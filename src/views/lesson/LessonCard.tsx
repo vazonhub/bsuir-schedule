@@ -1,0 +1,330 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { Avatar } from '@components/Avatar';
+import type { NormalizedLesson } from '@utils/scheduleNormalization';
+import { Palette, Radius, Spacing } from '@theme';
+import { getLessonAccentColor, getLessonBreakRange } from '@utils/lesson';
+import type { LessonTimeStatus } from '@utils/lesson';
+
+interface Props {
+  lesson: NormalizedLesson;
+  onPress?(): void;
+  /**
+   * Compact-mode для пар не своей подгруппы — одна строка с названием
+   * предмета, пунктирная рамка цвета типа занятия, прозрачный фон.
+   */
+  compact?: boolean;
+  /**
+   * Состояние пары относительно «сейчас» — `null` если пара не сегодня
+   * (тогда никакой подсветки не накладываем).
+   */
+  timeStatus?: LessonTimeStatus | null;
+}
+
+// Полупрозрачная серая «вуаль» для прошедших / уже прошедшей части идущей пары.
+const PAST_OVERLAY_COLOR = 'rgba(60, 60, 67, 0.10)';
+// Тонкий синий «маркер» 5-минутного перерыва в середине пары — рисуется
+// поверх серой вуали, пока пара не закончилась.
+const BREAK_OVERLAY_COLOR = 'rgba(10, 132, 255, 0.18)';
+
+const buildTeacherShort = (lesson: NormalizedLesson): string | null => {
+  const first = (lesson.raw.employees ?? [])[0];
+  if (!first) return null;
+  if (first.fio) return first.fio;
+  const initials = [first.firstName?.[0], first.middleName?.[0]]
+    .filter(Boolean)
+    .map((c) => `${c}.`)
+    .join(' ');
+  return `${first.lastName ?? ''} ${initials}`.trim();
+};
+
+const buildAvatarInitials = (lesson: NormalizedLesson): string => {
+  const first = (lesson.raw.employees ?? [])[0];
+  if (!first) return '?';
+  return `${first.lastName?.[0] ?? ''}${first.firstName?.[0] ?? ''}`;
+};
+
+export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Props) => {
+  const accent = getLessonAccentColor(lesson.raw.lessonTypeAbbrev);
+
+  // Ширина «прошедшей» серой заливки. 0 = ничего не закрашено,
+  // 1 = карточка полностью закрашена (пара уже прошла).
+  const pastFraction =
+    timeStatus?.kind === 'past'
+      ? 1
+      : timeStatus?.kind === 'ongoing'
+        ? timeStatus.progress
+        : 0;
+
+  // Синий маркер 5-минутного перерыва — только пока пара ещё не закончилась
+  // (показываем как для идущей, так и для запланированной на сегодня).
+  const breakRange =
+    timeStatus?.kind === 'ongoing' || timeStatus?.kind === 'future'
+      ? getLessonBreakRange(lesson)
+      : null;
+
+  // Подпись с временем начала перерыва (вертикально внутри синего блока).
+  // Показываем только для уже идущей пары, у которой перерыв ещё не наступил.
+  const showBreakLabel =
+    !!breakRange &&
+    timeStatus?.kind === 'ongoing' &&
+    timeStatus.progress < breakRange.startFraction;
+
+  if (compact) {
+    const compactNumSubgroup = lesson.raw.numSubgroup;
+    const showCompactSubgroup = compactNumSubgroup === 1 || compactNumSubgroup === 2;
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.compact,
+          { borderColor: accent },
+          pressed && onPress && styles.compactPressed,
+        ]}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={
+          showCompactSubgroup
+            ? `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, подгруппа ${compactNumSubgroup}`
+            : `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, не моя подгруппа`
+        }
+      >
+        <View style={styles.compactBody}>
+          <Text style={styles.compactSubject} numberOfLines={1}>
+            {lesson.raw.subject}
+          </Text>
+          <Text style={styles.compactTime} numberOfLines={1}>
+            {lesson.startTime} — {lesson.endTime}
+          </Text>
+        </View>
+        {showCompactSubgroup && (
+          <View style={styles.subgroupChip}>
+            <Ionicons name="person" size={12} color={Palette.textSecondary} />
+            <Text style={styles.subgroupNumber}>{compactNumSubgroup}</Text>
+          </View>
+        )}
+      </Pressable>
+    );
+  }
+
+  const teacher = buildTeacherShort(lesson);
+  const auditories = (lesson.raw.auditories ?? []).join(', ');
+  const meta = [teacher, auditories].filter(Boolean).join(' · ');
+  const teacherEmployee = (lesson.raw.employees ?? [])[0];
+  const hasAvatar = Boolean(teacherEmployee);
+  const numSubgroup = lesson.raw.numSubgroup;
+  const showSubgroup = numSubgroup === 1 || numSubgroup === 2;
+  const hasRightArea = hasAvatar || showSubgroup;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [styles.card, pressed && onPress && styles.cardPressed]}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={`${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}`}
+    >
+      <View style={[styles.stripe, { backgroundColor: accent }]} />
+
+      <View style={styles.content}>
+        {pastFraction > 0 && (
+          <View
+            pointerEvents="none"
+            style={[styles.pastOverlay, { width: `${pastFraction * 100}%` }]}
+          />
+        )}
+        {breakRange && (
+          <View
+            pointerEvents="none"
+            style={[
+              styles.breakOverlay,
+              {
+                left: `${breakRange.startFraction * 100}%`,
+                width: `${breakRange.widthFraction * 100}%`,
+              },
+            ]}
+          >
+            <View style={styles.breakLabelRotator} pointerEvents="none">
+              <Text style={styles.breakLabel} numberOfLines={1}>
+                {breakRange.startsAt}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.body}>
+          <Text style={styles.time}>
+            {lesson.startTime} — {lesson.endTime}
+          </Text>
+          <Text style={styles.subject} numberOfLines={2}>
+            {lesson.raw.subject}
+          </Text>
+          {meta.length > 0 && (
+            <Text style={styles.meta} numberOfLines={1}>
+              {meta}
+            </Text>
+          )}
+          {lesson.raw.note && (
+            <Text style={styles.note} numberOfLines={1}>
+              {lesson.raw.note}
+            </Text>
+          )}
+        </View>
+
+        {hasRightArea && (
+          <View style={styles.right}>
+            {showSubgroup && (
+              <View style={styles.subgroupChip}>
+                <Ionicons name="person" size={16} color={Palette.textSecondary} />
+                <Text style={styles.subgroupNumber}>{numSubgroup}</Text>
+              </View>
+            )}
+            {hasAvatar && teacherEmployee && (
+              <Avatar
+                uri={teacherEmployee.photoLink}
+                initials={buildAvatarInitials(lesson)}
+                size={48}
+              />
+            )}
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
+};
+
+const STRIPE_WIDTH = 5;
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    backgroundColor: Palette.card,
+    borderRadius: Radius.lg,
+    marginHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.cardGap,
+    overflow: 'hidden',
+  },
+  cardPressed: { backgroundColor: Palette.cardPressed },
+  stripe: {
+    width: STRIPE_WIDTH,
+  },
+  content: {
+    flex: 1,
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  pastOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: PAST_OVERLAY_COLOR,
+  },
+  breakOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: BREAK_OVERLAY_COLOR,
+    alignItems: 'center',
+    overflow: 'visible',
+  },
+  // Чтобы повёрнутый текст не переносился на 2 строки, обёртке нужны
+  // явные размеры в её «исходных» (горизонтальных) координатах: ширина =
+  // достаточно для строки "HH:MM", высота = высота строки.
+  // Поворот делаем на View, а не на Text — на Text transform в RN иногда
+  // не применяется в узком контейнере (наш блок перерыва ~20pt).
+  // alignItems: 'flex-end' внутри обёртки ставит Text у правого края
+  // горизонтального бокса; после поворота на -90° (против часовой стрелки)
+  // правый край становится верхом → надпись прижата к верху полоски.
+  // marginTop компенсирует сдвиг центра при rotate: visualTop = marginTop +
+  // (height - width)/2; для 50×14 и желаемого visualTop ≈ 4 → marginTop ≈ 22.
+  breakLabelRotator: {
+    width: 50,
+    height: 14,
+    marginTop: 22,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    transform: [{ rotate: '-90deg' }],
+  },
+  breakLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: Palette.accent,
+    includeFontPadding: false,
+  },
+  body: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    gap: 2,
+  },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingRight: Spacing.lg,
+  },
+  subgroupChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  subgroupNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Palette.textSecondary,
+  },
+
+  time: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Palette.textSecondary,
+    letterSpacing: 0.2,
+  },
+  subject: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Palette.textPrimary,
+  },
+  meta: {
+    fontSize: 13,
+    color: Palette.textSecondary,
+  },
+  note: {
+    fontSize: 12,
+    color: Palette.textTertiary,
+    fontStyle: 'italic',
+  },
+
+  compact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.cardGap,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
+  },
+  compactPressed: { opacity: 0.5 },
+  compactBody: {
+    flex: 1,
+    gap: 2,
+  },
+  compactSubject: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Palette.textSecondary,
+  },
+  compactTime: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Palette.textTertiary,
+    letterSpacing: 0.2,
+  },
+});
