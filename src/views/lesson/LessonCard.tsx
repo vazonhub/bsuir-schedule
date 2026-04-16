@@ -1,11 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { usePalette } from '@hooks/usePalette';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
-import { Palette, Radius, Spacing } from '@theme';
+import { Radius, Spacing } from '@theme';
 import { getLessonAccentColor, getLessonBreakRange } from '@utils/lesson';
 import type { LessonTimeStatus } from '@utils/lesson';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   lesson: NormalizedLesson;
@@ -28,17 +33,6 @@ const PAST_OVERLAY_COLOR = 'rgba(60, 60, 67, 0.10)';
 // поверх серой вуали, пока пара не закончилась.
 const BREAK_OVERLAY_COLOR = 'rgba(10, 132, 255, 0.18)';
 
-const buildTeacherShort = (lesson: NormalizedLesson): string | null => {
-  const first = (lesson.raw.employees ?? [])[0];
-  if (!first) return null;
-  if (first.fio) return first.fio;
-  const initials = [first.firstName?.[0], first.middleName?.[0]]
-    .filter(Boolean)
-    .map((c) => `${c}.`)
-    .join(' ');
-  return `${first.lastName ?? ''} ${initials}`.trim();
-};
-
 const buildAvatarInitials = (lesson: NormalizedLesson): string => {
   const first = (lesson.raw.employees ?? [])[0];
   if (!first) return '?';
@@ -46,6 +40,9 @@ const buildAvatarInitials = (lesson: NormalizedLesson): string => {
 };
 
 export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Props) => {
+  const { t } = useTranslation();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const accent = getLessonAccentColor(lesson.raw.lessonTypeAbbrev);
 
   // Ширина «прошедшей» серой заливки. 0 = ничего не закрашено,
@@ -86,18 +83,13 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={
           showCompactSubgroup
-            ? `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, подгруппа ${compactNumSubgroup}`
-            : `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, не моя подгруппа`
+            ? `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, ${t('lesson.subgroup', { n: compactNumSubgroup })}`
+            : `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, ${t('lesson.notMySubgroup')}`
         }
       >
-        <View style={styles.compactBody}>
-          <Text style={styles.compactSubject} numberOfLines={1}>
-            {lesson.raw.subject}
-          </Text>
-          <Text style={styles.compactTime} numberOfLines={1}>
-            {lesson.startTime} — {lesson.endTime}
-          </Text>
-        </View>
+        <Text style={styles.compactText} numberOfLines={1}>
+          {lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
+        </Text>
         {showCompactSubgroup && (
           <View style={styles.subgroupChip}>
             <Ionicons name="person" size={12} color={Palette.textSecondary} />
@@ -108,9 +100,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
     );
   }
 
-  const teacher = buildTeacherShort(lesson);
   const auditories = (lesson.raw.auditories ?? []).join(', ');
-  const meta = [teacher, auditories].filter(Boolean).join(' · ');
   const teacherEmployee = (lesson.raw.employees ?? [])[0];
   const hasAvatar = Boolean(teacherEmployee);
   const numSubgroup = lesson.raw.numSubgroup;
@@ -160,9 +150,9 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
           <Text style={styles.subject} numberOfLines={2}>
             {lesson.raw.subject}
           </Text>
-          {meta.length > 0 && (
+          {auditories.length > 0 && (
             <Text style={styles.meta} numberOfLines={1}>
-              {meta}
+              {auditories}
             </Text>
           )}
           {lesson.raw.note && (
@@ -196,7 +186,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
 
 const STRIPE_WIDTH = 5;
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: Palette.card,
@@ -312,19 +302,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   compactPressed: { opacity: 0.5 },
-  compactBody: {
+  compactText: {
     flex: 1,
-    gap: 2,
-  },
-  compactSubject: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: Palette.textSecondary,
-  },
-  compactTime: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Palette.textTertiary,
-    letterSpacing: 0.2,
   },
 });

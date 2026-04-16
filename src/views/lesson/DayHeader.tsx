@@ -1,14 +1,22 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { usePalette } from '@hooks/usePalette';
 import type { WeekNumber } from '@models/dto';
-import { Palette, Spacing } from '@theme';
-import { formatDayHeader } from '@utils/date';
+import { Spacing } from '@theme';
+import { formatDayHeader, formatExamDayHeader } from '@utils/date';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   date: Date;
   week: WeekNumber;
   /** True for the section that contains the current real day. */
   isToday?: boolean;
+  /** True for the section that contains tomorrow. */
+  isTomorrow?: boolean;
+  /** True for exam session sections — hides week number. */
+  isExam?: boolean;
 }
 
 /**
@@ -16,15 +24,23 @@ interface Props {
  * screen background; opaque `backgroundColor` ensures it cleanly hides cards
  * scrolling behind it when the section list pins it to the top.
  */
-export const DayHeader = ({ date, week, isToday = false }: Props) => (
-  <View style={styles.wrap}>
-    <Text style={[styles.text, isToday && styles.today]} numberOfLines={1}>
-      {formatDayHeader(date, week)}
-    </Text>
-  </View>
-);
+export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false }: Props) => {
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
-const styles = StyleSheet.create({
+  return (
+    <View style={styles.wrap}>
+      <Text
+        style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow]}
+        numberOfLines={1}
+      >
+        {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
+      </Text>
+    </View>
+  );
+};
+
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   wrap: {
     paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8,
     paddingTop: Spacing.sectionTop,
@@ -40,5 +56,8 @@ const styles = StyleSheet.create({
   },
   today: {
     color: Palette.accent,
+  },
+  tomorrow: {
+    color: Palette.destructive,
   },
 });

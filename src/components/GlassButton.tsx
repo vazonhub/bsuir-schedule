@@ -1,9 +1,13 @@
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Palette, Radius } from '@theme';
+import { useGlassTint, useIsDark, usePalette } from '@hooks/usePalette';
+import { Radius } from '@theme';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   children: ReactNode;
@@ -18,6 +22,8 @@ interface Props {
   /** When true the button is rendered with a stronger fill — use for the
    * primary "active" state of toggle controls (e.g. pinned). */
   active?: boolean;
+  /** Override tint colour when active (default: `Palette.accent`). */
+  activeColor?: string;
   /** Дополнительные стили обёртки — например, чтобы разрешить flex-shrink
    * у шрифта-лейбла внутри топ-бара. */
   style?: StyleProp<ViewStyle>;
@@ -36,8 +42,13 @@ export const GlassButton = ({
   shape = 'pill',
   accessibilityLabel,
   active = false,
+  activeColor,
   style: styleProp,
 }: Props) => {
+  const Palette = usePalette();
+  const isDark = useIsDark();
+  const glassTint = useGlassTint();
+  const styles = useMemo(() => makeStyles(Palette, glassTint.tint), [Palette, glassTint.tint]);
   const radius = shape === 'pill' ? 999 : Radius.lg;
   const heightPx = height ?? size;
 
@@ -54,22 +65,28 @@ export const GlassButton = ({
       ]}
     >
       {Platform.OS === 'web' ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.7)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: glassTint.webBg }]} />
       ) : (
         <BlurView
           intensity={active ? 90 : 70}
-          tint={active ? 'systemThickMaterial' : 'systemThinMaterial'}
+          tint={isDark ? (active ? 'systemThickMaterialDark' : 'systemThinMaterialDark') : (active ? 'systemThickMaterial' : 'systemThinMaterial')}
           experimentalBlurMethod="dimezisBlurView"
           style={StyleSheet.absoluteFill}
         />
       )}
-      <View style={[StyleSheet.absoluteFill, styles.tint, active && styles.tintActive]} />
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          styles.tint,
+          active && (activeColor ? { backgroundColor: activeColor + '33' } : styles.tintActive),
+        ]}
+      />
       <View style={styles.content}>{children}</View>
     </Pressable>
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType, tintBg: string) => StyleSheet.create({
   wrap: {
     overflow: 'hidden',
     alignItems: 'center',
@@ -77,8 +94,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   pressed: { opacity: 0.7 },
-  tint: { backgroundColor: 'rgba(255,255,255,0.18)' },
-  tintActive: { backgroundColor: Palette.accent + '33' /* alpha 0x33 ≈ 20% */ },
+  tint: { backgroundColor: tintBg },
+  tintActive: { backgroundColor: Palette.accent + '33' },
   content: {
     flexDirection: 'row',
     alignItems: 'center',

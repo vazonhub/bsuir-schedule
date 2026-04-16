@@ -1,12 +1,18 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
 import { SubgroupPicker } from '@components/SubgroupPicker';
+import { usePalette } from '@hooks/usePalette';
 import type { SubgroupChoice } from '@stores/preferences.store';
-import { Palette, Spacing } from '@theme';
-import { formatDayShort } from '@utils/date';
+import { Spacing } from '@theme';
+import { formatDayShortCompact } from '@utils/date';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   pinned: boolean;
@@ -25,6 +31,17 @@ interface Props {
   currentDate?: Date;
   /** Подсветить лейбл акцентом, если это «сегодня». */
   isCurrentDateToday?: boolean;
+  /** Подсветить лейбл красным, если это «завтра». */
+  isCurrentDateTomorrow?: boolean;
+  /** Show an exams shortcut button (hidden when already viewing exams). */
+  showExamsButton?: boolean;
+  onScrollToExams?(): void;
+  /** When true, replaces back button with group title and pin with change button. */
+  isDefaultSchedule?: boolean;
+  /** Group name shown in the top bar (only when `isDefaultSchedule`). */
+  defaultGroupName?: string;
+  /** Callback to change the default group. */
+  onChangeDefaultGroup?(): void;
 }
 
 /**
@@ -41,9 +58,18 @@ export const FloatingTopBar = ({
   onSubgroupChange,
   currentDate,
   isCurrentDateToday = false,
+  isCurrentDateTomorrow = false,
+  showExamsButton = false,
+  onScrollToExams,
+  isDefaultSchedule = false,
+  defaultGroupName,
+  onChangeDefaultGroup,
 }: Props) => {
+  const { t } = useTranslation();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const showSubgroupPicker = subgroup !== undefined && onSubgroupChange !== undefined;
-  const dayLabel = currentDate ? formatDayShort(currentDate, new Date()) : null;
+  const dayLabel = currentDate ? formatDayShortCompact(currentDate, new Date()) : null;
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -53,24 +79,44 @@ export const FloatingTopBar = ({
       style={[styles.container, { paddingTop: insets.top + Spacing.sm }]}
     >
       <View style={styles.left}>
-        <GlassButton
-          onPress={() => router.back()}
-          size={38}
-          accessibilityLabel="Назад"
-        >
-          <Text style={styles.back}>‹</Text>
-        </GlassButton>
+        {isDefaultSchedule ? (
+          defaultGroupName ? (
+            <GlassButton
+              height={38}
+              shape="pill"
+              style={styles.dayLabelChip}
+              accessibilityLabel={t('groups.groupLabel', { name: defaultGroupName, speciality: '', course: '' })}
+            >
+              <Text style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
+                {defaultGroupName}
+              </Text>
+            </GlassButton>
+          ) : null
+        ) : (
+          <GlassButton
+            onPress={() => router.back()}
+            size={38}
+            accessibilityLabel={t('common.back')}
+          >
+            <Text style={styles.back}>&#8249;</Text>
+          </GlassButton>
+        )}
 
         {dayLabel && (
           <GlassButton
             height={38}
             shape="pill"
-            active={isCurrentDateToday}
+            active={isCurrentDateToday || isCurrentDateTomorrow}
+            activeColor={isCurrentDateTomorrow ? Palette.destructive : undefined}
             style={styles.dayLabelChip}
             accessibilityLabel={dayLabel}
           >
             <Text
-              style={[styles.dayLabel, isCurrentDateToday && styles.dayLabelToday]}
+              style={[
+                styles.dayLabel,
+                isCurrentDateToday && styles.dayLabelToday,
+                isCurrentDateTomorrow && styles.dayLabelTomorrow,
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -81,14 +127,33 @@ export const FloatingTopBar = ({
       </View>
 
       <View style={styles.right}>
-        <GlassButton
-          onPress={onTogglePin}
-          size={38}
-          active={pinned}
-          accessibilityLabel={pinned ? 'Открепить расписание' : 'Закрепить расписание'}
-        >
-          <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '★' : '☆'}</Text>
-        </GlassButton>
+        {showExamsButton && onScrollToExams && (
+          <GlassButton
+            onPress={onScrollToExams}
+            size={38}
+            accessibilityLabel={t('schedule.goToExams')}
+          >
+            <Ionicons name="school-outline" size={18} color={Palette.textPrimary} />
+          </GlassButton>
+        )}
+        {isDefaultSchedule && onChangeDefaultGroup ? (
+          <GlassButton
+            onPress={onChangeDefaultGroup}
+            size={38}
+            accessibilityLabel={t('schedule.changeGroup')}
+          >
+            <Ionicons name="swap-horizontal" size={18} color={Palette.textPrimary} />
+          </GlassButton>
+        ) : (
+          <GlassButton
+            onPress={onTogglePin}
+            size={38}
+            active={pinned}
+            accessibilityLabel={pinned ? t('schedule.unpin') : t('schedule.pin')}
+          >
+            <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
+          </GlassButton>
+        )}
 
         {showSubgroupPicker && (
           <SubgroupPicker value={subgroup} onChange={onSubgroupChange} />
@@ -98,7 +163,7 @@ export const FloatingTopBar = ({
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: 0,
@@ -147,6 +212,9 @@ const styles = StyleSheet.create({
   },
   dayLabelToday: {
     color: Palette.accent,
+  },
+  dayLabelTomorrow: {
+    color: Palette.destructive,
   },
   pin: {
     fontSize: 18,

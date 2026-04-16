@@ -1,6 +1,11 @@
+import { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { Palette, Radius, Spacing } from '@theme';
+import { usePalette } from '@hooks/usePalette';
+import { Radius, Spacing } from '@theme';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   value: string;
@@ -12,34 +17,38 @@ interface Props {
  * Search bar styled as a card-tile (matches the rest of the design system —
  * white fill, large corner radius, screen-edge padding).
  */
-export const SearchBar = ({ value, onChange, placeholder = 'Поиск' }: Props) => {
+export const SearchBar = ({ value, onChange, placeholder }: Props) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('common.search');
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const showManualClear = Platform.OS !== 'ios' && value.length > 0;
 
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        <Text style={styles.icon}>⌕</Text>
+        <Text style={styles.icon}>{'\u2315'}</Text>
         <TextInput
           style={styles.input}
           value={value}
           onChangeText={onChange}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           placeholderTextColor={Palette.searchPlaceholder}
           autoCorrect={false}
           autoCapitalize="none"
           clearButtonMode="while-editing"
           returnKeyType="search"
           underlineColorAndroid="transparent"
-          accessibilityLabel="Поиск"
+          accessibilityLabel={t('common.search')}
         />
         {showManualClear && (
           <Pressable
             onPress={() => onChange('')}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Очистить"
+            accessibilityLabel={t('common.clear')}
           >
-            <Text style={styles.clear}>×</Text>
+            <Text style={styles.clear}>{'\u00D7'}</Text>
           </Pressable>
         )}
       </View>
@@ -47,7 +56,7 @@ export const SearchBar = ({ value, onChange, placeholder = 'Поиск' }: Props
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   wrap: {
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,

@@ -1,3 +1,4 @@
+import i18n from '@i18n';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import type { KnownLessonType } from '@theme/colors';
 import type { LessonTypeAbbrev } from '@models/dto';
@@ -11,17 +12,17 @@ export const getLessonAccentColor = (type: LessonTypeAbbrev | null | undefined):
   );
 };
 
-const FULL_LESSON_TYPE_NAME: Record<string, string> = {
-  ПЗ: 'Практическое занятие',
-  ЛР: 'Лабораторная работа',
-  ЛК: 'Лекция',
-  Консультация: 'Консультация',
-  Экзамен: 'Экзамен',
-};
+/** Known lesson type abbreviations that have translation keys. */
+const KNOWN_LESSON_TYPES = ['ПЗ', 'ЛР', 'ЛК', 'Консультация', 'Экзамен'] as const;
+type KnownLessonTypeAbbrev = (typeof KNOWN_LESSON_TYPES)[number];
+
+const isKnownLessonType = (type: string): type is KnownLessonTypeAbbrev =>
+  (KNOWN_LESSON_TYPES as readonly string[]).includes(type);
 
 export const getLessonTypeFullName = (type: LessonTypeAbbrev | null | undefined): string => {
-  if (!type) return 'Занятие';
-  return FULL_LESSON_TYPE_NAME[type] ?? type;
+  if (!type) return i18n.t('lessonType.fallback');
+  if (isKnownLessonType(type)) return i18n.t(`lessonType.${type}`);
+  return type;
 };
 
 export type LessonTimeStatus =

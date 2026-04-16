@@ -219,12 +219,13 @@
 - [x] Empty: «Расписание ещё не опубликовано» (если `schedules` пуст или нормализация даёт 0 событий).
 - [x] Error: ретрай-кнопка, под капотом — повтор контроллера.
 
-### Phase 5 — Детали пары (bottom sheet)
+### Phase 5 — Детали пары (bottom sheet) ✅
 
-Файлы: `src/views/lesson/LessonDetailsSheet.tsx`, потенциально библиотека `@gorhom/bottom-sheet`.
+Файлы: `src/views/lesson/LessonDetailsSheet.tsx`, `@gorhom/bottom-sheet`.
 
-- [ ] Установить `@gorhom/bottom-sheet` (`expo install @gorhom/bottom-sheet`).
-- [ ] Sheet с контентом:
+- [x] Установить `@gorhom/bottom-sheet` (`expo install @gorhom/bottom-sheet`).
+- [x] `BottomSheetModalProvider` добавлен в `app/_layout.tsx`.
+- [x] Sheet с контентом:
   - Полное название предмета (`subjectFullName`).
   - Тип (полное название из `getLessonTypeFullName`) + цветовой чип.
   - Время и дата.
@@ -232,36 +233,40 @@
   - Список преподавателей (ФИО + degree + rank, тап → переход в `EmployeeSchedule` соответствующего таба).
   - Список групп (для расписания преподавателя — тап → `GroupSchedule`).
   - Заметка (`note`), если есть.
-  - Недели (`weekNumber`) с подсветкой текущей.
-- [ ] Открытие по тапу на `LessonCard`.
+  - Недели (`weekNumber`) с подсветкой текущей (синий бейдж).
+  - Бейдж подгруппы, если применимо.
+- [x] Открытие по тапу на `LessonCard`.
 
-### Phase 6 — Кэш, оффлайн и предзагрузка закреплённого
+### Phase 6 — Кэш, оффлайн и предзагрузка закреплённого ✅
 
-Файлы: `src/services/cache/mmkv.ts`, `src/services/prefetch.ts`, обновление контроллеров.
+Файлы: `src/services/cache/cache.ts`, `src/services/prefetch.ts`, `src/hooks/useAppBootstrap.ts`, обновление контроллеров и сторов.
 
-- [ ] Тонкая обёртка над MMKV: `cache.get<T>(key)`, `cache.set(key, value, ttl?)`, `cache.invalidate(key)`.
-- [ ] Контроллеры пишут результат в кэш и читают его на старте → возвращают данные пользователю мгновенно, потом обновляют сетью (stale-while-revalidate).
-- [ ] TTL: 24 ч для списков групп/преподавателей, 6 ч для расписания, 1 ч для `current-week`.
-- [ ] Хранить ключ «последняя открытая группа» — для быстрого старта (опционально открывать её сразу).
-- [ ] **Prefetch закреплённого:** на старте приложения `prefetch.ts` проходит по `preferences.pinnedGroups[]` и `preferences.pinnedEmployees[]` и зовёт `ScheduleController.loadGroupSchedule` / `loadEmployeeSchedule` для каждого. Запросы идут параллельно с `Promise.allSettled`, ошибки логируются, не падают.
-- [ ] Refresh закреплённого по триггерам: `AppState` → active (с дебаунсом), pull-to-refresh на любом списке, ручное «обновить» в настройках.
+- [x] Тонкая обёртка с TTL: `cache.get<T>(key, ttlMs)`, `cache.set(key, data)`, `cache.invalidate(key)` — поверх AsyncStorage (MMKV не совместим с текущими peer-deps).
+- [x] Сторы `groups.store` и `employees.store` теперь персистятся через AsyncStorage (Zustand persist) — мгновенный старт с кэшированными данными.
+- [x] Контроллеры реализуют stale-while-revalidate: если кэш свежий и стор не пуст — пропускают запрос; если есть стale-данные — не показывают ошибку при сбое сети.
+- [x] TTL: 24 ч для списков групп/преподавателей, 6 ч для расписания, 1 ч для `current-week`.
+- [ ] Хранить ключ «последняя открытая группа» — отложено.
+- [x] **Prefetch закреплённого:** `prefetch.ts` загружает `currentWeek` + расписания всех закреплённых групп/преподавателей параллельно через `Promise.allSettled`.
+- [x] **`useAppBootstrap`** в `app/_layout.tsx`: на старте загружает списки + prefetch; по `AppState → active` (с дебаунсом 5 с) обновляет всё заново.
 
-### Phase 7 — Закрепление и «моя группа»
+### Phase 7 — Закрепление и «моя группа» ✅
 
-Файлы: `src/stores/preferences.store.ts`, `src/components/PinButton.tsx`.
+Файлы: `src/stores/preferences.store.ts`, `src/views/schedule/MyScheduleScreen.tsx`, `src/views/groups/GroupPickerScreen.tsx`, `app/(tabs)/(my)/*`.
 
-- [ ] `preferences.store.ts` (Zustand + persist через MMKV): `pinnedGroups: string[]`, `pinnedEmployees: string[]`, `defaultGroup: string | null`, `theme: 'auto'|'light'|'dark'`.
-- [ ] Первый запуск — без onboarding-модала. Просто открывается список групп; пользователь сам выбирает и закрепляет.
-- [ ] Кнопка ★ (Pin) в шапке `GroupScheduleScreen` и `EmployeeScheduleScreen` — toggle закрепления. Первая закреплённая группа автоматически становится `defaultGroup` (используется виджетами).
-- [ ] Закреплённые поднимаются наверх списка отдельной секцией «Закреплённые» (показывается выше факультетов в `SectionList`).
-- [ ] Закреплённые автоматически попадают в Phase 6 prefetch.
-- [ ] Виджеты (Phase 10) читают `defaultGroup` для отображения.
+- [x] `preferences.store.ts`: добавлено `defaultGroup: string | null` + `setDefaultGroup(name)`, персистится в AsyncStorage.
+- [x] Вкладка «Моё» (`app/(tabs)/(my)`) — первая в таб-баре (иконка `calendar`). Показывает расписание `defaultGroup` через `ScheduleView` с `isDefaultSchedule` режимом.
+- [x] Если `defaultGroup` не выбрана — empty state с кнопкой «Выбрать группу» → переход на `GroupPickerScreen`.
+- [x] `GroupPickerScreen` — аналог GroupsListScreen, но тап на группу → `setDefaultGroup(name)` + `router.back()`.
+- [x] `FloatingTopBar` в режиме `isDefaultSchedule`: вместо кнопки «назад» — название группы; вместо pin — кнопка «сменить группу» (иконка swap).
+- [x] Prefetch приоритизирует `defaultGroup` (загружается первой).
+- [x] Закреплённые (избранные) группы/преподаватели — отдельная функциональность через `pinnedGroups`/`pinnedEmployees` (реализована ранее).
+- [x] Виджеты (Phase 10) будут читать `defaultGroup`.
 
 ### Phase 8 — Тёмная тема и Liquid Glass-полировка
 
-- [ ] Тема через `useColorScheme()`, `Palette` / `PaletteDark` уже готовы.
-- [ ] Кастомный header (large title) — изучить `react-native-screens` `headerLargeTitle` для нативного эффекта.
-- [ ] BlurView (`expo-blur`) под карточкой расписания «сегодня» — подчёркивает Liquid Glass.
+- [x] Тема через `useColorScheme()`, `Palette` / `PaletteDark` уже готовы.
+- [x] Кастомный header (large title) — изучить `react-native-screens` `headerLargeTitle` для нативного эффекта.
+- [x] BlurView (`expo-blur`) под карточкой расписания «сегодня» — подчёркивает Liquid Glass.
 
 ### Phase 9 — Полировка и QA
 
@@ -270,60 +275,40 @@
 - [ ] Аналитика ошибок (Sentry) — опционально.
 - [ ] Ручное QA на iPhone 17 (iOS 26) и любом Android-устройстве/эмуляторе с API 33+.
 
-### Phase 10 — Виджеты на главный экран
+### Phase 10 — Виджеты на главный экран ✅
 
 Цель: показывать ближайшие пары закреплённой (default) группы прямо на Home Screen / Lock Screen.
 
-#### 10.1 Подготовка общего слоя
+#### 10.1 Подготовка общего слоя ✅
 
 Файлы: `src/services/widget/widgetData.ts`, `src/services/widget/index.ts`.
 
-- [ ] Утилита `buildWidgetSnapshot(schedule: ScheduleDto, currentWeek: WeekNumber, now: Date): WidgetSnapshot` — компактное представление: «сегодня» + «следующие 1–3 пары».
-  ```ts
-  interface WidgetSnapshot {
-    groupName: string;
-    generatedAt: string;       // ISO
-    currentWeek: WeekNumber;
-    todayLessons: WidgetLesson[];
-    upcomingLessons: WidgetLesson[]; // ближайшие после "сейчас"
-  }
-  interface WidgetLesson {
-    subject: string;
-    typeAbbrev: string | null;
-    typeColorHex: string;
-    startTime: string;
-    endTime: string;
-    auditories: string[];
-    teacher: string | null;     // короткое ФИО
-  }
-  ```
-- [ ] Сериализация снапшота в JSON и запись в **shared storage** (см. ниже).
-- [ ] Записывать снапшот после каждого успешного `loadGroupSchedule` для закреплённых групп.
+- [x] `buildWidgetSnapshot(schedule, currentWeek, now, groupName)` — сегодняшние пары + 3 ближайших.
+- [x] Запись снапшота в shared storage через `react-native-shared-group-preferences` (App Group на iOS).
+- [x] `updateWidgetSnapshot()` вызывается после каждого успешного `loadGroupSchedule` для default группы, при старте приложения и при возврате в foreground.
 
-#### 10.2 iOS — WidgetKit (Swift)
+#### 10.2 iOS — WidgetKit (Swift) ✅
 
-- [ ] `npx expo install expo-apple-targets` (или ручной target в Xcode после `prebuild`).
-- [ ] App Group: добавить `group.by.vazon.bsuirschedule` в `app.json → ios.entitlements`. JS-сторона использует `react-native-shared-group-preferences` или MMKV с `appGroupId`, чтобы писать в общий контейнер.
-- [ ] WidgetKit Extension на Swift:
-  - читает JSON-снапшот из App Group,
-  - реализует `TimelineProvider`, обновляющий вид раз в час и по `Timeline.refresh`,
-  - размеры: `systemSmall` (1 ближайшая пара), `systemMedium` (3 пары + «сегодня»), `accessoryRectangular` для Lock Screen (Live Activities — позже).
-- [ ] Цвета пар прокидываются как hex из `WidgetSnapshot` (Swift парсит в `Color`).
-- [ ] Иконка SF Symbol (`graduationcap.fill` или `calendar`) в шапке виджета.
+- [x] App Group `group.by.vazon.bsuirschedule` в `app.json → ios.entitlements`.
+- [x] Expo config plugin `plugins/withWidget.js` для entitlements.
+- [x] `targets/widget/ScheduleWidget.swift` — полный WidgetKit extension:
+  - `TimelineProvider` с обновлением раз в час.
+  - Читает JSON из UserDefaults (App Group).
+  - `systemSmall` — 1 ближайшая пара с цветной полоской.
+  - `systemMedium` — до 3 пар + название группы + неделя.
+  - Цвета пар из hex (Swift `Color` extension).
+  - Инструкция по добавлению target в Xcode в `plugins/withWidget.js`.
 
 #### 10.3 Android — Glance App Widgets
 
-- [ ] После `expo prebuild` добавить нативный модуль с Jetpack Glance (Compose-style виджеты).
-- [ ] Хранилище — общий `SharedPreferences` (или DataStore) внутри пакета приложения. JS пишет через `react-native-default-preference` либо через `react-native-mmkv` с одним и тем же файлом-инстансом — нативный код Glance читает оттуда.
-- [ ] Layouts: маленький (1 пара), средний (3 пары) — соответствуют iOS размерам, чтобы JS-код снапшота был общим.
-- [ ] Цвет акцента — `RoundedCornerShape` + цветовая полоска слева, как в карточке внутри приложения.
+- [ ] Jetpack Glance виджеты — отложено до Phase 11 (после стабилизации iOS виджета).
 
-#### 10.4 Обновление виджетов
+#### 10.4 Обновление виджетов ✅
 
-- [ ] iOS: после успешной перезаписи снапшота вызывать `WidgetCenter.shared.reloadAllTimelines()` через нативный модуль.
-- [ ] Android: триггерить `GlanceAppWidget.update(...)`.
-- [ ] Бэкграунд-обновление: `expo-background-fetch` (iOS) + `expo-task-manager` (Android) — задача раз в N часов перезапрашивает расписание для default группы и перезаписывает снапшот.
-- [ ] Описать ограничения (iOS background fetch не гарантирует частоту) в `CLAUDE.md`.
+- [x] `schedule.controller.ts` обновляет snapshot после загрузки расписания default группы.
+- [x] `useAppBootstrap` обновляет snapshot при старте и при возврате в foreground.
+- [x] Background fetch: `src/services/widget/backgroundTask.ts` — `expo-background-fetch` + `expo-task-manager`, задача `WIDGET_REFRESH` каждые 2 часа обновляет расписание и snapshot.
+- [x] Ограничения: iOS не гарантирует точный интервал background fetch — зависит от паттернов использования устройства.
 
 ---
 

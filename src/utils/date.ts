@@ -1,5 +1,6 @@
 import { addDays as fnsAddDays, format, isSameDay as fnsIsSameDay, parse, startOfDay } from 'date-fns';
 
+import i18n from '@i18n';
 import type { BsuirDateString, DayNameRu, WeekNumber } from '@models/dto';
 
 const BSUIR_DATE_FMT = 'dd.MM.yyyy';
@@ -55,20 +56,58 @@ const MONTHS_GENITIVE_RU = [
   'декабря',
 ] as const;
 
+/** Get localized day names (Sun=0..Sat=6) from i18n. */
+export const getDayNames = (): string[] =>
+  i18n.t('date.days', { returnObjects: true }) as string[];
+
+/** Get localized month names from i18n. */
+const getMonthNames = (): string[] =>
+  i18n.t('date.months', { returnObjects: true }) as string[];
+
+/** Get localized short day names from i18n. */
+const getDayNamesShort = (): string[] =>
+  i18n.t('date.daysShort', { returnObjects: true }) as string[];
+
+/** "Понедельник, 14 апреля" — without week info (used for exams). */
+export const formatExamDayHeader = (date: Date): string => {
+  const days = getDayNames();
+  const months = getMonthNames();
+  const dayName = days[date.getDay()];
+  const dom = date.getDate();
+  const month = months[date.getMonth()];
+  return `${dayName}, ${dom} ${month}`;
+};
+
 /** "Понедельник, 14 апреля · Неделя 2" */
 export const formatDayHeader = (date: Date, week: WeekNumber): string => {
-  const dayName = DAY_NAMES_RU[date.getDay()];
+  const days = getDayNames();
+  const months = getMonthNames();
+  const dayName = days[date.getDay()];
   const dom = date.getDate();
-  const month = MONTHS_GENITIVE_RU[date.getMonth()];
-  return `${dayName}, ${dom} ${month} · Неделя ${week}`;
+  const month = months[date.getMonth()];
+  return `${dayName}, ${dom} ${month} · ${i18n.t('schedule.week', { n: week })}`;
 };
 
 /** "Сегодня" / "Завтра" / "Понедельник, 14 апреля". Used for non-sticky labels. */
 export const formatDayShort = (date: Date, today: Date): string => {
-  if (isSameDay(date, today)) return 'Сегодня';
-  if (isSameDay(date, addDays(today, 1))) return 'Завтра';
-  const dayName = DAY_NAMES_RU[date.getDay()];
+  if (isSameDay(date, today)) return i18n.t('date.today');
+  if (isSameDay(date, addDays(today, 1))) return i18n.t('date.tomorrow');
+  const days = getDayNames();
+  const months = getMonthNames();
+  const dayName = days[date.getDay()];
   const dom = date.getDate();
-  const month = MONTHS_GENITIVE_RU[date.getMonth()];
+  const month = months[date.getMonth()];
   return `${dayName}, ${dom} ${month}`;
+};
+
+/** Compact variant for the floating header: "Сегодня" / "Завтра" / "ПН, 14 апреля". */
+export const formatDayShortCompact = (date: Date, today: Date): string => {
+  if (isSameDay(date, today)) return i18n.t('date.today');
+  if (isSameDay(date, addDays(today, 1))) return i18n.t('date.tomorrow');
+  const shorts = getDayNamesShort();
+  const months = getMonthNames();
+  const abbrev = shorts[date.getDay()];
+  const dom = date.getDate();
+  const month = months[date.getMonth()];
+  return `${abbrev}, ${dom} ${month}`;
 };

@@ -10,22 +10,29 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchBar } from '@components/SearchBar';
 import { GroupsController } from '@controllers/groups.controller';
 import { useGroupSearch } from '@hooks/useGroupSearch';
+import { usePalette } from '@hooks/usePalette';
 import { useGroupsStore } from '@stores/groups.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Palette, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
-import { buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { PINNED_SECTION_KEY, buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
 
 import { GroupRow } from './GroupRow';
 import { SectionHeader } from './SectionHeader';
 
+type PaletteType = ReturnType<typeof usePalette>;
+
 export const GroupsListScreen = () => {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const items = useGroupsStore((s) => s.items);
   const isLoading = useGroupsStore((s) => s.isLoading);
   const error = useGroupsStore((s) => s.error);
@@ -85,7 +92,7 @@ export const GroupsListScreen = () => {
             onPress={handleRefresh}
             style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
           >
-            <Text style={styles.retryLabel}>Повторить</Text>
+            <Text style={styles.retryLabel}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -106,7 +113,7 @@ export const GroupsListScreen = () => {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <SearchBar value={query} onChange={setQuery} placeholder="Поиск группы или факультета" />
+      <SearchBar value={query} onChange={setQuery} placeholder={t('groups.searchPlaceholder')} />
 
       {isSearching ? (
         <FlatList
@@ -119,7 +126,7 @@ export const GroupsListScreen = () => {
           refreshControl={refreshControl}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.empty}>Ничего не найдено</Text>
+              <Text style={styles.empty}>{t('common.nothingFound')}</Text>
             </View>
           }
         />
@@ -132,7 +139,7 @@ export const GroupsListScreen = () => {
           keyboardDismissMode="on-drag"
           contentContainerStyle={listContent}
           renderSectionHeader={({ section }) => (
-            <SectionHeader abbrev={section.facultyAbbrev} name={section.facultyName} />
+            <SectionHeader abbrev={section.facultyAbbrev} name={section.facultyName} pinned={section.key === PINNED_SECTION_KEY} />
           )}
           renderItem={renderRow}
           refreshControl={refreshControl}
@@ -142,7 +149,7 @@ export const GroupsListScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
   emptyContent: { flexGrow: 1 },

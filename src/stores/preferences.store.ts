@@ -8,16 +8,25 @@ import { asyncStorageAdapter } from '@services/cache/asyncStorage';
  * Совпадает с семантикой `LessonDto.numSubgroup`.
  */
 export type SubgroupChoice = 0 | 1 | 2;
+export type ThemeChoice = 'auto' | 'light' | 'dark';
+export type LanguageChoice = 'ru' | 'be' | 'en';
 
 interface PreferencesState {
   pinnedGroups: string[];
   pinnedEmployees: string[];
+  /** Группа, закреплённая на вкладке «Моё расписание» и на виджетах. */
+  defaultGroup: string | null;
   /** Выбор подгруппы для конкретного расписания (по ключу — group name / employee urlId). */
   subgroupByKey: Record<string, SubgroupChoice>;
+  theme: ThemeChoice;
+  language: LanguageChoice;
 
   togglePinnedGroup(name: string): void;
   togglePinnedEmployee(urlId: string): void;
+  setDefaultGroup(name: string | null): void;
   setSubgroup(key: string, value: SubgroupChoice): void;
+  setTheme(theme: ThemeChoice): void;
+  setLanguage(language: LanguageChoice): void;
 }
 
 const toggleInArray = (arr: string[], value: string): string[] =>
@@ -28,7 +37,10 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       pinnedGroups: [],
       pinnedEmployees: [],
+      defaultGroup: null,
       subgroupByKey: {},
+      theme: 'auto' as ThemeChoice,
+      language: 'ru' as LanguageChoice,
 
       togglePinnedGroup: (name) =>
         set((s) => ({ pinnedGroups: toggleInArray(s.pinnedGroups, name) })),
@@ -36,8 +48,13 @@ export const usePreferencesStore = create<PreferencesState>()(
       togglePinnedEmployee: (urlId) =>
         set((s) => ({ pinnedEmployees: toggleInArray(s.pinnedEmployees, urlId) })),
 
+      setDefaultGroup: (name) => set({ defaultGroup: name }),
+
       setSubgroup: (key, value) =>
         set((s) => ({ subgroupByKey: { ...s.subgroupByKey, [key]: value } })),
+
+      setTheme: (theme) => set({ theme }),
+      setLanguage: (language) => set({ language }),
     }),
     {
       name: 'preferences-v1',
@@ -45,7 +62,10 @@ export const usePreferencesStore = create<PreferencesState>()(
       partialize: (state) => ({
         pinnedGroups: state.pinnedGroups,
         pinnedEmployees: state.pinnedEmployees,
+        defaultGroup: state.defaultGroup,
         subgroupByKey: state.subgroupByKey,
+        theme: state.theme,
+        language: state.language,
       }),
     },
   ),

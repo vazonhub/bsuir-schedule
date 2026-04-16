@@ -19,6 +19,7 @@ module.exports = function (api) {
             '@theme': './src/theme',
             '@utils': './src/utils',
             '@hooks': './src/hooks',
+            '@i18n': './src/i18n',
           },
           extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
         },

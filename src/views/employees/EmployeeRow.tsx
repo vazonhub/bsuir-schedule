@@ -1,8 +1,13 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto } from '@models/dto';
-import { Palette, Radius, Spacing } from '@theme';
+import { Radius, Spacing } from '@theme';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   employee: EmployeeDto;
@@ -24,6 +29,9 @@ const buildSubtitle = (e: EmployeeDto): string | null => {
 };
 
 export const EmployeeRow = ({ employee, onPress }: Props) => {
+  const { t } = useTranslation();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const subtitle = buildSubtitle(employee);
 
   return (
@@ -31,7 +39,7 @@ export const EmployeeRow = ({ employee, onPress }: Props) => {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
-      accessibilityLabel={`Преподаватель ${employee.lastName} ${employee.firstName} ${employee.middleName}`}
+      accessibilityLabel={t('employees.teacherLabel', { name: `${employee.lastName} ${employee.firstName} ${employee.middleName}` })}
     >
       <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
       <View style={styles.main}>
@@ -46,12 +54,12 @@ export const EmployeeRow = ({ employee, onPress }: Props) => {
           </Text>
         )}
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <Text style={styles.chevron}>&rsaquo;</Text>
     </Pressable>
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',

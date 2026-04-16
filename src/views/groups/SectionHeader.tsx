@@ -1,10 +1,16 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Palette, Spacing } from '@theme';
+import { usePalette } from '@hooks/usePalette';
+import { Spacing } from '@theme';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   abbrev: string;
   name?: string;
+  pinned?: boolean;
 }
 
 /**
@@ -14,21 +20,27 @@ interface Props {
  * carries an opaque `backgroundColor: Palette.background` so that — when the
  * `SectionList` makes it sticky — it cleanly hides any cards passing behind.
  */
-export const SectionHeader = ({ abbrev, name }: Props) => (
-  <View style={styles.header}>
-    <Text style={styles.abbrev}>{abbrev}</Text>
-    {name ? (
-      <>
-        <Text style={styles.dot}>·</Text>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-      </>
-    ) : null}
-  </View>
-);
+export const SectionHeader = ({ abbrev, name, pinned }: Props) => {
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
-const styles = StyleSheet.create({
+  return (
+    <View style={styles.header}>
+      {pinned && <Ionicons name="star" size={13} color={Palette.accent} />}
+      <Text style={styles.abbrev}>{abbrev}</Text>
+      {name ? (
+        <>
+          <Text style={styles.dot}>&middot;</Text>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+        </>
+      ) : null}
+    </View>
+  );
+};
+
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',

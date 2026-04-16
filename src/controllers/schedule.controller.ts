@@ -1,5 +1,29 @@
+import type { AxiosError } from 'axios';
+
+import type { ScheduleDto } from '@models/dto';
 import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
+import { updateWidgetSnapshot } from '@services/widget';
+import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
+
+const isNotFound = (e: unknown): boolean =>
+  (e as AxiosError)?.response?.status === 404;
+
+const EMPTY_SCHEDULE: ScheduleDto = {
+  startDate: null,
+  endDate: null,
+  startExamsDate: null,
+  endExamsDate: null,
+  studentGroupDto: null,
+  employeeDto: null,
+  schedules: null,
+  nextSchedules: null,
+  currentTerm: null,
+  nextTerm: null,
+  exams: [],
+  currentPeriod: null,
+  isZaochOrDist: false,
+};
 
 export const ScheduleController = {
   async loadCurrentWeek(): Promise<void> {
@@ -21,8 +45,16 @@ export const ScheduleController = {
     try {
       const data = await GroupsApi.schedule(groupName);
       store.setSchedule(groupName, data);
+      // Update widget if this is the default group.
+      if (groupName === usePreferencesStore.getState().defaultGroup) {
+        void updateWidgetSnapshot();
+      }
     } catch (e) {
-      store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы');
+      if (isNotFound(e)) {
+        store.setSchedule(groupName, EMPTY_SCHEDULE);
+      } else {
+        store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы');
+      }
     } finally {
       store.setLoadingKey(null);
     }
@@ -38,9 +70,13 @@ export const ScheduleController = {
       const data = await EmployeesApi.schedule(urlId);
       store.setSchedule(urlId, data);
     } catch (e) {
-      store.setError(
-        e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
-      );
+      if (isNotFound(e)) {
+        store.setSchedule(urlId, EMPTY_SCHEDULE);
+      } else {
+        store.setError(
+          e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
+        );
+      }
     } finally {
       store.setLoadingKey(null);
     }

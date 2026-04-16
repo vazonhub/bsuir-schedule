@@ -1,10 +1,15 @@
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloatingTopBar } from '@components/FloatingTopBar';
 import { useNow } from '@hooks/useNow';
+import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import {
   selectIsEmployeePinned,
@@ -12,18 +17,24 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Palette, Spacing, TAB_BAR_HEIGHT } from '@theme';
-import { isSameDay } from '@utils/date';
+import { Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { addDays, isSameDay } from '@utils/date';
 import { getLessonTimeStatus } from '@utils/lesson';
 import {
   findUpcomingSectionIndex,
+  flattenExams,
   flattenSchedule,
+  groupExamsByDay,
   groupLessonsByDay,
 } from '@utils/scheduleNormalization';
 import type { ScheduleSection } from '@utils/scheduleNormalization';
 
 import { DayHeader } from '@views/lesson/DayHeader';
 import { LessonCard } from '@views/lesson/LessonCard';
+import { LessonDetailsSheet } from '@views/lesson/LessonDetailsSheet';
+import type { NormalizedLesson } from '@utils/scheduleNormalization';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   schedule: ScheduleDto;
@@ -33,7 +44,8 @@ interface Props {
   entityType: 'group' | 'employee';
   onRefresh?(): void;
   refreshing?: boolean;
-  onLessonPress?(lessonKey: string): void;
+  /** True when rendered as the root "My Schedule" tab (no back button). */
+  isDefaultSchedule?: boolean;
 }
 
 export const ScheduleView = ({
@@ -43,10 +55,21 @@ export const ScheduleView = ({
   entityType,
   onRefresh,
   refreshing = false,
-  onLessonPress,
+  isDefaultSchedule = false,
 }: Props) => {
+  const { t } = useTranslation();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<SectionList<unknown>>(null);
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const [selectedLesson, setSelectedLesson] = useState<NormalizedLesson | null>(null);
+
+  const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
+    setSelectedLesson(lesson);
+    sheetRef.current?.present();
+  }, []);
 
   // Pin / subgroup state — persisted via AsyncStorage.
   const subgroup = usePreferencesStore(selectSubgroup(entityKey));
@@ -70,15 +93,35 @@ export const ScheduleView = ({
     [now.getFullYear(), now.getMonth(), now.getDate()],
   );
 
-  const sections = useMemo(() => {
+  const regularSections = useMemo(() => {
     const flat = flattenSchedule(schedule, currentWeek, today);
     return groupLessonsByDay(flat);
   }, [schedule, currentWeek, today]);
 
-  const upcomingIndex = useMemo(
-    () => findUpcomingSectionIndex(sections, today),
-    [sections, today],
+  const examSections = useMemo(() => {
+    const flat = flattenExams(schedule, currentWeek, today);
+    return groupExamsByDay(flat);
+  }, [schedule, currentWeek, today]);
+
+  const firstExamSectionIndex = regularSections.length > 0 ? regularSections.length : 0;
+  const sections = useMemo(
+    () => [...regularSections, ...examSections],
+    [regularSections, examSections],
   );
+
+  const hasExams = examSections.length > 0;
+
+  const upcomingIndex = useMemo(() => {
+    // Если есть обычные секции — скроллим к ближайшему дню занятий.
+    const idx = findUpcomingSectionIndex(regularSections, today);
+    if (idx >= 0) return idx;
+    // Если обычных нет, но есть экзамены — скроллим к ближайшему экзамену.
+    if (hasExams) {
+      const examIdx = findUpcomingSectionIndex(examSections, today);
+      return examIdx >= 0 ? firstExamSectionIndex + examIdx : 0;
+    }
+    return -1;
+  }, [regularSections, examSections, firstExamSectionIndex, hasExams, today]);
 
   // Высота «зоны» FloatingTopBar — нужна и для верхнего отступа контента,
   // и для смещения индикатора RefreshControl (чтобы он появлялся в safe-зоне,
@@ -115,6 +158,10 @@ export const ScheduleView = ({
     else togglePinnedEmployee(entityKey);
   }, [entityType, entityKey, togglePinnedGroup, togglePinnedEmployee]);
 
+  const handleChangeDefaultGroup = useCallback(() => {
+    router.push('/(tabs)/(my)/pick-group');
+  }, [router]);
+
   // Селектор подгруппы только для расписания группы. У преподавателя
   // фильтр по подгруппе не имеет смысла — он ведёт обе.
   const isGroup = entityType === 'group';
@@ -122,6 +169,17 @@ export const ScheduleView = ({
     (v: typeof subgroup) => setSubgroup(entityKey, v),
     [entityKey, setSubgroup],
   );
+
+  const handleScrollToExams = useCallback(() => {
+    if (!hasExams || sections.length === 0) return;
+    listRef.current?.scrollToLocation({
+      sectionIndex: firstExamSectionIndex,
+      itemIndex: 0,
+      animated: true,
+      viewPosition: 0,
+      viewOffset: topInset,
+    });
+  }, [hasExams, sections.length, firstExamSectionIndex, topInset]);
 
   /** True если данная пара актуальна для выбранной подгруппы. */
   const isMineSubgroup = useCallback(
@@ -235,7 +293,7 @@ export const ScheduleView = ({
     [recomputeTopSection],
   );
 
-  if (sections.length === 0) {
+  if (regularSections.length === 0 && examSections.length === 0) {
     return (
       <View style={styles.container}>
         <FloatingTopBar
@@ -243,9 +301,12 @@ export const ScheduleView = ({
           onTogglePin={handleTogglePin}
           subgroup={isGroup ? subgroup : undefined}
           onSubgroupChange={isGroup ? handleSubgroupChange : undefined}
+          isDefaultSchedule={isDefaultSchedule}
+          defaultGroupName={isDefaultSchedule ? entityKey : undefined}
+          onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
         />
         <View style={styles.center}>
-          <Text style={styles.empty}>Расписание ещё не опубликовано</Text>
+          <Text style={styles.empty}>{t('schedule.notFound')}</Text>
         </View>
       </View>
     );
@@ -262,19 +323,28 @@ export const ScheduleView = ({
         contentContainerStyle={contentStyle}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        renderSectionHeader={({ section }) => (
-          <MeasuredDayHeader
-            section={section as ScheduleSection}
-            today={today}
-            onMeasure={measureSection}
-          />
-        )}
+        renderSectionHeader={({ section }) => {
+          const s = section as ScheduleSection;
+          const isFirstExam = hasExams && s === examSections[0];
+          return (
+            <>
+              {isFirstExam && regularSections.length > 0 && (
+                <ExamsSeparator Palette={Palette} />
+              )}
+              <MeasuredDayHeader
+                section={s}
+                today={today}
+                onMeasure={measureSection}
+              />
+            </>
+          );
+        }}
         renderItem={({ item }) => (
           <LessonCard
             lesson={item}
             compact={!isMineSubgroup(item.raw.numSubgroup)}
             timeStatus={isSameDay(item.date, today) ? getLessonTimeStatus(item, now) : null}
-            onPress={onLessonPress ? () => onLessonPress(item.key) : undefined}
+            onPress={() => handleLessonPress(item)}
           />
         )}
         onScrollToIndexFailed={(info) => {
@@ -306,6 +376,18 @@ export const ScheduleView = ({
         onSubgroupChange={isGroup ? handleSubgroupChange : undefined}
         currentDate={topSection?.date}
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
+        isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
+        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam}
+        onScrollToExams={handleScrollToExams}
+        isDefaultSchedule={isDefaultSchedule}
+        defaultGroupName={isDefaultSchedule ? entityKey : undefined}
+        onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
+      />
+      <LessonDetailsSheet
+        ref={sheetRef}
+        lesson={selectedLesson}
+        currentWeek={currentWeek}
+        entityType={entityType}
       />
     </View>
   );
@@ -333,13 +415,59 @@ const MeasuredDayHeader = ({ section, today, onMeasure }: MeasuredDayHeaderProps
         date={section.date}
         week={section.week}
         isToday={isSameDay(section.date, today)}
+        isTomorrow={isSameDay(section.date, addDays(today, 1))}
+        isExam={section.isExam}
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+interface ExamsSeparatorProps {
+  Palette: PaletteType;
+}
+
+const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
+  const { t } = useTranslation();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  return (
+    <View style={styles.examsSeparator}>
+      <View style={styles.examsSeparatorLine} />
+      <View style={styles.examsSeparatorContent}>
+        <Ionicons name="document-text-outline" size={14} color={Palette.textSecondary} />
+        <Text style={styles.examsSeparatorText}>{t('schedule.exams')}</Text>
+      </View>
+      <View style={styles.examsSeparatorLine} />
+    </View>
+  );
+};
+
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
   empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
+  examsSeparator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxxl,
+    paddingBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  examsSeparatorLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: Palette.separator,
+  },
+  examsSeparatorContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  examsSeparatorText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Palette.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
 });

@@ -1,31 +1,42 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
+import { usePalette } from '@hooks/usePalette';
 import type { StudentGroupDto } from '@models/dto';
-import { Palette, Radius, Spacing } from '@theme';
+import { Radius, Spacing } from '@theme';
+
+type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   group: StudentGroupDto;
   onPress(): void;
 }
 
-export const GroupRow = ({ group, onPress }: Props) => (
-  <Pressable
-    onPress={onPress}
-    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    accessibilityRole="button"
-    accessibilityLabel={`Группа ${group.name}, ${group.specialityName}, ${group.course} курс`}
-  >
-    <View style={styles.main}>
-      <Text style={styles.title}>{group.name}</Text>
-      <Text style={styles.subtitle} numberOfLines={1}>
-        {group.facultyAbbrev} · {group.specialityAbbrev} · {group.course} курс
-      </Text>
-    </View>
-    <Text style={styles.chevron}>›</Text>
-  </Pressable>
-);
+export const GroupRow = ({ group, onPress }: Props) => {
+  const { t } = useTranslation();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
-const styles = StyleSheet.create({
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={t('groups.groupLabel', { name: group.name, speciality: group.specialityName, course: group.course })}
+    >
+      <View style={styles.main}>
+        <Text style={styles.title}>{group.name}</Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {group.facultyAbbrev} &middot; {group.specialityAbbrev} &middot; {group.course} курс
+        </Text>
+      </View>
+      <Text style={styles.chevron}>&rsaquo;</Text>
+    </Pressable>
+  );
+};
+
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -33,8 +44,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     marginHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.cardGap,
-    paddingVertical: Spacing.cardPaddingY,
-    paddingHorizontal: Spacing.cardPaddingX,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   cardPressed: {
     backgroundColor: Palette.cardPressed,

@@ -1,5 +1,6 @@
 import {
   DAY_NAME_TO_DOW,
+  DAY_NAMES_RU,
   addDays,
   isSameDay,
   parseBsuirDate,
@@ -41,6 +42,8 @@ export interface ScheduleSection {
   date: Date;
   week: WeekNumber;
   data: NormalizedLesson[];
+  /** True for sections that belong to the exam session. */
+  isExam?: boolean;
 }
 
 const ALL_WEEKS: readonly WeekNumber[] = [1, 2, 3, 4];
@@ -172,6 +175,43 @@ export const flattenSchedule = (
 
   out.sort(compareLessonsAsc);
   return out;
+};
+
+/**
+ * Flatten exams into a sorted list of concrete occurrences.
+ * Exams always have `dateLesson` — one occurrence each.
+ */
+export const flattenExams = (
+  schedule: ScheduleDto,
+  currentWeek: WeekNumber,
+  today: Date,
+): NormalizedLesson[] => {
+  if (!schedule.exams || schedule.exams.length === 0) return [];
+
+  const todayStart = startOfLocalDay(today);
+  const out: NormalizedLesson[] = [];
+
+  for (let i = 0; i < schedule.exams.length; i++) {
+    const exam = schedule.exams[i];
+    if (!exam) continue;
+    const date = parseBsuirDate(exam.dateLesson);
+    if (!date) continue;
+    const dayName = DAY_NAMES_RU[date.getDay()] as DayNameRu;
+    const week = computeWeekForDate(date, todayStart, currentWeek);
+    out.push(buildNormalized(exam, date, week, dayName, i, todayStart, currentWeek));
+  }
+
+  out.sort(compareLessonsAsc);
+  return out;
+};
+
+/**
+ * Group exam lessons by day and mark sections as exam sections.
+ */
+export const groupExamsByDay = (lessons: NormalizedLesson[]): ScheduleSection[] => {
+  const sections = groupLessonsByDay(lessons);
+  for (const s of sections) s.isExam = true;
+  return sections;
 };
 
 const buildNormalized = (

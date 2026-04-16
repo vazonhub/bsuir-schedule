@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 
 /**
@@ -8,15 +9,25 @@ import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
  * (на iOS 26+ дефолтное поведение `automatic` сворачивает его в pill).
  */
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <NativeTabs minimizeBehavior="never">
+      <NativeTabs.Trigger name="(my)">
+        <Icon sf="calendar" />
+        <Label>{t('tabs.my')}</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(groups)">
         <Icon sf="person.3.fill" />
-        <Label>Группы</Label>
+        <Label>{t('tabs.groups')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(employees)">
-        <Icon sf="graduationcap.fill" />
-        <Label>Преподаватели</Label>
+        <Icon sf="person.text.rectangle.fill" />
+        <Label>{t('tabs.employees')}</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="(settings)">
+        <Icon sf="gearshape.fill" />
+        <Label>{t('tabs.settings')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

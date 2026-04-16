@@ -1,3 +1,4 @@
+import i18n from '@i18n';
 import type { StudentGroupDto } from '@models/dto';
 
 /**
@@ -32,7 +33,7 @@ export const buildPinnedSection = (
   data.sort((a, b) => pinnedNames.indexOf(a.name) - pinnedNames.indexOf(b.name));
   return {
     key: PINNED_SECTION_KEY,
-    facultyAbbrev: 'Закреплённые',
+    facultyAbbrev: i18n.t('groups.favorites'),
     facultyName: '',
     data,
   };

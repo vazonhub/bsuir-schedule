@@ -1,17 +1,24 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScheduleController } from '@controllers/schedule.controller';
+import { usePalette } from '@hooks/usePalette';
 import { useScheduleStore } from '@stores/schedule.store';
-import { Palette, Radius, Spacing } from '@theme';
+import { Radius, Spacing } from '@theme';
 
 import { ScheduleView } from './ScheduleView';
 
+type PaletteType = ReturnType<typeof usePalette>;
+
 export const GroupScheduleScreen = () => {
+  const { t } = useTranslation();
   const { name } = useLocalSearchParams<{ name: string }>();
   const groupName = name ?? '';
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const schedule = useScheduleStore((s) => s.byKey[groupName]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
@@ -40,7 +47,7 @@ export const GroupScheduleScreen = () => {
               onPress={load}
               style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
             >
-              <Text style={styles.retryLabel}>Повторить</Text>
+              <Text style={styles.retryLabel}>{t('common.retry')}</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -67,7 +74,7 @@ export const GroupScheduleScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
   error: { color: Palette.destructive, textAlign: 'center', marginBottom: Spacing.xl },
