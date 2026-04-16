@@ -42,7 +42,15 @@
     "plugins": [
       "expo-router",
       "./plugins/withWidget",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ]
     ],
     "extra": {
       "router": {},
