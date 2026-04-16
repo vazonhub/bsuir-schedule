@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Bsuir Time",
-    "slug": "bsuir-time",
+    "slug": "bsuir-schedule",
     "scheme": "bsuirtime",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -73,6 +73,7 @@
           }
         }
       }
-    }
+    },
+    "owner": "kostyabet228"
   }
 }
