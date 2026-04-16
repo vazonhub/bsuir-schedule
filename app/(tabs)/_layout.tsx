@@ -12,7 +12,7 @@ export default function TabsLayout() {
   const { t } = useTranslation();
 
   return (
-    <NativeTabs minimizeBehavior="never">
+    <NativeTabs minimizeBehavior="never" blurEffect="systemChromeMaterial">
       <NativeTabs.Trigger name="(my)">
         <Icon sf="calendar" />
         <Label>{t('tabs.my')}</Label>
