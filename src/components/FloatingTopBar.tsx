@@ -82,10 +82,11 @@ export const FloatingTopBar = ({
         {isDefaultSchedule ? (
           defaultGroupName ? (
             <GlassButton
+              onPress={onChangeDefaultGroup}
               height={38}
               shape="pill"
               style={styles.dayLabelChip}
-              accessibilityLabel={t('groups.groupLabel', { name: defaultGroupName, speciality: '', course: '' })}
+              accessibilityLabel={t('schedule.changeGroup')}
             >
               <Text style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
                 {defaultGroupName}
@@ -136,15 +137,7 @@ export const FloatingTopBar = ({
             <Ionicons name="school-outline" size={18} color={Palette.textPrimary} />
           </GlassButton>
         )}
-        {isDefaultSchedule && onChangeDefaultGroup ? (
-          <GlassButton
-            onPress={onChangeDefaultGroup}
-            size={38}
-            accessibilityLabel={t('schedule.changeGroup')}
-          >
-            <Ionicons name="swap-horizontal" size={18} color={Palette.textPrimary} />
-          </GlassButton>
-        ) : (
+        {!isDefaultSchedule && (
           <GlassButton
             onPress={onTogglePin}
             size={38}

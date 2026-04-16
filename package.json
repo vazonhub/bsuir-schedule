@@ -1,9 +1,12 @@
 {
-  "name": "bsuir-schedule",
-  "version": "0.1.0",
+  "name": "bsuir-time",
+  "version": "0.1.1",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
+    "bump:patch": "npm version patch --no-git-tag-version",
+    "bump:minor": "npm version minor --no-git-tag-version",
+    "bump:major": "npm version major --no-git-tag-version",
     "start": "expo start",
     "ios": "expo run:ios",
     "android": "expo run:android",
@@ -12,7 +15,8 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ios:eas": "eas build --platform ios --profile production --auto-submit"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -32,6 +36,7 @@
     "expo-image": "~3.0.11",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "i18next": "^26.0.5",
     "react": "19.1.0",

@@ -11,6 +11,7 @@ export interface WidgetLesson {
   endTime: string;
   auditories: string[];
   teacher: string | null;
+  teacherPhotoUrl: string | null;
 }
 
 export interface WidgetSnapshot {
@@ -18,7 +19,6 @@ export interface WidgetSnapshot {
   generatedAt: string;
   currentWeek: WeekNumber;
   todayLessons: WidgetLesson[];
-  upcomingLessons: WidgetLesson[];
 }
 
 const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
@@ -40,6 +40,7 @@ const toWidgetLesson = (lesson: NormalizedLesson): WidgetLesson => ({
   endTime: lesson.endTime,
   auditories: lesson.raw.auditories ?? [],
   teacher: buildTeacherShort(lesson.raw.employees ?? []),
+  teacherPhotoUrl: lesson.raw.employees?.[0]?.photoLink ?? null,
 });
 
 /**
@@ -64,29 +65,15 @@ export const buildWidgetSnapshot = (
     (a, b) => a.date.getTime() - b.date.getTime() || a.startTime.localeCompare(b.startTime),
   );
 
-  // Today's lessons
+  // All of today's lessons (Swift side filters out past ones at render time)
   const todayLessons = all
     .filter((l) => l.date.getTime() === todayStart.getTime())
     .map(toWidgetLesson);
-
-  // Upcoming: lessons after "now" (same day included), max 3
-  const upcomingLessons: WidgetLesson[] = [];
-  for (const l of all) {
-    if (upcomingLessons.length >= 3) break;
-    // Build Date for lesson start
-    const [hStr, mStr] = l.startTime.split(':');
-    const lessonStart = new Date(l.date);
-    lessonStart.setHours(Number(hStr), Number(mStr), 0, 0);
-    if (lessonStart.getTime() > now.getTime()) {
-      upcomingLessons.push(toWidgetLesson(l));
-    }
-  }
 
   return {
     groupName,
     generatedAt: now.toISOString(),
     currentWeek,
     todayLessons,
-    upcomingLessons,
   };
 };

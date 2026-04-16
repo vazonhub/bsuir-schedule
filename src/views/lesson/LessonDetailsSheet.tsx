@@ -1,6 +1,6 @@
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { forwardRef, useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -25,33 +25,51 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
   ({ lesson, currentWeek, entityType }, ref) => {
     const { t } = useTranslation();
     const router = useRouter();
+    const segments = useSegments() as string[];
+    const currentTab = (segments[1] ?? '(groups)') as '(my)' | '(groups)' | '(employees)';
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
 
     const handleEmployeePress = useCallback(
       (employee: EmployeeDto) => {
-        router.push({
-          pathname: '/(tabs)/(employees)/[urlId]',
-          params: {
-            urlId: employee.urlId,
-            fio: employee.fio ?? `${employee.lastName} ${employee.firstName?.[0] ?? ''}.`,
-          },
-        });
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
+        const params = {
+          urlId: employee.urlId,
+          fio: employee.fio ?? `${employee.lastName} ${employee.firstName?.[0] ?? ''}.`,
+        };
+        switch (currentTab) {
+          case '(employees)':
+            router.push({ pathname: '/(tabs)/(employees)/[urlId]', params });
+            break;
+          case '(groups)':
+            router.push({ pathname: '/(tabs)/(groups)/employee/[urlId]' as never, params });
+            break;
+          case '(my)':
+            router.push({ pathname: '/(tabs)/(my)/employee/[urlId]' as never, params });
+            break;
+        }
       },
-      [router, ref],
+      [router, ref, currentTab],
     );
 
     const handleGroupPress = useCallback(
       (group: LessonStudentGroupDto) => {
-        router.push({
-          pathname: '/(tabs)/(groups)/[name]',
-          params: { name: group.name },
-        });
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
+        const params = { name: group.name };
+        switch (currentTab) {
+          case '(groups)':
+            router.push({ pathname: '/(tabs)/(groups)/[name]', params });
+            break;
+          case '(employees)':
+            router.push({ pathname: '/(tabs)/(employees)/group/[name]' as never, params });
+            break;
+          case '(my)':
+            router.push({ pathname: '/(tabs)/(my)/group/[name]' as never, params });
+            break;
+        }
       },
-      [router, ref],
+      [router, ref, currentTab],
     );
 
     if (!lesson) return null;

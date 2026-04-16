@@ -68,8 +68,13 @@ export const ScheduleView = ({
 
   const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
     setSelectedLesson(lesson);
-    sheetRef.current?.present();
   }, []);
+
+  useEffect(() => {
+    if (selectedLesson) {
+      sheetRef.current?.present();
+    }
+  }, [selectedLesson]);
 
   // Pin / subgroup state — persisted via AsyncStorage.
   const subgroup = usePreferencesStore(selectSubgroup(entityKey));

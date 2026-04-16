@@ -1,9 +1,8 @@
 {
   "expo": {
-    "name": "BSUIR Schedule",
-    "slug": "bsuir-schedule",
-    "scheme": "bsuirschedule",
-    "version": "0.1.0",
+    "name": "Bsuir Time",
+    "slug": "bsuir-time",
+    "scheme": "bsuirtime",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

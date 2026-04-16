@@ -40,5 +40,14 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
   await writeSnapshot(snapshot);
 };
 
+// Re-build widget snapshot whenever the default group changes.
+let _prevDefaultGroup = usePreferencesStore.getState().defaultGroup;
+usePreferencesStore.subscribe((state) => {
+  if (state.defaultGroup !== _prevDefaultGroup) {
+    _prevDefaultGroup = state.defaultGroup;
+    void updateWidgetSnapshot();
+  }
+});
+
 export type { WidgetSnapshot, WidgetLesson } from './widgetData';
 export { buildWidgetSnapshot } from './widgetData';
