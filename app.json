@@ -55,7 +55,24 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "fcba8170-b003-44b7-9203-ece1a99b2162"
+        "projectId": "fcba8170-b003-44b7-9203-ece1a99b2162",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ScheduleWidget",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.widget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.by.vazon.bsuirschedule"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     }
   }
