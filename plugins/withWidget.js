@@ -1,4 +1,4 @@
-const { withEntitlementsPlist, withXcodeProject } = require('expo/config-plugins');
+const { withEntitlementsPlist, withXcodeProject, withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -332,6 +332,40 @@ function withWidget(config) {
 
     return mod;
   });
+
+  // 3. Patch Podfile: disable code signing for CocoaPods resource bundles
+  config = withDangerousMod(config, [
+    'ios',
+    (mod) => {
+      const podfilePath = path.join(mod.modRequest.projectRoot, 'ios', 'Podfile');
+      if (fs.existsSync(podfilePath)) {
+        let podfile = fs.readFileSync(podfilePath, 'utf8');
+        const snippet = `
+    # [withWidget] Disable code signing for CocoaPods resource bundles (Xcode 14+)
+    installer.pods_project.targets.each do |target|
+      if target.respond_to?(:product_type) && target.product_type == "com.apple.product-type.bundle"
+        target.build_configurations.each do |config|
+          config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        end
+      end
+    end`;
+        if (!podfile.includes('CODE_SIGNING_ALLOWED')) {
+          // Insert before the last `end` of post_install, or append a new post_install block
+          if (podfile.includes('post_install do |installer|')) {
+            // Add before the closing end of post_install
+            podfile = podfile.replace(
+              /post_install do \|installer\|/,
+              `post_install do |installer|${snippet}`
+            );
+          } else {
+            podfile += `\npost_install do |installer|${snippet}\nend\n`;
+          }
+          fs.writeFileSync(podfilePath, podfile);
+        }
+      }
+      return mod;
+    },
+  ]);
 
   return config;
 }
