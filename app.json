@@ -41,7 +41,8 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/withWidget"
+      "./plugins/withWidget",
+      "expo-font"
     ],
     "extra": {
       "router": {},
