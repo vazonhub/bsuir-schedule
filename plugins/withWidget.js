@@ -19,6 +19,8 @@ function withWidget(config) {
     const projectRoot = mod.modRequest.projectRoot;
     const appBundleId = mod.ios?.bundleIdentifier ?? 'by.vazon.bsuirschedule';
     const widgetBundleId = appBundleId + '.widget';
+    const appVersion = mod.version ?? '0.1.0';
+    const buildNumber = mod.ios?.buildNumber ?? '1';
 
     // Skip if already added
     if (proj.pbxTargetByName(WIDGET_NAME)) return mod;
@@ -129,14 +131,14 @@ function withWidget(config) {
       CLANG_ENABLE_MODULES: 'YES',
       CODE_SIGN_ENTITLEMENTS: `${WIDGET_NAME}/${entFile}`,
       CODE_SIGN_STYLE: 'Automatic',
-      CURRENT_PROJECT_VERSION: '1',
+      CURRENT_PROJECT_VERSION: buildNumber,
       GENERATE_INFOPLIST_FILE: 'YES',
       INFOPLIST_FILE: `${WIDGET_NAME}/Info.plist`,
       INFOPLIST_KEY_CFBundleDisplayName: 'Schedule',
       INFOPLIST_KEY_NSHumanReadableCopyright: '""',
       IPHONEOS_DEPLOYMENT_TARGET: DEPLOYMENT_TARGET,
       LD_RUNPATH_SEARCH_PATHS: '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"',
-      MARKETING_VERSION: '1.0',
+      MARKETING_VERSION: appVersion,
       PRODUCT_BUNDLE_IDENTIFIER: `"${widgetBundleId}"`,
       PRODUCT_NAME: '"$(TARGET_NAME)"',
       SKIP_INSTALL: 'YES',
