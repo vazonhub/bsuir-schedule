@@ -27,7 +27,7 @@ export const MyScheduleScreen = () => {
   const defaultGroup = usePreferencesStore((s) => s.defaultGroup);
 
   if (!defaultGroup) {
-    return <EmptyState onSelect={() => router.push('/(tabs)/(my)/pick-group')} />;
+    return <EmptyState onSelect={() => router.push('/(tabs)/(a-my)/pick-group')} />;
   }
 
   return <DefaultGroupSchedule groupName={defaultGroup} />;

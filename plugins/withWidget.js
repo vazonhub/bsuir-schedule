@@ -82,6 +82,23 @@ function withWidget(config) {
     // --- Xcode project manipulation ---
     const mainTargetUuid = proj.getFirstTarget().uuid;
 
+    // Sync main target's MARKETING_VERSION & CURRENT_PROJECT_VERSION
+    // (Expo hardcodes version in Info.plist but leaves build settings at Xcode defaults)
+    const appTarget = proj.pbxNativeTargetSection()[mainTargetUuid];
+    if (appTarget && appTarget.buildConfigurationList) {
+      const cfgList = proj.pbxXCConfigurationList()[appTarget.buildConfigurationList];
+      if (cfgList && cfgList.buildConfigurations) {
+        const cfgSection = proj.pbxXCBuildConfigurationSection();
+        for (const entry of cfgList.buildConfigurations) {
+          const cfg = cfgSection[entry.value];
+          if (cfg && cfg.buildSettings) {
+            cfg.buildSettings.MARKETING_VERSION = appVersion;
+            cfg.buildSettings.CURRENT_PROJECT_VERSION = buildNumber;
+          }
+        }
+      }
+    }
+
     // Add PBX group for widget files
     const grp = proj.addPbxGroup(
       ['ScheduleWidget.swift', 'Info.plist', entFile],

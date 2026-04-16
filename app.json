@@ -8,9 +8,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/splash-logo.png",
+      "backgroundColor": "#3A547F"
     },
     "ios": {
       "supportsTablet": true,
@@ -42,6 +41,19 @@
       "expo-router",
       "./plugins/withWidget",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 200,
+          "backgroundColor": "#3A547F",
+          "dark": {
+            "image": "./assets/splash-logo.png",
+            "imageWidth": 200,
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
       [
         "expo-build-properties",
         {

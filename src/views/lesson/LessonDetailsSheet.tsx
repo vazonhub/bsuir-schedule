@@ -26,7 +26,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const { t } = useTranslation();
     const router = useRouter();
     const segments = useSegments() as string[];
-    const currentTab = (segments[1] ?? '(groups)') as '(my)' | '(groups)' | '(employees)';
+    const currentTab = (segments[1] ?? '(groups)') as '(a-my)' | '(groups)' | '(employees)';
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
@@ -45,8 +45,8 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
           case '(groups)':
             router.push({ pathname: '/(tabs)/(groups)/employee/[urlId]' as never, params });
             break;
-          case '(my)':
-            router.push({ pathname: '/(tabs)/(my)/employee/[urlId]' as never, params });
+          case '(a-my)':
+            router.push({ pathname: '/(tabs)/(a-my)/employee/[urlId]' as never, params });
             break;
         }
       },
@@ -64,8 +64,8 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
           case '(employees)':
             router.push({ pathname: '/(tabs)/(employees)/group/[name]' as never, params });
             break;
-          case '(my)':
-            router.push({ pathname: '/(tabs)/(my)/group/[name]' as never, params });
+          case '(a-my)':
+            router.push({ pathname: '/(tabs)/(a-my)/group/[name]' as never, params });
             break;
         }
       },

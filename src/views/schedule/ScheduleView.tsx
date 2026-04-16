@@ -164,7 +164,7 @@ export const ScheduleView = ({
   }, [entityType, entityKey, togglePinnedGroup, togglePinnedEmployee]);
 
   const handleChangeDefaultGroup = useCallback(() => {
-    router.push('/(tabs)/(my)/pick-group');
+    router.push('/(tabs)/(a-my)/pick-group');
   }, [router]);
 
   // Селектор подгруппы только для расписания группы. У преподавателя
