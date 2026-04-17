@@ -18,8 +18,8 @@ export const en: TranslationKeys = {
 
   mySchedule: {
     title: 'My Schedule',
-    subtitle: 'Select a group to see its schedule right when you open the app',
-    selectGroup: 'Select group',
+    subtitle: 'Select a group or teacher to see their schedule right when you open the app',
+    selectGroup: 'Select schedule',
   },
 
   schedule: {
@@ -28,14 +28,16 @@ export const en: TranslationKeys = {
     goToExams: 'Go to exams',
     pin: 'Pin schedule',
     unpin: 'Unpin schedule',
-    changeGroup: 'Change group',
+    changeGroup: 'Change schedule',
     week: 'Week {{n}}',
   },
 
   groups: {
     searchPlaceholder: 'Search group or faculty',
-    pickerTitle: 'Select group',
+    pickerTitle: 'Select schedule',
     pickerSearchPlaceholder: 'Search group',
+    pickerTabGroups: 'Groups',
+    pickerTabEmployees: 'Teachers',
     favorites: 'Favorites',
     groupLabel: 'Group {{name}}, {{speciality}}, year {{course}}',
   },

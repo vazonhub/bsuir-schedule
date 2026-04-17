@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
+import type { DefaultEmployee } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { Radius, Spacing } from '@theme';
@@ -18,19 +19,24 @@ type PaletteType = ReturnType<typeof usePalette>;
 /**
  * «Моё расписание» — главный экран приложения.
  *
- * - Если `defaultGroup` выбрана → показываем её расписание (как GroupScheduleScreen,
- *   но без кнопки «назад» — это корневой экран таба).
- * - Если не выбрана → предлагаем выбрать группу.
+ * - Если `defaultGroup` выбрана → показываем её расписание.
+ * - Если `defaultEmployee` выбран → показываем расписание преподавателя.
+ * - Если ничего не выбрано → предлагаем выбрать.
  */
 export const MyScheduleScreen = () => {
   const router = useRouter();
   const defaultGroup = usePreferencesStore((s) => s.defaultGroup);
+  const defaultEmployee = usePreferencesStore((s) => s.defaultEmployee);
 
-  if (!defaultGroup) {
-    return <EmptyState onSelect={() => router.push('/(tabs)/(a-my)/pick-group')} />;
+  if (defaultGroup) {
+    return <DefaultGroupSchedule groupName={defaultGroup} />;
   }
 
-  return <DefaultGroupSchedule groupName={defaultGroup} />;
+  if (defaultEmployee) {
+    return <DefaultEmployeeSchedule employee={defaultEmployee} />;
+  }
+
+  return <EmptyState onSelect={() => router.push('/(tabs)/(amy)/pick-group')} />;
 };
 
 // ────────────────────────────────────────────────────────────────
@@ -115,6 +121,68 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
       onRefresh={load}
       refreshing={isLoading}
       isDefaultSchedule
+      defaultLabel={groupName}
+    />
+  );
+};
+
+// ────────────────────────────────────────────────────────────────
+
+const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) => {
+  const { t } = useTranslation();
+  const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const schedule = useScheduleStore((s) => s.byKey[employee.urlId]);
+  const currentWeek = useScheduleStore((s) => s.currentWeek);
+  const loadingKey = useScheduleStore((s) => s.loadingKey);
+  const error = useScheduleStore((s) => s.error);
+
+  const load = useCallback(() => {
+    void ScheduleController.loadCurrentWeek();
+    void ScheduleController.loadEmployeeSchedule(employee.urlId);
+  }, [employee.urlId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const isLoading = loadingKey === employee.urlId;
+
+  if (!schedule || !currentWeek) {
+    if (error && !schedule) {
+      return (
+        <SafeAreaView edges={['top']} style={styles.container}>
+          <View style={styles.center}>
+            <Text style={styles.error}>{error}</Text>
+            <Pressable
+              onPress={load}
+              style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
+            >
+              <Text style={styles.retryLabel}>{t('common.retry')}</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      );
+    }
+    return (
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <ScheduleView
+      schedule={schedule}
+      currentWeek={currentWeek}
+      entityKey={employee.urlId}
+      entityType="employee"
+      onRefresh={load}
+      refreshing={isLoading}
+      isDefaultSchedule
+      defaultLabel={employee.fio}
     />
   );
 };

@@ -46,6 +46,8 @@ interface Props {
   refreshing?: boolean;
   /** True when rendered as the root "My Schedule" tab (no back button). */
   isDefaultSchedule?: boolean;
+  /** Label shown in the FloatingTopBar pill when `isDefaultSchedule` (group name or "Фамилия И.О."). */
+  defaultLabel?: string;
 }
 
 export const ScheduleView = ({
@@ -56,6 +58,7 @@ export const ScheduleView = ({
   onRefresh,
   refreshing = false,
   isDefaultSchedule = false,
+  defaultLabel,
 }: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -164,7 +167,7 @@ export const ScheduleView = ({
   }, [entityType, entityKey, togglePinnedGroup, togglePinnedEmployee]);
 
   const handleChangeDefaultGroup = useCallback(() => {
-    router.push('/(tabs)/(a-my)/pick-group');
+    router.push('/(tabs)/(amy)/pick-group');
   }, [router]);
 
   // Селектор подгруппы только для расписания группы. У преподавателя
@@ -307,7 +310,7 @@ export const ScheduleView = ({
           subgroup={isGroup ? subgroup : undefined}
           onSubgroupChange={isGroup ? handleSubgroupChange : undefined}
           isDefaultSchedule={isDefaultSchedule}
-          defaultGroupName={isDefaultSchedule ? entityKey : undefined}
+          defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
           onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
         />
         <View style={styles.center}>
@@ -385,7 +388,7 @@ export const ScheduleView = ({
         showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam}
         onScrollToExams={handleScrollToExams}
         isDefaultSchedule={isDefaultSchedule}
-        defaultGroupName={isDefaultSchedule ? entityKey : undefined}
+        defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
         onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
       />
       <LessonDetailsSheet

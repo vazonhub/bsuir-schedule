@@ -18,8 +18,8 @@ export const be: TranslationKeys = {
 
   mySchedule: {
     title: 'Маё расклад',
-    subtitle: 'Абярыце групу, каб бачыць расклад адразу пры адкрыцці праграмы',
-    selectGroup: 'Абраць групу',
+    subtitle: 'Абярыце групу або выкладчыка, каб бачыць расклад адразу пры адкрыцці праграмы',
+    selectGroup: 'Абраць расклад',
   },
 
   schedule: {
@@ -28,14 +28,16 @@ export const be: TranslationKeys = {
     goToExams: 'Перайсці да экзаменаў',
     pin: 'Замацаваць расклад',
     unpin: 'Адмацаваць расклад',
-    changeGroup: 'Змяніць групу',
+    changeGroup: 'Змяніць расклад',
     week: 'Тыдзень {{n}}',
   },
 
   groups: {
     searchPlaceholder: 'Пошук групы або факультэта',
-    pickerTitle: 'Абраць групу',
+    pickerTitle: 'Абраць расклад',
     pickerSearchPlaceholder: 'Пошук групы',
+    pickerTabGroups: 'Групы',
+    pickerTabEmployees: 'Выкладчыкі',
     favorites: 'Абраныя',
     groupLabel: 'Група {{name}}, {{speciality}}, {{course}} курс',
   },

@@ -19,8 +19,8 @@ export const ru = {
   // My Schedule
   mySchedule: {
     title: 'Моё расписание',
-    subtitle: 'Выберите группу, чтобы видеть расписание сразу при открытии приложения',
-    selectGroup: 'Выбрать группу',
+    subtitle: 'Выберите группу или преподавателя, чтобы видеть расписание сразу при открытии приложения',
+    selectGroup: 'Выбрать расписание',
   },
 
   // Schedule
@@ -30,15 +30,17 @@ export const ru = {
     goToExams: 'Перейти к экзаменам',
     pin: 'Закрепить расписание',
     unpin: 'Открепить расписание',
-    changeGroup: 'Сменить группу',
+    changeGroup: 'Сменить расписание',
     week: 'Неделя {{n}}',
   },
 
   // Groups
   groups: {
     searchPlaceholder: 'Поиск группы или факультета',
-    pickerTitle: 'Выбрать группу',
+    pickerTitle: 'Выбрать расписание',
     pickerSearchPlaceholder: 'Поиск группы',
+    pickerTabGroups: 'Группы',
+    pickerTabEmployees: 'Преподаватели',
     favorites: 'Избранные',
     groupLabel: 'Группа {{name}}, {{speciality}}, {{course}} курс',
   },
