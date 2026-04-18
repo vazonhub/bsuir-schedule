@@ -1,7 +1,8 @@
 import WidgetKit
 import SwiftUI
+import UIKit
 
-// MARK: - Data models (match JS WidgetSnapshot)
+// MARK: - Data models (match TS WidgetSnapshot)
 
 struct WidgetLesson: Codable {
     let subject: String
@@ -12,13 +13,25 @@ struct WidgetLesson: Codable {
     let auditories: [String]
     let teacher: String?
     let teacherPhotoUrl: String?
+    let numSubgroup: Int
+    let isMine: Bool
+}
+
+struct WidgetDayBlock: Codable {
+    let dateISO: String
+    let dayOfWeek: Int
+    let dayOfMonth: Int
+    let month: Int
+    let lessons: [WidgetLesson]
 }
 
 struct WidgetSnapshot: Codable {
     let groupName: String
     let generatedAt: String
     let currentWeek: Int
-    let todayLessons: [WidgetLesson]
+    let subgroup: Int
+    let today: WidgetDayBlock
+    let nextDay: WidgetDayBlock?
 }
 
 // MARK: - Shared storage reader
@@ -38,7 +51,7 @@ func loadSnapshot() -> WidgetSnapshot? {
     return nil
 }
 
-// MARK: - Color from hex
+// MARK: - Helpers
 
 extension Color {
     init(hex: String) {
@@ -53,10 +66,45 @@ extension Color {
     }
 }
 
+private let dayNamesShort = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
+private let monthNames = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+]
+
+func formatDayLabel(_ block: WidgetDayBlock) -> String {
+    let dow = dayNamesShort[block.dayOfWeek]
+    let month = monthNames[block.month]
+    return "\(dow), \(block.dayOfMonth) \(month)"
+}
+
+/// Minutes since midnight from "HH:mm" string.
+func minutesFromTime(_ time: String) -> Int? {
+    let parts = time.split(separator: ":")
+    guard parts.count == 2, let h = Int(parts[0]), let m = Int(parts[1]) else { return nil }
+    return h * 60 + m
+}
+
+/// Filter lessons: keep only those whose endTime is after the given minutes-since-midnight.
+func remainingLessons(from lessons: [WidgetLesson], afterMinutes: Int) -> [WidgetLesson] {
+    lessons.filter { lesson in
+        guard let end = minutesFromTime(lesson.endTime) else { return true }
+        return end > afterMinutes
+    }
+}
+
+/// Current time as minutes since midnight.
+func nowMinutes() -> Int {
+    let cal = Calendar.current
+    let now = Date()
+    return cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
+}
+
 // MARK: - Photo downloader
 
 func downloadPhotos(for lessons: [WidgetLesson], completion: @escaping ([String: Data]) -> Void) {
-    let uniqueUrls = Set(lessons.compactMap { $0.teacherPhotoUrl })
+    let mine = lessons.filter { $0.isMine }
+    let uniqueUrls = Set(mine.compactMap { $0.teacherPhotoUrl })
     guard !uniqueUrls.isEmpty else { completion([:]); return }
 
     let lock = NSLock()
@@ -81,46 +129,100 @@ func downloadPhotos(for lessons: [WidgetLesson], completion: @escaping ([String:
     group.notify(queue: .main) { completion(cache) }
 }
 
-// MARK: - Filter: only lessons not yet finished
-
-func remainingLessons(from lessons: [WidgetLesson]) -> [WidgetLesson] {
-    let now = Date()
-    let cal = Calendar.current
-    let nowMinutes = cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
-
-    return lessons.filter { lesson in
-        let parts = lesson.endTime.split(separator: ":")
-        guard parts.count == 2, let h = Int(parts[0]), let m = Int(parts[1]) else { return true }
-        return h * 60 + m > nowMinutes
-    }
-}
-
 // MARK: - Timeline
 
 struct ScheduleEntry: TimelineEntry {
     let date: Date
     let snapshot: WidgetSnapshot?
     let photos: [String: Data]
+    /// Which day block to display: today's remaining or nextDay.
+    let displayBlock: WidgetDayBlock?
+    /// True if displayBlock is NOT today (i.e. showing next day).
+    let isNextDay: Bool
+    /// Lessons to show (already filtered for remaining if today).
+    let visibleLessons: [WidgetLesson]
 }
 
 struct ScheduleTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> ScheduleEntry {
-        ScheduleEntry(date: .now, snapshot: nil, photos: [:])
+        ScheduleEntry(date: .now, snapshot: nil, photos: [:],
+                      displayBlock: nil, isNextDay: false, visibleLessons: [])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ScheduleEntry) -> Void) {
-        completion(ScheduleEntry(date: .now, snapshot: loadSnapshot(), photos: [:]))
+        let entry = buildCurrentEntry(snapshot: loadSnapshot(), photos: [:])
+        completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ScheduleEntry>) -> Void) {
         let snapshot = loadSnapshot()
-        let lessons = snapshot?.todayLessons ?? []
+        let allLessons = (snapshot?.today.lessons ?? []) + (snapshot?.nextDay?.lessons ?? [])
+        let mineLessons = allLessons.filter { $0.isMine }
 
-        downloadPhotos(for: lessons) { photos in
-            let entry = ScheduleEntry(date: .now, snapshot: snapshot, photos: photos)
-            let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now
-            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+        downloadPhotos(for: mineLessons) { photos in
+            var entries: [ScheduleEntry] = []
+            let cal = Calendar.current
+
+            // Entry for right now
+            entries.append(buildCurrentEntry(snapshot: snapshot, photos: photos))
+
+            // Generate entries at each lesson boundary (start and end times) for today
+            if let snap = snapshot {
+                let todayLessons = snap.today.lessons
+                var times = Set<Int>()
+                for lesson in todayLessons {
+                    if let s = minutesFromTime(lesson.startTime) { times.insert(s) }
+                    if let e = minutesFromTime(lesson.endTime) { times.insert(e) }
+                }
+
+                let current = nowMinutes()
+                for mins in times.sorted() where mins > current {
+                    if let entryDate = cal.date(bySettingHour: mins / 60, minute: mins % 60, second: 0, of: Date()) {
+                        entries.append(buildEntry(at: entryDate, afterMinutes: mins, snapshot: snap, photos: photos))
+                    }
+                }
+
+                // Entry at midnight for next day rollover
+                if let tomorrow = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: Date())) {
+                    entries.append(ScheduleEntry(
+                        date: tomorrow, snapshot: snap, photos: photos,
+                        displayBlock: snap.nextDay, isNextDay: snap.nextDay != nil,
+                        visibleLessons: snap.nextDay?.lessons ?? []
+                    ))
+                }
+            }
+
+            // Fallback: refresh at least every 2 hours
+            let fallback = cal.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
+            completion(Timeline(entries: entries, policy: .after(fallback)))
         }
+    }
+
+    private func buildCurrentEntry(snapshot: WidgetSnapshot?, photos: [String: Data]) -> ScheduleEntry {
+        guard let snap = snapshot else {
+            return ScheduleEntry(date: .now, snapshot: nil, photos: photos,
+                                 displayBlock: nil, isNextDay: false, visibleLessons: [])
+        }
+        return buildEntry(at: Date(), afterMinutes: nowMinutes(), snapshot: snap, photos: photos)
+    }
+
+    private func buildEntry(at date: Date, afterMinutes: Int, snapshot: WidgetSnapshot, photos: [String: Data]) -> ScheduleEntry {
+        let remaining = remainingLessons(from: snapshot.today.lessons, afterMinutes: afterMinutes)
+
+        if !remaining.isEmpty {
+            return ScheduleEntry(
+                date: date, snapshot: snapshot, photos: photos,
+                displayBlock: snapshot.today, isNextDay: false,
+                visibleLessons: remaining
+            )
+        }
+
+        // Today is done — show next day
+        return ScheduleEntry(
+            date: date, snapshot: snapshot, photos: photos,
+            displayBlock: snapshot.nextDay, isNextDay: snapshot.nextDay != nil,
+            visibleLessons: snapshot.nextDay?.lessons ?? []
+        )
     }
 }
 
@@ -132,15 +234,31 @@ struct LessonRow: View {
     var compact: Bool = false
 
     var body: some View {
+        if lesson.isMine {
+            fullRow
+        } else {
+            compactRow
+        }
+    }
+
+    private var fullRow: some View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(Color(hex: lesson.typeColorHex))
                 .frame(width: 4)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(lesson.subject)
-                    .font(.system(size: compact ? 12 : 13, weight: .semibold))
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(lesson.subject)
+                        .font(.system(size: compact ? 12 : 13, weight: .semibold))
+                        .lineLimit(1)
+
+                    if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                        Text("\(lesson.numSubgroup) п/г")
+                            .font(.system(size: compact ? 9 : 10, weight: .medium))
+                            .foregroundColor(Color(hex: lesson.typeColorHex))
+                    }
+                }
 
                 HStack(spacing: 3) {
                     Text("\(lesson.startTime)–\(lesson.endTime)")
@@ -148,8 +266,7 @@ struct LessonRow: View {
                         .foregroundColor(.secondary)
 
                     if !lesson.auditories.isEmpty {
-                        Text("·")
-                            .foregroundColor(.secondary)
+                        Text("·").foregroundColor(.secondary)
                         Text(lesson.auditories.joined(separator: ", "))
                             .font(.system(size: compact ? 10 : 11, weight: .medium))
                             .lineLimit(1)
@@ -159,19 +276,47 @@ struct LessonRow: View {
 
             Spacer(minLength: 0)
 
-            if let data = photo, let img = UIImage(data: data) {
+            if !compact, let data = photo, let img = UIImage(data: data) {
                 Image(uiImage: img)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: compact ? 24 : 28, height: compact ? 24 : 28)
+                    .frame(width: 28, height: 28)
                     .clipShape(Circle())
             }
         }
     }
+
+    /// Compact row for lessons of another subgroup — dashed outline, single line.
+    private var compactRow: some View {
+        HStack(spacing: 4) {
+            Text(lesson.subject)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+
+            Text("· \(lesson.startTime)–\(lesson.endTime)")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+
+            if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                Text("\(lesson.numSubgroup) п/г")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundColor(Color(hex: lesson.typeColorHex))
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+        .padding(.horizontal, 6)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color(hex: lesson.typeColorHex).opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        )
+    }
 }
 
 struct EmptyStateView: View {
-    /// true when today had lessons but all have ended
     var allDone: Bool = false
 
     var body: some View {
@@ -191,14 +336,22 @@ struct EmptyStateView: View {
 struct WidgetHeader: View {
     let groupName: String
     let currentWeek: Int
+    var dateLabel: String? = nil
     var showWeek: Bool = true
 
     var body: some View {
         HStack {
-            Text(groupName)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(groupName)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .textCase(.uppercase)
+                if let label = dateLabel {
+                    Text(label)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.orange)
+                }
+            }
             Spacer()
             if showWeek {
                 Text("Неделя \(currentWeek)")
@@ -212,27 +365,34 @@ struct WidgetHeader: View {
 // MARK: - Small widget
 
 struct SmallWidgetView: View {
-    let snapshot: WidgetSnapshot?
-    let photos: [String: Data]
+    let entry: ScheduleEntry
 
     var body: some View {
-        if let snap = snapshot {
-            let lessons = remainingLessons(from: snap.todayLessons)
-            if !lessons.isEmpty {
+        if let snap = entry.snapshot {
+            if !entry.visibleLessons.isEmpty {
+                let lessons = Array(entry.visibleLessons.prefix(2))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(snap.groupName)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .textCase(.uppercase)
+                    HStack {
+                        Text(snap.groupName)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.secondary)
+                            .textCase(.uppercase)
+                        Spacer()
+                    }
+                    if entry.isNextDay, let block = entry.displayBlock {
+                        Text(formatDayLabel(block))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.orange)
+                    }
 
                     Spacer(minLength: 0)
 
-                    ForEach(Array(lessons.prefix(2).enumerated()), id: \.offset) { _, lesson in
+                    ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
                         LessonRow(lesson: lesson, photo: nil, compact: true)
                     }
                 }
             } else {
-                EmptyStateView(allDone: !snap.todayLessons.isEmpty)
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
             }
         } else {
             EmptyStateView()
@@ -243,24 +403,27 @@ struct SmallWidgetView: View {
 // MARK: - Medium widget
 
 struct MediumWidgetView: View {
-    let snapshot: WidgetSnapshot?
-    let photos: [String: Data]
+    let entry: ScheduleEntry
 
     var body: some View {
-        if let snap = snapshot {
-            let lessons = remainingLessons(from: snap.todayLessons)
-            if !lessons.isEmpty {
+        if let snap = entry.snapshot {
+            if !entry.visibleLessons.isEmpty {
+                let lessons = Array(entry.visibleLessons.prefix(3))
                 VStack(alignment: .leading, spacing: 4) {
-                    WidgetHeader(groupName: snap.groupName, currentWeek: snap.currentWeek)
+                    WidgetHeader(
+                        groupName: snap.groupName,
+                        currentWeek: snap.currentWeek,
+                        dateLabel: entry.isNextDay ? (entry.displayBlock.map { formatDayLabel($0) }) : nil
+                    )
 
-                    ForEach(Array(lessons.prefix(3).enumerated()), id: \.offset) { _, lesson in
-                        LessonRow(lesson: lesson, photo: photos[lesson.teacherPhotoUrl ?? ""])
+                    ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""])
                     }
 
                     Spacer(minLength: 0)
                 }
             } else {
-                EmptyStateView(allDone: !snap.todayLessons.isEmpty)
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
             }
         } else {
             EmptyStateView()
@@ -271,19 +434,21 @@ struct MediumWidgetView: View {
 // MARK: - Large widget
 
 struct LargeWidgetView: View {
-    let snapshot: WidgetSnapshot?
-    let photos: [String: Data]
+    let entry: ScheduleEntry
 
     var body: some View {
-        if let snap = snapshot {
-            let lessons = remainingLessons(from: snap.todayLessons)
-            if !lessons.isEmpty {
-                let visible = Array(lessons.prefix(7))
+        if let snap = entry.snapshot {
+            if !entry.visibleLessons.isEmpty {
+                let visible = Array(entry.visibleLessons.prefix(7))
                 VStack(alignment: .leading, spacing: 6) {
-                    WidgetHeader(groupName: snap.groupName, currentWeek: snap.currentWeek)
+                    WidgetHeader(
+                        groupName: snap.groupName,
+                        currentWeek: snap.currentWeek,
+                        dateLabel: entry.isNextDay ? (entry.displayBlock.map { formatDayLabel($0) }) : nil
+                    )
 
                     ForEach(Array(visible.enumerated()), id: \.offset) { index, lesson in
-                        LessonRow(lesson: lesson, photo: photos[lesson.teacherPhotoUrl ?? ""])
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""])
                         if index < visible.count - 1 {
                             Divider()
                         }
@@ -292,7 +457,7 @@ struct LargeWidgetView: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                EmptyStateView(allDone: !snap.todayLessons.isEmpty)
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
             }
         } else {
             EmptyStateView()
@@ -309,13 +474,13 @@ struct ScheduleWidgetEntryView: View {
     var body: some View {
         switch family {
         case .systemSmall:
-            SmallWidgetView(snapshot: entry.snapshot, photos: entry.photos)
+            SmallWidgetView(entry: entry)
         case .systemMedium:
-            MediumWidgetView(snapshot: entry.snapshot, photos: entry.photos)
+            MediumWidgetView(entry: entry)
         case .systemLarge:
-            LargeWidgetView(snapshot: entry.snapshot, photos: entry.photos)
+            LargeWidgetView(entry: entry)
         default:
-            MediumWidgetView(snapshot: entry.snapshot, photos: entry.photos)
+            MediumWidgetView(entry: entry)
         }
     }
 }
@@ -337,7 +502,7 @@ struct ScheduleWidget: Widget {
             }
         }
         .configurationDisplayName("Bsuir Time")
-        .description("Оставшиеся пары на сегодня")
+        .description("Расписание занятий")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

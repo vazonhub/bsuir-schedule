@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Platform, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FloatingTopBar } from '@components/FloatingTopBar';
+import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useNow } from '@hooks/useNow';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
@@ -70,14 +71,14 @@ export const ScheduleView = ({
   const [selectedLesson, setSelectedLesson] = useState<NormalizedLesson | null>(null);
 
   const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
+    void hapticLight();
     setSelectedLesson(lesson);
+    sheetRef.current?.present();
   }, []);
 
-  useEffect(() => {
-    if (selectedLesson) {
-      sheetRef.current?.present();
-    }
-  }, [selectedLesson]);
+  const handleSheetDismiss = useCallback(() => {
+    setSelectedLesson(null);
+  }, []);
 
   // Pin / subgroup state — persisted via AsyncStorage.
   const subgroup = usePreferencesStore(selectSubgroup(entityKey));
@@ -153,15 +154,20 @@ export const ScheduleView = ({
     return () => clearTimeout(id);
   }, [upcomingIndex, sections, topInset]);
 
+  const isIOS = Platform.OS === 'ios';
+
   const contentStyle = useMemo(
     () => ({
-      paddingTop: topInset,
+      // На iOS используем contentInset вместо paddingTop — иначе
+      // RefreshControl-спиннер прячется за FloatingTopBar.
+      paddingTop: isIOS ? 0 : topInset,
       paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
     }),
-    [insets.bottom, topInset],
+    [insets.bottom, topInset, isIOS],
   );
 
   const handleTogglePin = useCallback(() => {
+    void hapticSuccess();
     if (entityType === 'group') togglePinnedGroup(entityKey);
     else togglePinnedEmployee(entityKey);
   }, [entityType, entityKey, togglePinnedGroup, togglePinnedEmployee]);
@@ -329,6 +335,11 @@ export const ScheduleView = ({
         // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
         stickySectionHeadersEnabled={false}
         contentContainerStyle={contentStyle}
+        // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
+        // показывается ниже FloatingTopBar, а не за ним.
+        contentInset={isIOS ? { top: topInset } : undefined}
+        contentOffset={isIOS ? { x: 0, y: -topInset } : undefined}
+        scrollIndicatorInsets={isIOS ? { top: topInset } : undefined}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         renderSectionHeader={({ section }) => {
@@ -396,6 +407,7 @@ export const ScheduleView = ({
         lesson={selectedLesson}
         currentWeek={currentWeek}
         entityType={entityType}
+        onDismiss={handleSheetDismiss}
       />
     </View>
   );

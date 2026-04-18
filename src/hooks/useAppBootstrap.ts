@@ -5,6 +5,7 @@ import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { prefetchPinned } from '@services/prefetch';
 import { updateWidgetSnapshot } from '@services/widget';
+import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
 
 const FOREGROUND_DEBOUNCE_MS = 5_000;
 
@@ -23,6 +24,7 @@ export const useAppBootstrap = () => {
     void GroupsController.loadAll();
     void EmployeesController.loadAll();
     void prefetchPinned().then(() => updateWidgetSnapshot());
+    void registerWidgetBackgroundFetch();
   }, []);
 
   useEffect(() => {

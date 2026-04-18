@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
-import { usePalette } from '@hooks/usePalette';
+import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { Radius, Spacing } from '@theme';
 import { getLessonAccentColor, getLessonBreakRange } from '@utils/lesson';
@@ -28,10 +28,12 @@ interface Props {
 }
 
 // Полупрозрачная серая «вуаль» для прошедших / уже прошедшей части идущей пары.
-const PAST_OVERLAY_COLOR = 'rgba(60, 60, 67, 0.10)';
+const PAST_OVERLAY_LIGHT = 'rgba(60, 60, 67, 0.10)';
+const PAST_OVERLAY_DARK = 'rgba(255, 255, 255, 0.05)';
 // Тонкий синий «маркер» 5-минутного перерыва в середине пары — рисуется
 // поверх серой вуали, пока пара не закончилась.
-const BREAK_OVERLAY_COLOR = 'rgba(10, 132, 255, 0.18)';
+const BREAK_OVERLAY_LIGHT = 'rgba(10, 132, 255, 0.18)';
+const BREAK_OVERLAY_DARK = 'rgba(10, 132, 255, 0.35)';
 
 const buildAvatarInitials = (lesson: NormalizedLesson): string => {
   const first = (lesson.raw.employees ?? [])[0];
@@ -42,6 +44,9 @@ const buildAvatarInitials = (lesson: NormalizedLesson): string => {
 export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
+  const isDark = useIsDark();
+  const pastOverlayColor = isDark ? PAST_OVERLAY_DARK : PAST_OVERLAY_LIGHT;
+  const breakOverlayColor = isDark ? BREAK_OVERLAY_DARK : BREAK_OVERLAY_LIGHT;
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const accent = getLessonAccentColor(lesson.raw.lessonTypeAbbrev);
 
@@ -121,7 +126,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
         {pastFraction > 0 && (
           <View
             pointerEvents="none"
-            style={[styles.pastOverlay, { width: `${pastFraction * 100}%` }]}
+            style={[styles.pastOverlay, { width: `${pastFraction * 100}%`, backgroundColor: pastOverlayColor }]}
           />
         )}
         {breakRange && (
@@ -132,6 +137,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
               {
                 left: `${breakRange.startFraction * 100}%`,
                 width: `${breakRange.widthFraction * 100}%`,
+                backgroundColor: breakOverlayColor,
               },
             ]}
           >
@@ -209,13 +215,11 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     top: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: PAST_OVERLAY_COLOR,
   },
   breakOverlay: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    backgroundColor: BREAK_OVERLAY_COLOR,
     alignItems: 'center',
     overflow: 'visible',
   },

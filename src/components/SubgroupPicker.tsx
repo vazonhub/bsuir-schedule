@@ -5,6 +5,7 @@ import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { useTranslation } from 'react-i18next';
 
 import { GlassButton } from '@components/GlassButton';
+import { hapticLight } from '@utils/haptics';
 import { useGlassTint, useIsDark, usePalette } from '@hooks/usePalette';
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
@@ -69,6 +70,7 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
   const [open, setOpen] = useState(false);
 
   const handleSelect = (next: SubgroupChoice) => {
+    void hapticLight();
     onChange(next);
     setOpen(false);
   };

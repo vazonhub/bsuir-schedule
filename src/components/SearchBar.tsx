@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
@@ -22,7 +22,7 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
   const resolvedPlaceholder = placeholder ?? t('common.search');
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
-  const showManualClear = Platform.OS !== 'ios' && value.length > 0;
+  const showClear = value.length > 0;
 
   return (
     <View style={styles.wrap}>
@@ -36,12 +36,11 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
           placeholderTextColor={Palette.searchPlaceholder}
           autoCorrect={false}
           autoCapitalize="none"
-          clearButtonMode="while-editing"
           returnKeyType="search"
           underlineColorAndroid="transparent"
           accessibilityLabel={t('common.search')}
         />
-        {showManualClear && (
+        {showClear && (
           <Pressable
             onPress={() => onChange('')}
             hitSlop={10}

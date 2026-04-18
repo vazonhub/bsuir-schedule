@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
 import type { DefaultEmployee } from '@stores/preferences.store';
@@ -104,11 +105,9 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
       );
     }
     return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SkeletonSchedule />
+      </View>
     );
   }
 
@@ -165,11 +164,9 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
       );
     }
     return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SkeletonSchedule />
+      </View>
     );
   }
 

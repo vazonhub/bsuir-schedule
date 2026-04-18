@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   SectionList,
@@ -14,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchBar } from '@components/SearchBar';
+import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
+import { hapticSuccess } from '@utils/haptics';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { useEmployeeSearch } from '@hooks/useEmployeeSearch';
@@ -93,6 +94,7 @@ export const GroupPickerScreen = () => {
 
   const handleGroupPress = useCallback(
     (groupName: string) => {
+      void hapticSuccess();
       setDefaultGroup(groupName);
       router.back();
     },
@@ -101,6 +103,7 @@ export const GroupPickerScreen = () => {
 
   const handleEmployeePress = useCallback(
     (urlId: string, fio: string) => {
+      void hapticSuccess();
       setDefaultEmployee({ urlId, fio });
       router.back();
     },
@@ -114,9 +117,7 @@ export const GroupPickerScreen = () => {
   if (isLoading) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
+        {activeTab === 'groups' ? <SkeletonGroupsList /> : <SkeletonEmployeesList />}
       </SafeAreaView>
     );
   }

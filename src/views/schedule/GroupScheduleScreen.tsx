@@ -1,9 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
 import { useScheduleStore } from '@stores/schedule.store';
@@ -54,11 +55,9 @@ export const GroupScheduleScreen = () => {
       );
     }
     return (
-      <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <SkeletonSchedule />
+      </View>
     );
   }
 

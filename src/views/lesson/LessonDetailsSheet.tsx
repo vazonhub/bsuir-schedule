@@ -10,6 +10,7 @@ import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto, LessonStudentGroupDto, WeekNumber } from '@models/dto';
 import { Radius, Spacing } from '@theme';
 import { getDayNames } from '@utils/date';
+import { hapticLight } from '@utils/haptics';
 import { getLessonAccentColor, getLessonTypeFullName } from '@utils/lesson';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
@@ -19,10 +20,11 @@ interface Props {
   lesson: NormalizedLesson | null;
   currentWeek: WeekNumber;
   entityType: 'group' | 'employee';
+  onDismiss?(): void;
 }
 
 export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
-  ({ lesson, currentWeek, entityType }, ref) => {
+  ({ lesson, currentWeek, entityType, onDismiss }, ref) => {
     const { t } = useTranslation();
     const router = useRouter();
     const segments = useSegments() as string[];
@@ -33,6 +35,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
 
     const handleEmployeePress = useCallback(
       (employee: EmployeeDto) => {
+        void hapticLight();
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
         const params = {
           urlId: employee.urlId,
@@ -55,6 +58,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
 
     const handleGroupPress = useCallback(
       (group: LessonStudentGroupDto) => {
+        void hapticLight();
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
         const params = { name: group.name };
         switch (currentTab) {
@@ -96,6 +100,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         enableDynamicSizing={false}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
+        onDismiss={onDismiss}
       >
         <BottomSheetScrollView contentContainerStyle={styles.content}>
           {/* Type chip */}
@@ -131,8 +136,13 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
             </View>
           )}
 
-          {/* Weeks */}
-          {weekNumbers.length > 0 && (
+          {/* Weeks or specific date */}
+          {raw.dateLesson ? (
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar-outline" size={18} color={Palette.textSecondary} />
+              <Text style={styles.infoText}>{dateStr}</Text>
+            </View>
+          ) : weekNumbers.length > 0 ? (
             <View style={styles.infoRow}>
               <Ionicons name="calendar-outline" size={18} color={Palette.textSecondary} />
               <View style={styles.weeksRow}>
@@ -163,7 +173,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
                 <Text style={styles.weeksLabel}>{t('lesson.weekLabel')}</Text>
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* Note */}
           {raw.note && (

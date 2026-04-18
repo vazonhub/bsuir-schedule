@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -15,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchBar } from '@components/SearchBar';
+import { SkeletonEmployeesList } from '@components/Skeleton';
 import { EmployeesController } from '@controllers/employees.controller';
 import { useEmployeeSearch } from '@hooks/useEmployeeSearch';
 import { usePalette } from '@hooks/usePalette';
@@ -77,9 +77,7 @@ export const EmployeesListScreen = () => {
   if (isLoading && items.length === 0) {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
+        <SkeletonEmployeesList />
       </SafeAreaView>
     );
   }
