@@ -13,6 +13,7 @@ import { getDayNames } from '@utils/date';
 import { hapticLight } from '@utils/haptics';
 import { getLessonAccentColor, getLessonTypeFullName } from '@utils/lesson';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
+import { FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/colors';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -76,22 +77,20 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
       [router, ref, currentTab],
     );
 
-    if (!lesson) return null;
-
-    const raw = lesson.raw;
-    const accent = getLessonAccentColor(raw.lessonTypeAbbrev);
-    const typeFull = getLessonTypeFullName(raw.lessonTypeAbbrev);
+    const raw = lesson?.raw ?? null;
+    const accent = raw ? getLessonAccentColor(raw.lessonTypeAbbrev) : FALLBACK;
+    const typeFull = raw ? getLessonTypeFullName(raw.lessonTypeAbbrev) : '';
     const days = getDayNames();
     const months = t('date.months', { returnObjects: true }) as string[];
-    const dayName = days[lesson.date.getDay()];
-    const dom = lesson.date.getDate();
-    const month = months[lesson.date.getMonth()];
+    const dayName = lesson ? days[lesson.date.getDay()] : '';
+    const dom = lesson?.date.getDate() ?? 0;
+    const month = lesson ? months[lesson.date.getMonth()] : '';
     const dateStr = `${dayName}, ${dom} ${month}`;
-    const auditories = (raw.auditories ?? []).join(', ');
-    const employees = raw.employees ?? [];
-    const groups = raw.studentGroups ?? [];
-    const weekNumbers = raw.weekNumber ?? [];
-    const showSubgroup = raw.numSubgroup === 1 || raw.numSubgroup === 2;
+    const auditories = (raw?.auditories ?? []).join(', ');
+    const employees = raw?.employees ?? [];
+    const groups = raw?.studentGroups ?? [];
+    const weekNumbers = raw?.weekNumber ?? [];
+    const showSubgroup = raw?.numSubgroup === 1 || raw?.numSubgroup === 2;
 
     return (
       <BottomSheetModal
@@ -102,7 +101,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         handleIndicatorStyle={styles.handle}
         onDismiss={onDismiss}
       >
-        <BottomSheetScrollView contentContainerStyle={styles.content}>
+        {lesson && raw && <BottomSheetScrollView contentContainerStyle={styles.content}>
           {/* Type chip */}
           <View style={styles.chipRow}>
             <View style={[styles.typeChip, { backgroundColor: accent + '1A' }]}>
@@ -237,7 +236,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
               ))}
             </View>
           )}
-        </BottomSheetScrollView>
+        </BottomSheetScrollView>}
       </BottomSheetModal>
     );
   },

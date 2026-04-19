@@ -241,7 +241,7 @@ export const ScheduleView = ({
   // работает стабильно на обеих архитектурах. Контент-Y вычисляем как
   // `pageY - scrollViewPageY + currentScrollY`.
   const sectionOffsetsRef = useRef<Map<string, number>>(new Map());
-  const currentScrollYRef = useRef<number>(0);
+  const currentScrollYRef = useRef<number>(isIOS ? -topInset : 0);
   const scrollViewPageYRef = useRef<number>(0);
   const topSectionRef = useRef<ScheduleSection | null>(null);
   useEffect(() => {
