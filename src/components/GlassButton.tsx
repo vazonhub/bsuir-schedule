@@ -78,7 +78,7 @@ export const GlassButton = ({
         style={[
           StyleSheet.absoluteFill,
           styles.tint,
-          active && (activeColor ? { backgroundColor: activeColor + '33' } : styles.tintActive),
+          active && (activeColor ? { backgroundColor: activeColor + '0' } : styles.tintActive),
         ]}
       />
       <View style={styles.content}>{children}</View>

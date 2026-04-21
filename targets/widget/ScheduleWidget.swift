@@ -343,9 +343,8 @@ struct WidgetHeader: View {
         HStack {
             VStack(alignment: .leading, spacing: 1) {
                 Text(groupName)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 11))
                     .foregroundColor(.secondary)
-                    .textCase(.uppercase)
                 if let label = dateLabel {
                     Text(label)
                         .font(.system(size: 10, weight: .medium))
@@ -374,9 +373,8 @@ struct SmallWidgetView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text(snap.groupName)
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 11))
                             .foregroundColor(.secondary)
-                            .textCase(.uppercase)
                         Spacer()
                     }
                     if entry.isNextDay, let block = entry.displayBlock {
@@ -495,10 +493,12 @@ struct ScheduleWidget: Widget {
             if #available(iOS 17, *) {
                 ScheduleWidgetEntryView(entry: entry)
                     .containerBackground(.fill.tertiary, for: .widget)
+                    .widgetURL(URL(string: "bsuirtime://"))
             } else {
                 ScheduleWidgetEntryView(entry: entry)
                     .padding(12)
                     .background()
+                    .widgetURL(URL(string: "bsuirtime://"))
             }
         }
         .configurationDisplayName("Bsuir Time")

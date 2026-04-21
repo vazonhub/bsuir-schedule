@@ -13,7 +13,7 @@ type PaletteType = ReturnType<typeof usePalette>;
 
 const THEME_VALUES: ThemeChoice[] = ['auto', 'light', 'dark'];
 const LANG_VALUES: LanguageChoice[] = ['ru', 'be', 'en'];
-const LANG_LABELS = ['Русский', 'Беларускі', 'English'];
+const LANG_LABELS = ['Русский', 'Беларуская', 'English'];
 
 export const SettingsScreen = () => {
   const { t } = useTranslation();

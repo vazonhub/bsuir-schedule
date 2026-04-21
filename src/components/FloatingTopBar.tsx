@@ -36,6 +36,9 @@ interface Props {
   /** Show an exams shortcut button (hidden when already viewing exams). */
   showExamsButton?: boolean;
   onScrollToExams?(): void;
+  /** Show a "back to schedule" button when viewing exams. */
+  showScheduleButton?: boolean;
+  onScrollToSchedule?(): void;
   /** When true, replaces back button with group title and pin with change button. */
   isDefaultSchedule?: boolean;
   /** Group name shown in the top bar (only when `isDefaultSchedule`). */
@@ -61,6 +64,8 @@ export const FloatingTopBar = ({
   isCurrentDateTomorrow = false,
   showExamsButton = false,
   onScrollToExams,
+  showScheduleButton = false,
+  onScrollToSchedule,
   isDefaultSchedule = false,
   defaultGroupName,
   onChangeDefaultGroup,
@@ -134,7 +139,16 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('schedule.goToExams')}
           >
-            <Ionicons name="school-outline" size={18} color={Palette.textPrimary} />
+            <Ionicons name="school-outline" size={18} color="#FF9500" />
+          </GlassButton>
+        )}
+        {showScheduleButton && onScrollToSchedule && (
+          <GlassButton
+            onPress={onScrollToSchedule}
+            size={38}
+            accessibilityLabel={t('schedule.goToSchedule')}
+          >
+            <Ionicons name="time-outline" size={18} color="#34C759" />
           </GlassButton>
         )}
         {!isDefaultSchedule && (

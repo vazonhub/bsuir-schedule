@@ -2,12 +2,28 @@ import { useDeferredValue, useMemo, useState } from 'react';
 
 import type { StudentGroupDto } from '@models/dto';
 
-const matches = (group: StudentGroupDto, query: string): boolean =>
-  group.name.toLowerCase().includes(query) ||
-  group.facultyAbbrev.toLowerCase().includes(query) ||
-  group.facultyName.toLowerCase().includes(query) ||
-  group.specialityAbbrev.toLowerCase().includes(query) ||
-  group.specialityName.toLowerCase().includes(query);
+/** All searchable fields of a group, pre-lowercased, plus course as string. */
+const getSearchFields = (g: StudentGroupDto): string[] => [
+  g.name.toLowerCase(),
+  g.facultyAbbrev.toLowerCase(),
+  g.facultyName.toLowerCase(),
+  g.specialityAbbrev.toLowerCase(),
+  g.specialityName.toLowerCase(),
+  String(g.course),
+];
+
+const tokenMatchesGroup = (token: string, fields: string[]): boolean =>
+  fields.some((f) => f.includes(token));
+
+/**
+ * Multi-token search: every token in the query must match at least one field.
+ * Supports mixed queries like "иэф ээ 3 курс".
+ * The word "курс" is stripped as noise.
+ */
+const matches = (group: StudentGroupDto, tokens: string[]): boolean => {
+  const fields = getSearchFields(group);
+  return tokens.every((t) => tokenMatchesGroup(t, fields));
+};
 
 export interface UseGroupSearchResult {
   query: string;
@@ -33,8 +49,10 @@ export const useGroupSearch = (items: StudentGroupDto[]): UseGroupSearchResult =
 
   const filtered = useMemo(() => {
     if (!trimmed) return items;
+    const tokens = trimmed.split(/\s+/).filter((t) => t && t !== 'курс');
+    if (tokens.length === 0) return items;
     return items
-      .filter((g) => matches(g, trimmed))
+      .filter((g) => matches(g, tokens))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [items, trimmed]);
 

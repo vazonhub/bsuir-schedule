@@ -70,19 +70,31 @@ export const buildSearchIndex = <T>(
   return result;
 };
 
-const tokenMatchesEntry = <T>(entry: SearchIndexEntry<T>, token: string): boolean => {
-  // Substring fast path — handles short tokens, exact prefixes, contains.
+/**
+ * Score a single token against an entry. Returns 0 if no match.
+ * Higher = better:
+ *   3 — exact word match
+ *   2 — prefix match (word starts with token)
+ *   1 — substring match (token found inside word)
+ *   0.1..0.99 — fuzzy bigram score (dice coefficient)
+ */
+const tokenScoreEntry = <T>(entry: SearchIndexEntry<T>, token: string): number => {
+  let best = 0;
   for (const word of entry.words) {
-    if (word.includes(token)) return true;
+    if (word === token) return 3; // exact — short-circuit
+    if (word.startsWith(token)) { best = Math.max(best, 2); continue; }
+    if (word.includes(token)) { best = Math.max(best, 1); continue; }
   }
-  // Fuzzy bigram match for longer tokens — handles typos.
+  if (best > 0) return best;
+  // Fuzzy bigram match for longer tokens — handles typos / transpositions.
   if (token.length >= FUZZY_MIN_TOKEN_LENGTH) {
     const queryBigrams = bigrams(token);
     for (const wordBigram of entry.wordBigrams) {
-      if (diceSimilarity(queryBigrams, wordBigram) >= FUZZY_THRESHOLD) return true;
+      const dice = diceSimilarity(queryBigrams, wordBigram);
+      if (dice >= FUZZY_THRESHOLD) best = Math.max(best, dice);
     }
   }
-  return false;
+  return best;
 };
 
 export const fuzzyFilter = <T>(
@@ -91,16 +103,18 @@ export const fuzzyFilter = <T>(
 ): T[] => {
   const tokens = tokenize(query);
   if (tokens.length === 0) return index.map((e) => e.raw);
-  const matched: T[] = [];
+  const scored: Array<{ raw: T; score: number }> = [];
   for (const entry of index) {
+    let totalScore = 0;
     let allMatch = true;
     for (const token of tokens) {
-      if (!tokenMatchesEntry(entry, token)) {
-        allMatch = false;
-        break;
-      }
+      const s = tokenScoreEntry(entry, token);
+      if (s === 0) { allMatch = false; break; }
+      totalScore += s;
     }
-    if (allMatch) matched.push(entry.raw);
+    if (allMatch) scored.push({ raw: entry.raw, score: totalScore });
   }
-  return matched;
+  // Sort by total score descending — exact/prefix matches float to the top.
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((e) => e.raw);
 };

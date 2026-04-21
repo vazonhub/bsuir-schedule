@@ -1,14 +1,17 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { useURL } from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAppBootstrap } from '@hooks/useAppBootstrap';
 import { useIsDark } from '@hooks/usePalette';
 import '@i18n';
+import type { ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 /**
@@ -21,12 +24,38 @@ export default function RootLayout() {
   const isDark = useIsDark();
   const language = usePreferencesStore((s) => s.language);
   const { i18n } = useTranslation();
+  const router = useRouter();
+  const incomingUrl = useURL();
+  const handledUrl = useRef<string | null>(null);
+
+  const themeChoice = usePreferencesStore((s) => s.theme);
+
+  // Sync native UIUserInterfaceStyle with the user's theme choice.
+  // This ensures UITabBarController and other UIKit elements follow
+  // the in-app theme, not the system one.
+  useEffect(() => {
+    const nativeScheme: 'light' | 'dark' | null =
+      themeChoice === 'auto' ? null : themeChoice;
+    Appearance.setColorScheme(nativeScheme);
+  }, [themeChoice]);
 
   useEffect(() => {
     if (i18n.language !== language) {
       void i18n.changeLanguage(language);
     }
   }, [language, i18n]);
+
+  // Widget tap: navigate to "My" tab.
+  // useURL() returns the latest URL that opened/resumed the app.
+  // We track handledUrl to avoid re-processing the same URL.
+  useEffect(() => {
+    if (!incomingUrl) return;
+    if (incomingUrl === handledUrl.current) return;
+    handledUrl.current = incomingUrl;
+    if (incomingUrl.startsWith('bsuirtime://')) {
+      router.navigate('/(tabs)/(amy)');
+    }
+  }, [incomingUrl, router]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

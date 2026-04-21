@@ -195,6 +195,20 @@ export const ScheduleView = ({
     });
   }, [hasExams, sections.length, firstExamSectionIndex, topInset]);
 
+  const handleScrollToSchedule = useCallback(() => {
+    if (regularSections.length === 0 || sections.length === 0) return;
+    const targetIndex = upcomingIndex >= 0 && upcomingIndex < regularSections.length
+      ? upcomingIndex
+      : 0;
+    listRef.current?.scrollToLocation({
+      sectionIndex: targetIndex,
+      itemIndex: 0,
+      animated: true,
+      viewPosition: 0,
+      viewOffset: topInset,
+    });
+  }, [regularSections.length, sections.length, upcomingIndex, topInset]);
+
   /** True если данная пара актуальна для выбранной подгруппы. */
   const isMineSubgroup = useCallback(
     (numSubgroup: number): boolean => {
@@ -269,7 +283,7 @@ export const ScheduleView = ({
   }, [sections.length]);
 
   const recomputeTopSection = useCallback(() => {
-    const threshold = currentScrollYRef.current + topInset + 0.5;
+    const threshold = currentScrollYRef.current + topInset + 48;
     const list = sectionsRef.current;
     let current: ScheduleSection | null = null;
     for (const s of list) {
@@ -398,6 +412,8 @@ export const ScheduleView = ({
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
         showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam}
         onScrollToExams={handleScrollToExams}
+        showScheduleButton={hasExams && regularSections.length > 0 && !!topSection?.isExam}
+        onScrollToSchedule={handleScrollToSchedule}
         isDefaultSchedule={isDefaultSchedule}
         defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
         onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}

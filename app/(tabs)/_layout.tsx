@@ -25,29 +25,35 @@ export default function TabsLayout() {
   const { t } = useTranslation();
   const palette = usePalette();
 
-  const triggerProps = supportsLiquidGlass
-    ? {}
-    : { disableTransparentOnScrollEdge: true as const };
+  // iOS < 26: solid blur + backgroundColor fallback on every trigger to
+  // guarantee both standard AND scrollEdge appearances are opaque.
+  const fallbackTabBar = !supportsLiquidGlass
+    ? {
+        backgroundColor: palette.card,
+        blurEffect: 'systemThickMaterial' as const,
+        disableTransparentOnScrollEdge: true as const,
+      }
+    : {};
 
   return (
     <NativeTabs
       minimizeBehavior={supportsLiquidGlass ? 'never' : undefined}
-      blurEffect={supportsLiquidGlass ? 'systemChromeMaterial' : undefined}
+      blurEffect={supportsLiquidGlass ? 'systemChromeMaterial' : 'systemThickMaterial'}
       backgroundColor={supportsLiquidGlass ? undefined : palette.card}
     >
-      <NativeTabs.Trigger name="(amy)" {...triggerProps}>
+      <NativeTabs.Trigger name="(amy)" {...fallbackTabBar}>
         <Icon sf="calendar" />
         <Label>{t('tabs.my')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(groups)" {...triggerProps}>
+      <NativeTabs.Trigger name="(groups)" {...fallbackTabBar}>
         <Icon sf="person.3.fill" />
         <Label>{t('tabs.groups')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(employees)" {...triggerProps}>
+      <NativeTabs.Trigger name="(employees)" {...fallbackTabBar}>
         <Icon sf="person.text.rectangle.fill" />
         <Label>{t('tabs.employees')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(settings)" {...triggerProps}>
+      <NativeTabs.Trigger name="(settings)" {...fallbackTabBar}>
         <Icon sf="gearshape.fill" />
         <Label>{t('tabs.settings')}</Label>
       </NativeTabs.Trigger>

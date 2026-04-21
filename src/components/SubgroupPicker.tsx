@@ -85,11 +85,6 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
         accessibilityLabel={t('subgroup.label', { value: t(A11Y_LABELS[value]) })}
       >
         <OptionLabel value={value} active={open} size="sm" Palette={Palette} styles={styles} />
-        <Ionicons
-          name={open ? 'chevron-up' : 'chevron-down'}
-          size={14}
-          color={open ? Palette.accent : Palette.textSecondary}
-        />
       </GlassButton>
 
       <Modal

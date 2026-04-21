@@ -151,7 +151,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
 
         <View style={styles.body}>
           <Text style={styles.time}>
-            {lesson.startTime} — {lesson.endTime}
+            {lesson.startTime}–{lesson.endTime}
           </Text>
           <Text style={styles.subject} numberOfLines={2}>
             {lesson.raw.subject}
@@ -274,7 +274,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   time: {
     fontSize: 13,
     fontWeight: '600',
-    color: Palette.textSecondary,
+    color: Palette.textPrimary,
     letterSpacing: 0.2,
   },
   subject: {

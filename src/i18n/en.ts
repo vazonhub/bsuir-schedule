@@ -26,6 +26,7 @@ export const en: TranslationKeys = {
     notFound: 'Schedule not found',
     exams: 'Exams',
     goToExams: 'Go to exams',
+    goToSchedule: 'Go to schedule',
     pin: 'Pin schedule',
     unpin: 'Unpin schedule',
     changeGroup: 'Change schedule',
