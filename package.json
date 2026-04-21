@@ -17,7 +17,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npm run prebuild -- --clean && npx expo run:ios"
+    "ios:build": "npm run prebuild -- --clean && npx expo run:ios",
+    "android:build": "npm run prebuild -- --clean && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
