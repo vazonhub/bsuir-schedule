@@ -4,14 +4,12 @@ import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Appearance } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useAppBootstrap } from '@hooks/useAppBootstrap';
 import { useIsDark } from '@hooks/usePalette';
 import '@i18n';
-import type { ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 /**
@@ -26,16 +24,9 @@ export default function RootLayout() {
   const { i18n } = useTranslation();
   const router = useRouter();
 
-  const themeChoice = usePreferencesStore((s) => s.theme);
-
-  // Sync native UIUserInterfaceStyle with the user's theme choice.
-  // This ensures UITabBarController and other UIKit elements follow
-  // the in-app theme, not the system one.
-  useEffect(() => {
-    const nativeScheme: 'light' | 'dark' | null =
-      themeChoice === 'auto' ? null : themeChoice;
-    Appearance.setColorScheme(nativeScheme);
-  }, [themeChoice]);
+  // Native UIUserInterfaceStyle is synced in preferences.store.ts — both in
+  // setTheme() and onRehydrateStorage() — so it updates atomically with the
+  // palette, before React re-renders.  No useEffect needed here.
 
   useEffect(() => {
     if (i18n.language !== language) {

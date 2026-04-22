@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform } from 'react-native';
 import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
 
-import { usePalette } from '@hooks/usePalette';
+import { usePalette, useIsDark } from '@hooks/usePalette';
 
 const isAndroid = Platform.OS === 'android';
 
@@ -28,39 +28,35 @@ const supportsLiquidGlass = iosVersion >= 26;
 export default function TabsLayout() {
   const { t } = useTranslation();
   const palette = usePalette();
+  const isDark = useIsDark();
 
-  // iOS < 26: solid blur + backgroundColor fallback on every trigger to
-  // guarantee both standard AND scrollEdge appearances are opaque.
-  const fallbackTabBar = !supportsLiquidGlass
-    ? {
-        backgroundColor: palette.card,
-        blurEffect: 'systemThickMaterial' as const,
-        disableTransparentOnScrollEdge: true as const,
-      }
-    : {};
-
+  // iOS < 26: backgroundColor + disableTransparentOnScrollEdge are set at the
+  // NativeTabs level (not per-trigger) so the native UITabBar updates
+  // immediately when the palette changes, instead of waiting for a tab tap.
   return (
     <NativeTabs
+      key={supportsLiquidGlass ? undefined : isDark ? 'dark' : 'light'}
       minimizeBehavior={supportsLiquidGlass ? 'never' : undefined}
-      blurEffect={supportsLiquidGlass ? 'systemChromeMaterial' : 'systemThickMaterial'}
+      blurEffect={supportsLiquidGlass ? 'systemChromeMaterial' : undefined}
       backgroundColor={supportsLiquidGlass ? undefined : palette.card}
+      disableTransparentOnScrollEdge={!supportsLiquidGlass || undefined}
       labelVisibilityMode="labeled"
       tintColor={isAndroid ? palette.accent : undefined}
       labelStyle={isAndroid ? { fontSize: 12 } : undefined}
     >
-      <NativeTabs.Trigger name="(amy)" {...fallbackTabBar}>
+      <NativeTabs.Trigger name="(amy)">
         <Icon sf="calendar" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="calendar" />} />
         <Label>{t('tabs.my')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(groups)" {...fallbackTabBar}>
+      <NativeTabs.Trigger name="(groups)">
         <Icon sf="person.3.fill" androidSrc={<VectorIcon family={MaterialIcons} name="groups" />} />
         <Label>{t('tabs.groups')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(employees)" {...fallbackTabBar}>
+      <NativeTabs.Trigger name="(employees)">
         <Icon sf="person.text.rectangle.fill" androidSrc={<VectorIcon family={MaterialIcons} name="person-search" />} />
         <Label>{t('tabs.employees')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(settings)" {...fallbackTabBar}>
+      <NativeTabs.Trigger name="(settings)">
         <Icon sf="gearshape.fill" androidSrc={<VectorIcon family={MaterialIcons} name="settings" />} />
         <Label>{t('tabs.settings')}</Label>
       </NativeTabs.Trigger>

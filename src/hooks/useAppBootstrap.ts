@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { AppState } from 'react-native';
+import { Appearance, AppState } from 'react-native';
 
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { prefetchPinned } from '@services/prefetch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
+import { usePreferencesStore } from '@stores/preferences.store';
 
 const FOREGROUND_DEBOUNCE_MS = 5_000;
 
@@ -37,6 +38,22 @@ export const useAppBootstrap = () => {
       void GroupsController.loadAll();
       void EmployeesController.loadAll();
       void prefetchPinned().then(() => updateWidgetSnapshot());
+    });
+    return () => sub.remove();
+  }, []);
+
+  // When theme is 'auto' and the system appearance changes, update the
+  // store's resolvedScheme so the JS palette follows the OS setting.
+  // We do NOT call Appearance.setColorScheme() here — in auto mode the
+  // override is null and the system drives the native appearance natively.
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      const { theme } = usePreferencesStore.getState();
+      if (theme === 'auto' && colorScheme) {
+        usePreferencesStore.setState({
+          resolvedScheme: colorScheme as 'light' | 'dark',
+        });
+      }
     });
     return () => sub.remove();
   }, []);

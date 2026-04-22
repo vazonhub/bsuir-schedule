@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { Platform, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -68,16 +68,42 @@ export const ScheduleView = ({
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<SectionList<unknown>>(null);
   const sheetRef = useRef<BottomSheetModal>(null);
-  const [selectedLesson, setSelectedLesson] = useState<NormalizedLesson | null>(null);
+  // Lesson data lives in a ref so it's always available synchronously when
+  // the sheet renders — no dependency on React's async state batching.
+  const lessonRef = useRef<NormalizedLesson | null>(null);
+  const [, forceRender] = useReducer((x: number) => x + 1, 0);
+  const selectedLesson = lessonRef.current;
+
+  // When a dismiss animation is still in flight, present() is silently
+  // ignored by BottomSheetModal.  We force-dismiss first, then re-present
+  // once the animation finishes (onDismiss fires).
+  const pendingLessonRef = useRef<NormalizedLesson | null>(null);
 
   const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
     void hapticLight();
-    setSelectedLesson(lesson);
-    sheetRef.current?.present();
+    lessonRef.current = lesson;
+    forceRender();
+
+    // Try to present — if the sheet is idle this works immediately.
+    // If a dismiss animation is in progress, present() is a no-op,
+    // so we stash the lesson and force-dismiss; handleSheetDismiss
+    // will re-present once the animation settles.
+    const sheet = sheetRef.current;
+    if (sheet) {
+      pendingLessonRef.current = lesson;
+      sheet.dismiss();
+      sheet.present();
+    }
   }, []);
 
   const handleSheetDismiss = useCallback(() => {
-    setSelectedLesson(null);
+    const pending = pendingLessonRef.current;
+    if (pending) {
+      // A new lesson was requested while the sheet was dismissing.
+      // Data is already in lessonRef — just re-present.
+      pendingLessonRef.current = null;
+      sheetRef.current?.present();
+    }
   }, []);
 
   // Pin / subgroup state — persisted via AsyncStorage.
@@ -491,7 +517,7 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
     <View style={styles.examsSeparator}>
       <View style={styles.examsSeparatorLine} />
       <View style={styles.examsSeparatorContent}>
-        <Ionicons name="document-text-outline" size={14} color={Palette.textSecondary} />
+        <Ionicons name="school" size={14} color={Palette.textSecondary} />
         <Text style={styles.examsSeparatorText}>{t('schedule.exams')}</Text>
       </View>
       <View style={styles.examsSeparatorLine} />

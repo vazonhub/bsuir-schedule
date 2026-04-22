@@ -13,7 +13,7 @@ export const be: TranslationKeys = {
     retry: 'Паўтарыць',
     search: 'Пошук',
     clear: 'Ачысціць',
-    nothingFound: 'Нічога не знойдзена',
+    nothingFound: 'Няма вынікаў пошуку',
   },
 
   mySchedule: {
@@ -23,7 +23,7 @@ export const be: TranslationKeys = {
   },
 
   schedule: {
-    notFound: 'Расклад не знойдзены',
+    notFound: 'Няма вынікаў пошуку',
     exams: 'Экзамены',
     goToExams: 'Перайсці да экзаменаў',
     goToSchedule: 'Перайсці да раскладу',

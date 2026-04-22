@@ -1,29 +1,20 @@
-import { useColorScheme } from 'react-native';
-
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Palette as PaletteLight, PaletteDark } from '@theme/colors';
 
 /**
- * Returns the active palette based on user theme preference and system scheme.
- *
- * - `'auto'` → follows system `useColorScheme()`.
- * - `'light'` / `'dark'` → forced.
+ * Returns the active palette based on the resolved scheme stored in
+ * PreferencesStore.  Does NOT use `useColorScheme()` — the resolved scheme
+ * is computed synchronously in setTheme() / onRehydrate so the palette and
+ * native UIUserInterfaceStyle stay in lock-step.
  */
 export const usePalette = () => {
-  const themeChoice = usePreferencesStore((s) => s.theme);
-  const systemScheme = useColorScheme();
-
-  const isDark =
-    themeChoice === 'dark' || (themeChoice === 'auto' && systemScheme === 'dark');
-
-  return isDark ? PaletteDark : PaletteLight;
+  const resolved = usePreferencesStore((s) => s.resolvedScheme);
+  return resolved === 'dark' ? PaletteDark : PaletteLight;
 };
 
 /** Returns `true` if the current resolved theme is dark. */
 export const useIsDark = (): boolean => {
-  const themeChoice = usePreferencesStore((s) => s.theme);
-  const systemScheme = useColorScheme();
-  return themeChoice === 'dark' || (themeChoice === 'auto' && systemScheme === 'dark');
+  return usePreferencesStore((s) => s.resolvedScheme) === 'dark';
 };
 
 /** Glass tint colors that adapt to light/dark. */

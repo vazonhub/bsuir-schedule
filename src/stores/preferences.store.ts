@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { Appearance } from 'react-native';
 
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
+import { getSystemScheme } from '@utils/systemScheme';
 
 /**
  * `0` — общая (без подгруппы или «все»), `1` / `2` — конкретная подгруппа.
@@ -16,6 +18,14 @@ export interface DefaultEmployee {
   fio: string;
 }
 
+/** Resolved scheme — the actual light/dark value after resolving 'auto'. */
+export type ResolvedScheme = 'light' | 'dark';
+
+const resolveScheme = (theme: ThemeChoice): ResolvedScheme => {
+  if (theme === 'auto') return getSystemScheme();
+  return theme;
+};
+
 interface PreferencesState {
   pinnedGroups: string[];
   pinnedEmployees: string[];
@@ -26,6 +36,8 @@ interface PreferencesState {
   /** Выбор подгруппы для конкретного расписания (по ключу — group name / employee urlId). */
   subgroupByKey: Record<string, SubgroupChoice>;
   theme: ThemeChoice;
+  /** Actual resolved scheme — avoids depending on the async useColorScheme(). */
+  resolvedScheme: ResolvedScheme;
   language: LanguageChoice;
 
   togglePinnedGroup(name: string): void;
@@ -42,13 +54,14 @@ const toggleInArray = (arr: string[], value: string): string[] =>
 
 export const usePreferencesStore = create<PreferencesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       pinnedGroups: [],
       pinnedEmployees: [],
       defaultGroup: null,
       defaultEmployee: null,
       subgroupByKey: {},
       theme: 'auto' as ThemeChoice,
+      resolvedScheme: resolveScheme('auto'),
       language: 'ru' as LanguageChoice,
 
       togglePinnedGroup: (name) =>
@@ -64,7 +77,23 @@ export const usePreferencesStore = create<PreferencesState>()(
       setSubgroup: (key, value) =>
         set((s) => ({ subgroupByKey: { ...s.subgroupByKey, [key]: value } })),
 
-      setTheme: (theme) => set({ theme }),
+      setTheme: (theme) => {
+        if (theme === 'auto') {
+          // Remove the forced override so the system scheme becomes visible
+          // again, then read the real value.
+          Appearance.setColorScheme(null);
+          const resolved =
+            (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
+          set({ theme, resolvedScheme: resolved });
+        } else {
+          set({ theme, resolvedScheme: theme });
+          // Defer the native style flip so traitCollectionDidChange only
+          // fires after the bridge has delivered the new JS props.
+          setTimeout(() => {
+            Appearance.setColorScheme(theme);
+          }, 150);
+        }
+      },
       setLanguage: (language) => set({ language }),
     }),
     {
@@ -79,6 +108,24 @@ export const usePreferencesStore = create<PreferencesState>()(
         theme: state.theme,
         language: state.language,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (state.theme === 'auto') {
+            // Remove any stale override so the system scheme is visible.
+            Appearance.setColorScheme(null);
+            const resolved =
+              (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
+            if (state.resolvedScheme !== resolved) {
+              usePreferencesStore.setState({ resolvedScheme: resolved });
+            }
+          } else {
+            Appearance.setColorScheme(state.theme);
+            if (state.resolvedScheme !== state.theme) {
+              usePreferencesStore.setState({ resolvedScheme: state.theme });
+            }
+          }
+        }
+      },
     },
   ),
 );
