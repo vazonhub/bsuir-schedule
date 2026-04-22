@@ -35,25 +35,13 @@ export default function RootLayout() {
   }, [language, i18n]);
 
   // Widget tap: navigate to "My" tab.
-  // Linking.addEventListener fires on every URL open — including repeated
-  // taps on the widget with the same `bsuirtime://` URL.
-  // Also handle the initial/cold-start URL via getInitialURL.
+  // Cold-start URLs are handled automatically by expo-router's linking config,
+  // so we only need addEventListener for warm-resume (app was backgrounded,
+  // widget tap foregrounded it).
   useEffect(() => {
-    const handleUrl = (url: string) => {
-      if (url.startsWith('bsuirtime://')) {
-        if (router.canDismiss()) router.dismissAll();
-        router.navigate('/(tabs)/(amy)');
-      }
-    };
-
-    // Cold start: app was killed, widget tap launched it.
-    void Linking.getInitialURL().then((url) => {
-      if (url) handleUrl(url);
-    });
-
-    // Warm resume: app was backgrounded, widget tap foregrounded it.
     const subscription = Linking.addEventListener('url', (event) => {
-      handleUrl(event.url);
+      if (!event.url.startsWith('bsuirtime://')) return;
+      router.navigate('/(tabs)/(amy)');
     });
 
     return () => subscription.remove();
