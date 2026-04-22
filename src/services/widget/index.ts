@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { Platform } from 'react-native';
 
 import type { SubgroupChoice } from '@stores/preferences.store';
@@ -5,7 +6,7 @@ import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 
 import { buildWidgetSnapshot } from './widgetData';
-import type { WidgetSnapshot } from './widgetData';
+import type { WidgetSnapshot, WidgetStrings } from './widgetData';
 
 const APP_GROUP = 'group.by.vazon.bsuirschedule';
 const WIDGET_KEY = 'widgetSnapshot';
@@ -53,7 +54,19 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
   if (!schedule || !currentWeek) return;
 
   const subgroup: SubgroupChoice = subgroupByKey[defaultGroup] ?? 0;
-  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup);
+
+  const t = i18n.t;
+  const strings: WidgetStrings = {
+    daysShort: i18n.t('date.daysShort', { returnObjects: true }) as string[],
+    months: i18n.t('date.months', { returnObjects: true }) as string[],
+    weekLabel: t('widget.weekLabel'),
+    noClasses: t('widget.noClasses'),
+    allDone: t('widget.allDone'),
+    subgroupShort: t('widget.subgroupShort'),
+    description: t('widget.description'),
+  };
+
+  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings);
   await writeSnapshot(snapshot);
   reloadWidgetTimelines();
 };

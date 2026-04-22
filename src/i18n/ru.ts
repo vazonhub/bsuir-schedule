@@ -94,6 +94,15 @@ export const ru = {
     ],
   },
 
+  // Widget
+  widget: {
+    weekLabel: 'Неделя',
+    noClasses: 'Нет пар',
+    allDone: 'На сегодня пар больше нет',
+    subgroupShort: 'п/г',
+    description: 'Расписание занятий',
+  },
+
   // Settings
   settings: {
     title: 'Настройки',

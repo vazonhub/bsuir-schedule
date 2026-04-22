@@ -5,11 +5,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FloatingTopBar } from '@components/FloatingTopBar';
 import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
-import type { DefaultEmployee } from '@stores/preferences.store';
-import { usePreferencesStore } from '@stores/preferences.store';
+import type { DefaultEmployee, SubgroupChoice } from '@stores/preferences.store';
+import { usePreferencesStore, selectIsGroupPinned, selectIsEmployeePinned, selectSubgroup } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { Radius, Spacing } from '@theme';
 
@@ -72,10 +73,15 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const router = useRouter();
   const schedule = useScheduleStore((s) => s.byKey[groupName]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
   const loadingKey = useScheduleStore((s) => s.loadingKey);
   const error = useScheduleStore((s) => s.error);
+  const pinned = usePreferencesStore(selectIsGroupPinned(groupName));
+  const togglePin = usePreferencesStore((s) => s.togglePinnedGroup);
+  const subgroup = usePreferencesStore(selectSubgroup(groupName));
+  const setSubgroup = usePreferencesStore((s) => s.setSubgroup);
 
   const load = useCallback(() => {
     void ScheduleController.loadCurrentWeek();
@@ -91,7 +97,16 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
   if (!schedule || !currentWeek) {
     if (error && !schedule) {
       return (
-        <SafeAreaView edges={['top']} style={styles.container}>
+        <View style={styles.container}>
+          <FloatingTopBar
+            pinned={pinned}
+            onTogglePin={() => togglePin(groupName)}
+            subgroup={subgroup}
+            onSubgroupChange={(v: SubgroupChoice) => setSubgroup(groupName, v)}
+            isDefaultSchedule
+            defaultGroupName={groupName}
+            onChangeDefaultGroup={() => router.push('/(tabs)/(amy)/pick-group')}
+          />
           <View style={styles.center}>
             <Text style={styles.error}>{error}</Text>
             <Pressable
@@ -101,7 +116,7 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
               <Text style={styles.retryLabel}>{t('common.retry')}</Text>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </View>
       );
     }
     return (
@@ -131,10 +146,13 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const router = useRouter();
   const schedule = useScheduleStore((s) => s.byKey[employee.urlId]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
   const loadingKey = useScheduleStore((s) => s.loadingKey);
   const error = useScheduleStore((s) => s.error);
+  const pinned = usePreferencesStore(selectIsEmployeePinned(employee.urlId));
+  const togglePin = usePreferencesStore((s) => s.togglePinnedEmployee);
 
   const load = useCallback(() => {
     void ScheduleController.loadCurrentWeek();
@@ -150,7 +168,14 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
   if (!schedule || !currentWeek) {
     if (error && !schedule) {
       return (
-        <SafeAreaView edges={['top']} style={styles.container}>
+        <View style={styles.container}>
+          <FloatingTopBar
+            pinned={pinned}
+            onTogglePin={() => togglePin(employee.urlId)}
+            isDefaultSchedule
+            defaultGroupName={employee.fio}
+            onChangeDefaultGroup={() => router.push('/(tabs)/(amy)/pick-group')}
+          />
           <View style={styles.center}>
             <Text style={styles.error}>{error}</Text>
             <Pressable
@@ -160,7 +185,7 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
               <Text style={styles.retryLabel}>{t('common.retry')}</Text>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </View>
       );
     }
     return (

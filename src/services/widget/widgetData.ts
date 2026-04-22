@@ -31,6 +31,16 @@ export interface WidgetDayBlock {
   lessons: WidgetLesson[];
 }
 
+export interface WidgetStrings {
+  daysShort: string[];
+  months: string[];
+  weekLabel: string;
+  noClasses: string;
+  allDone: string;
+  subgroupShort: string;
+  description: string;
+}
+
 export interface WidgetSnapshot {
   groupName: string;
   generatedAt: string;
@@ -41,6 +51,8 @@ export interface WidgetSnapshot {
   today: WidgetDayBlock;
   /** Next day with lessons (null if today has remaining lessons or no future lessons). */
   nextDay: WidgetDayBlock | null;
+  /** Localized strings for the widget UI. */
+  strings: WidgetStrings;
 }
 
 const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
@@ -100,6 +112,7 @@ export const buildWidgetSnapshot = (
   now: Date,
   groupName: string,
   subgroup: SubgroupChoice,
+  strings: WidgetStrings,
 ): WidgetSnapshot => {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -130,5 +143,6 @@ export const buildWidgetSnapshot = (
     subgroup,
     today: toDayBlock(todayStart, todayLessons, subgroup),
     nextDay: nextDayBlock,
+    strings,
   };
 };

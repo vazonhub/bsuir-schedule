@@ -86,6 +86,14 @@ export const en: TranslationKeys = {
     ],
   },
 
+  widget: {
+    weekLabel: 'Week',
+    noClasses: 'No classes',
+    allDone: 'No more classes for today',
+    subgroupShort: 'sub',
+    description: 'Class schedule',
+  },
+
   settings: {
     title: 'Settings',
     themeSection: 'Theme',

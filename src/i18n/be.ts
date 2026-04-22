@@ -86,6 +86,14 @@ export const be: TranslationKeys = {
     ],
   },
 
+  widget: {
+    weekLabel: 'Тыдзень',
+    noClasses: 'Няма заняткаў',
+    allDone: 'На сёння заняткаў больш няма',
+    subgroupShort: 'п/г',
+    description: 'Расклад заняткаў',
+  },
+
   settings: {
     title: 'Налады',
     themeSection: 'Тэма афармлення',
