@@ -182,13 +182,10 @@ struct ScheduleTimelineProvider: TimelineProvider {
                     }
                 }
 
-                // Entry at midnight for next day rollover
+                // Entry at midnight for next day rollover — use buildEntry
+                // so stale-snapshot logic correctly treats nextDay as "today".
                 if let tomorrow = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: Date())) {
-                    entries.append(ScheduleEntry(
-                        date: tomorrow, snapshot: snap, photos: photos,
-                        displayBlock: snap.nextDay, isNextDay: snap.nextDay != nil,
-                        visibleLessons: snap.nextDay?.lessons ?? []
-                    ))
+                    entries.append(buildEntry(at: tomorrow, afterMinutes: 0, snapshot: snap, photos: photos))
                 }
             }
 
@@ -207,22 +204,55 @@ struct ScheduleTimelineProvider: TimelineProvider {
     }
 
     private func buildEntry(at date: Date, afterMinutes: Int, snapshot: WidgetSnapshot, photos: [String: Data]) -> ScheduleEntry {
-        let remaining = remainingLessons(from: snapshot.today.lessons, afterMinutes: afterMinutes)
+        let cal = Calendar.current
+        let todayISO = isoString(from: cal.startOfDay(for: date))
 
-        if !remaining.isEmpty {
+        // If the snapshot's "today" matches the real current date, use normal logic.
+        if snapshot.today.dateISO == todayISO {
+            let remaining = remainingLessons(from: snapshot.today.lessons, afterMinutes: afterMinutes)
+
+            if !remaining.isEmpty {
+                return ScheduleEntry(
+                    date: date, snapshot: snapshot, photos: photos,
+                    displayBlock: snapshot.today, isNextDay: false,
+                    visibleLessons: remaining
+                )
+            }
+
+            // Today is done — show next day
             return ScheduleEntry(
                 date: date, snapshot: snapshot, photos: photos,
-                displayBlock: snapshot.today, isNextDay: false,
-                visibleLessons: remaining
+                displayBlock: snapshot.nextDay, isNextDay: snapshot.nextDay != nil,
+                visibleLessons: snapshot.nextDay?.lessons ?? []
             )
         }
 
-        // Today is done — show next day
+        // Snapshot is stale — "today" in the snapshot is actually yesterday (or older).
+        // Check if nextDay matches the real today.
+        if let next = snapshot.nextDay, next.dateISO == todayISO {
+            let remaining = remainingLessons(from: next.lessons, afterMinutes: afterMinutes)
+            return ScheduleEntry(
+                date: date, snapshot: snapshot, photos: photos,
+                displayBlock: next, isNextDay: false,
+                visibleLessons: remaining.isEmpty ? next.lessons : remaining
+            )
+        }
+
+        // Snapshot is too old — neither today nor nextDay matches. Show whatever we have.
         return ScheduleEntry(
             date: date, snapshot: snapshot, photos: photos,
-            displayBlock: snapshot.nextDay, isNextDay: snapshot.nextDay != nil,
-            visibleLessons: snapshot.nextDay?.lessons ?? []
+            displayBlock: snapshot.nextDay ?? snapshot.today,
+            isNextDay: snapshot.nextDay != nil,
+            visibleLessons: snapshot.nextDay?.lessons ?? snapshot.today.lessons
         )
+    }
+
+    private func isoString(from date: Date) -> String {
+        let cal = Calendar.current
+        let y = cal.component(.year, from: date)
+        let m = cal.component(.month, from: date)
+        let d = cal.component(.day, from: date)
+        return String(format: "%04d-%02d-%02d", y, m, d)
     }
 }
 
@@ -341,15 +371,13 @@ struct WidgetHeader: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(groupName)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                if let label = dateLabel {
-                    Text(label)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.orange)
-                }
+            Text(groupName)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            if let label = dateLabel {
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.orange)
             }
             Spacer()
             if showWeek {
@@ -375,12 +403,12 @@ struct SmallWidgetView: View {
                         Text(snap.groupName)
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
+                        if entry.isNextDay, let block = entry.displayBlock {
+                            Text(formatDayLabel(block))
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.orange)
+                        }
                         Spacer()
-                    }
-                    if entry.isNextDay, let block = entry.displayBlock {
-                        Text(formatDayLabel(block))
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.orange)
                     }
 
                     Spacer(minLength: 0)

@@ -11,3 +11,19 @@ export const http = axios.create({
     Accept: 'application/json',
   },
 });
+
+if (__DEV__) {
+  http.interceptors.response.use(undefined, (error) => {
+    console.warn('[HTTP]', error.config?.url, error.message, error.code);
+    return Promise.reject(error);
+  });
+
+  // Quick fetch test — check if native networking works at all on Android.
+  fetch('https://www.google.com')
+    .then((r) => console.warn('[FETCH-GOOGLE] status:', r.status))
+    .catch((e) => console.warn('[FETCH-GOOGLE] error:', e.message));
+
+  fetch('https://iis.bsuir.by/api/v1/schedule/current-week')
+    .then((r) => console.warn('[FETCH-BSUIR] status:', r.status))
+    .catch((e) => console.warn('[FETCH-BSUIR] error:', e.message));
+}

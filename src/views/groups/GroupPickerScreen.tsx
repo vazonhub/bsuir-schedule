@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Dimensions,
   FlatList,
-  Pressable,
   SectionList,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '@components/GlassButton';
 import { SearchBar } from '@components/SearchBar';
 import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
 import { hapticSuccess } from '@utils/haptics';
@@ -20,11 +22,11 @@ import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { useEmployeeSearch } from '@hooks/useEmployeeSearch';
 import { useGroupSearch } from '@hooks/useGroupSearch';
-import { usePalette } from '@hooks/usePalette';
+import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useEmployeesStore } from '@stores/employees.store';
 import { useGroupsStore } from '@stores/groups.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { PINNED_SECTION_KEY, buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
 import {
   PINNED_SECTION_KEY as PINNED_EMP_KEY,
@@ -39,30 +41,32 @@ import { SectionHeader } from './SectionHeader';
 type PaletteType = ReturnType<typeof usePalette>;
 type PickerTab = 'groups' | 'employees';
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 /**
  * Schedule picker — allows user to select a default group or employee
  * for the "Моё" tab. Segmented control at the top switches between
  * groups list and employees list.
  */
 export const GroupPickerScreen = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const isDark = useIsDark();
   const [activeTab, setActiveTab] = useState<PickerTab>('groups');
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const switchTab = useCallback((tab: PickerTab) => {
     if (tab === activeTab) return;
-    const toValue = tab === 'groups' ? 0 : 1;
-    Animated.spring(slideAnim, {
-      toValue,
-      useNativeDriver: false,
-      friction: 9,
-      tension: 80,
-    }).start();
     setActiveTab(tab);
+    Animated.spring(slideAnim, {
+      toValue: tab === 'groups' ? 0 : 1,
+      useNativeDriver: true,
+      friction: 26,
+      tension: 170,
+    }).start();
   }, [activeTab, slideAnim]);
 
   // ─── Groups ───
@@ -78,7 +82,8 @@ export const GroupPickerScreen = () => {
     const facultySections = groupByFaculty(remaining);
     const pinned = buildPinnedSection(groups, pinnedGroupNames);
     return pinned ? [pinned, ...facultySections] : facultySections;
-  }, [groups, pinnedGroupNames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, pinnedGroupNames, i18n.language]);
 
   // ─── Employees ───
   const employees = useEmployeesStore((s) => s.items);
@@ -91,7 +96,8 @@ export const GroupPickerScreen = () => {
     const pinned = buildPinnedEmployeeSection(employees, pinnedEmployeeIds);
     const all = buildAllEmployeesSection(employees, pinnedEmployeeIds);
     return pinned ? [pinned, all] : [all];
-  }, [employees, pinnedEmployeeIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, pinnedEmployeeIds, i18n.language]);
 
   const listContent = useMemo(
     () => ({
@@ -143,121 +149,145 @@ export const GroupPickerScreen = () => {
     />
   );
 
+  const groupsTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -SCREEN_WIDTH],
+  });
+
+  const employeesTranslateX = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_WIDTH, 0],
+  });
+
+  const groupsOpacity = slideAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 0.3, 0],
+  });
+
+  const employeesOpacity = slideAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0.3, 1],
+  });
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backLabel}>&#8249; {t('common.back')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{t('groups.pickerTitle')}</Text>
+        <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
+          <Text style={styles.backChevron}>&#8249;</Text>
+        </GlassButton>
+        <Text style={styles.title} numberOfLines={1}>{t('groups.pickerTitle')}</Text>
       </View>
 
       {/* ─── Segmented control ─── */}
       <View style={styles.segmentWrapper}>
-        <View style={styles.segment} onLayout={(e) => { /* segment container */ }}>
-          <Animated.View
-            style={[
-              styles.segmentIndicator,
-              {
-                left: slideAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '50%'],
-                }),
-              },
-            ]}
-          />
-          <Pressable onPress={() => switchTab('groups')} style={styles.segmentTab}>
-            <Text style={[styles.segmentLabel, activeTab === 'groups' && styles.segmentLabelActive]}>
-              {t('groups.pickerTabGroups')}
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => switchTab('employees')} style={styles.segmentTab}>
-            <Text style={[styles.segmentLabel, activeTab === 'employees' && styles.segmentLabelActive]}>
-              {t('groups.pickerTabEmployees')}
-            </Text>
-          </Pressable>
-        </View>
+        <SegmentedControl
+          values={[t('groups.pickerTabGroups'), t('groups.pickerTabEmployees')]}
+          selectedIndex={activeTab === 'groups' ? 0 : 1}
+          onChange={(e) => {
+            const tab = e.nativeEvent.selectedSegmentIndex === 0 ? 'groups' : 'employees';
+            switchTab(tab);
+          }}
+          fontStyle={{ color: Palette.textPrimary }}
+          activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+          appearance={isDark ? 'dark' : 'light'}
+        />
       </View>
 
-      <View style={{ flex: 1 }}>
-      {activeTab === 'groups' ? (
-        isGroupsLoading ? (
-          <SkeletonGroupsList />
-        ) : (
-          <>
-            <SearchBar value={groupQuery} onChange={setGroupQuery} placeholder={t('groups.pickerSearchPlaceholder')} />
-            {isGroupSearching ? (
-              <FlatList
-                data={filteredGroups}
-                keyExtractor={(g) => String(g.id)}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                contentContainerStyle={filteredGroups.length === 0 ? styles.emptyContent : listContent}
-                renderItem={renderGroupRow}
-                ListEmptyComponent={
-                  <View style={styles.center}>
-                    <Text style={styles.empty}>{t('common.nothingFound')}</Text>
-                  </View>
-                }
-              />
-            ) : (
-              <SectionList
-                sections={groupSections}
-                keyExtractor={(g) => String(g.id)}
-                stickySectionHeadersEnabled
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                contentContainerStyle={listContent}
-                renderSectionHeader={({ section }) => (
-                  <SectionHeader abbrev={section.facultyAbbrev} name={section.facultyName} pinned={section.key === PINNED_SECTION_KEY} />
-                )}
-                renderItem={renderGroupRow}
-              />
-            )}
-          </>
-        )
-      ) : (
-        isEmployeesLoading ? (
-          <SkeletonEmployeesList />
-        ) : (
-          <>
-            <SearchBar value={empQuery} onChange={setEmpQuery} placeholder={t('employees.searchPlaceholder')} />
-            {isEmpSearching ? (
-              <FlatList
-                data={filteredEmployees}
-                keyExtractor={(e) => String(e.id)}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                contentContainerStyle={filteredEmployees.length === 0 ? styles.emptyContent : listContent}
-                renderItem={renderEmployeeRow}
-                ListEmptyComponent={
-                  <View style={styles.center}>
-                    <Text style={styles.empty}>{t('common.nothingFound')}</Text>
-                  </View>
-                }
-              />
-            ) : (
-              <SectionList
-                sections={employeeSections}
-                keyExtractor={(e) => String(e.id)}
-                stickySectionHeadersEnabled
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                contentContainerStyle={listContent}
-                renderSectionHeader={({ section }) => (
-                  <View style={styles.sectionHeader}>
-                    {section.key === PINNED_EMP_KEY && (
-                      <Ionicons name="star" size={13} color={Palette.accent} />
-                    )}
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                  </View>
-                )}
-                renderItem={renderEmployeeRow}
-              />
-            )}
-          </>
-        )
-      )}
+      <View style={styles.contentContainer}>
+        {/* Groups pane */}
+        <Animated.View
+          style={[
+            styles.pane,
+            { transform: [{ translateX: groupsTranslateX }], opacity: groupsOpacity },
+          ]}
+          pointerEvents={activeTab === 'groups' ? 'auto' : 'none'}
+        >
+          {isGroupsLoading ? (
+            <SkeletonGroupsList />
+          ) : (
+            <>
+              <SearchBar value={groupQuery} onChange={setGroupQuery} placeholder={t('groups.pickerSearchPlaceholder')} />
+              {isGroupSearching ? (
+                <FlatList
+                  data={filteredGroups}
+                  keyExtractor={(g) => String(g.id)}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  contentContainerStyle={filteredGroups.length === 0 ? styles.emptyContent : listContent}
+                  renderItem={renderGroupRow}
+                  ListEmptyComponent={
+                    <View style={styles.center}>
+                      <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+                    </View>
+                  }
+                />
+              ) : (
+                <SectionList
+                  sections={groupSections}
+                  keyExtractor={(g) => String(g.id)}
+                  stickySectionHeadersEnabled
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  contentContainerStyle={listContent}
+                  renderSectionHeader={({ section }) => (
+                    <SectionHeader abbrev={section.facultyAbbrev} name={section.facultyName} pinned={section.key === PINNED_SECTION_KEY} />
+                  )}
+                  renderItem={renderGroupRow}
+                />
+              )}
+            </>
+          )}
+        </Animated.View>
+
+        {/* Employees pane */}
+        <Animated.View
+          style={[
+            styles.pane,
+            { transform: [{ translateX: employeesTranslateX }], opacity: employeesOpacity },
+          ]}
+          pointerEvents={activeTab === 'employees' ? 'auto' : 'none'}
+        >
+          {isEmployeesLoading ? (
+            <SkeletonEmployeesList />
+          ) : (
+            <>
+              <SearchBar value={empQuery} onChange={setEmpQuery} placeholder={t('employees.searchPlaceholder')} />
+              {isEmpSearching ? (
+                <FlatList
+                  data={filteredEmployees}
+                  keyExtractor={(e) => String(e.id)}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  contentContainerStyle={filteredEmployees.length === 0 ? styles.emptyContent : listContent}
+                  renderItem={renderEmployeeRow}
+                  ListEmptyComponent={
+                    <View style={styles.center}>
+                      <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+                    </View>
+                  }
+                />
+              ) : (
+                <SectionList
+                  sections={employeeSections}
+                  keyExtractor={(e) => String(e.id)}
+                  stickySectionHeadersEnabled
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                  contentContainerStyle={listContent}
+                  renderSectionHeader={({ section }) => (
+                    <View style={styles.sectionHeader}>
+                      {section.key === PINNED_EMP_KEY && (
+                        <Ionicons name="star" size={13} color={Palette.accent} />
+                      )}
+                      <Text style={styles.sectionTitle}>{section.title}</Text>
+                    </View>
+                  )}
+                  renderItem={renderEmployeeRow}
+                />
+              )}
+            </>
+          )}
+        </Animated.View>
       </View>
     </SafeAreaView>
   );
@@ -269,20 +299,22 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   emptyContent: { flexGrow: 1 },
   empty: { color: Palette.textSecondary, textAlign: 'center' },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
-  backBtn: {
-    alignSelf: 'flex-start',
-  },
-  backLabel: {
-    fontSize: 17,
-    color: Palette.accent,
+  backChevron: {
+    fontSize: 28,
+    lineHeight: 28,
     fontWeight: '500',
+    color: Palette.textPrimary,
+    marginTop: 0,
   },
   title: {
+    flex: 1,
     fontSize: 22,
     fontWeight: '700',
     color: Palette.textPrimary,
@@ -292,35 +324,13 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.md,
   },
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: Palette.card,
-    borderRadius: Radius.lg,
-    padding: 3,
-    position: 'relative',
-  },
-  segmentIndicator: {
-    position: 'absolute',
-    top: 3,
-    bottom: 3,
-    width: '50%',
-    backgroundColor: Palette.accent,
-    borderRadius: Radius.lg - 2,
-  },
-  segmentTab: {
+  // ─── Animated content ───
+  contentContainer: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.lg - 2,
-    zIndex: 1,
+    overflow: 'hidden',
   },
-  segmentLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Palette.textSecondary,
-  },
-  segmentLabelActive: {
-    color: '#FFFFFF',
+  pane: {
+    ...StyleSheet.absoluteFillObject,
   },
   // ─── Employee section headers ───
   sectionHeader: {

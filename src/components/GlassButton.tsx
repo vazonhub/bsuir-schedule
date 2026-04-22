@@ -64,21 +64,20 @@ export const GlassButton = ({
         pressed && onPress && styles.pressed,
       ]}
     >
-      {Platform.OS === 'web' ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: glassTint.webBg }]} />
-      ) : (
+      {Platform.OS === 'ios' ? (
         <BlurView
           intensity={active ? 90 : 70}
           tint={isDark ? (active ? 'systemThickMaterialDark' : 'systemThinMaterialDark') : (active ? 'systemThickMaterial' : 'systemThinMaterial')}
-          experimentalBlurMethod="dimezisBlurView"
           style={StyleSheet.absoluteFill}
         />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? Palette.card : '#FFFFFF' }]} />
       )}
       <View
         style={[
           StyleSheet.absoluteFill,
           styles.tint,
-          active && (activeColor ? { backgroundColor: activeColor + '0' } : styles.tintActive),
+          active && (activeColor ? { backgroundColor: activeColor + '33' } : styles.tintActive),
         ]}
       />
       <View style={styles.content}>{children}</View>

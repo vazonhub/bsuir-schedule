@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
@@ -17,8 +17,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npm run prebuild -- --clean && npx expo run:ios",
-    "android:build": "npm run prebuild -- --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
+    "ios:build": "npm run prebuild && npx expo run:ios",
+    "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

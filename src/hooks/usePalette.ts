@@ -31,5 +31,5 @@ export const useGlassTint = () => {
   const isDark = useIsDark();
   return isDark
     ? { tint: 'rgba(255,255,255,0.08)', webBg: 'rgba(30,30,30,0.92)' }
-    : { tint: 'rgba(255,255,255,0.18)', webBg: 'rgba(255,255,255,0.92)' };
+    : { tint: 'rgba(255,255,255,0.55)', webBg: 'rgba(255,255,255,0.92)' };
 };

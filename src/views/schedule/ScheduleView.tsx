@@ -212,13 +212,24 @@ export const ScheduleView = ({
   /** True если данная пара актуальна для выбранной подгруппы. */
   const isMineSubgroup = useCallback(
     (numSubgroup: number): boolean => {
-      if (!isGroup) return true; // расписание препода — всё «моё»
       if (subgroup === 0) return true; // «Все» — всегда «моя»
       if (numSubgroup === 0) return true; // общая пара — всегда «моя»
       return numSubgroup === subgroup;
     },
-    [isGroup, subgroup],
+    [subgroup],
   );
+
+  // Счётчик для принудительной перемерки секций после смены подгруппы:
+  // карточки меняют высоту (compact ↔ full), сдвигая заголовки ниже.
+  const [measureKey, setMeasureKey] = useState(0);
+  const prevSubgroupRef = useRef(subgroup);
+  useEffect(() => {
+    if (prevSubgroupRef.current !== subgroup) {
+      prevSubgroupRef.current = subgroup;
+      sectionOffsetsRef.current.clear();
+      setMeasureKey((k) => k + 1);
+    }
+  }, [subgroup]);
 
   // ───── Текущий «топовый» день для шапки ─────
   // Sticky-заголовок дня выключен (см. SectionList ниже) — вместо него
@@ -327,8 +338,8 @@ export const ScheduleView = ({
         <FloatingTopBar
           pinned={isPinned}
           onTogglePin={handleTogglePin}
-          subgroup={isGroup ? subgroup : undefined}
-          onSubgroupChange={isGroup ? handleSubgroupChange : undefined}
+          subgroup={subgroup}
+          onSubgroupChange={handleSubgroupChange}
           isDefaultSchedule={isDefaultSchedule}
           defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
           onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
@@ -368,6 +379,7 @@ export const ScheduleView = ({
                 section={s}
                 today={today}
                 onMeasure={measureSection}
+                measureKey={measureKey}
               />
             </>
           );
@@ -405,8 +417,8 @@ export const ScheduleView = ({
       <FloatingTopBar
         pinned={isPinned}
         onTogglePin={handleTogglePin}
-        subgroup={isGroup ? subgroup : undefined}
-        onSubgroupChange={isGroup ? handleSubgroupChange : undefined}
+        subgroup={subgroup}
+        onSubgroupChange={handleSubgroupChange}
         currentDate={topSection?.date}
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
@@ -436,6 +448,8 @@ interface MeasuredDayHeaderProps {
   section: ScheduleSection;
   today: Date;
   onMeasure(section: ScheduleSection, node: View | null): void;
+  /** Changing this value forces a re-measure (e.g. after subgroup switch). */
+  measureKey?: number;
 }
 
 /**
@@ -443,8 +457,16 @@ interface MeasuredDayHeaderProps {
  * контенте скролла. `collapsable={false}` — чтобы на Android view не схлопнулся
  * в родителя и `measureLayout` мог его найти.
  */
-const MeasuredDayHeader = ({ section, today, onMeasure }: MeasuredDayHeaderProps) => {
+const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDayHeaderProps) => {
   const ref = useRef<View>(null);
+  useEffect(() => {
+    if (measureKey != null && measureKey > 0) {
+      // Subgroup (or other layout-affecting prop) changed — schedule a
+      // re-measure after RN completes the layout pass.
+      const id = setTimeout(() => onMeasure(section, ref.current), 150);
+      return () => clearTimeout(id);
+    }
+  }, [measureKey]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <View ref={ref} collapsable={false} onLayout={() => onMeasure(section, ref.current)}>
       <DayHeader

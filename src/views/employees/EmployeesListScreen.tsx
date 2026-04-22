@@ -28,7 +28,7 @@ import { EmployeeRow } from './EmployeeRow';
 type PaletteType = ReturnType<typeof usePalette>;
 
 export const EmployeesListScreen = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const Palette = usePalette();
@@ -44,7 +44,8 @@ export const EmployeesListScreen = () => {
     const pinned = buildPinnedEmployeeSection(items, pinnedUrlIds);
     const all = buildAllEmployeesSection(items, pinnedUrlIds);
     return pinned ? [pinned, all] : [all];
-  }, [items, pinnedUrlIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, pinnedUrlIds, i18n.language]);
 
   // Tab bar высоту приходится добавлять вручную — см. TAB_BAR_HEIGHT в
   // theme/spacing.ts. insets.bottom покрывает только home-indicator.

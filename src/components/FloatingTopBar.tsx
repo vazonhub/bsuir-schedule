@@ -139,7 +139,7 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('schedule.goToExams')}
           >
-            <Ionicons name="school-outline" size={18} color="#FF9500" />
+            <Ionicons name="school" size={18} color="#FF9500" />
           </GlassButton>
         )}
         {showScheduleButton && onScrollToSchedule && (
@@ -148,19 +148,17 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('schedule.goToSchedule')}
           >
-            <Ionicons name="time-outline" size={18} color="#34C759" />
+            <Ionicons name="time" size={18} color="#34C759" />
           </GlassButton>
         )}
-        {!isDefaultSchedule && (
-          <GlassButton
-            onPress={onTogglePin}
-            size={38}
-            active={pinned}
-            accessibilityLabel={pinned ? t('schedule.unpin') : t('schedule.pin')}
-          >
-            <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
-          </GlassButton>
-        )}
+        <GlassButton
+          onPress={onTogglePin}
+          size={38}
+          active={pinned}
+          accessibilityLabel={pinned ? t('schedule.unpin') : t('schedule.pin')}
+        >
+          <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
+        </GlassButton>
 
         {showSubgroupPicker && (
           <SubgroupPicker value={subgroup} onChange={onSubgroupChange} />
@@ -201,7 +199,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     lineHeight: 28,
     fontWeight: '500',
     color: Palette.textPrimary,
-    marginTop: -3,
+    marginTop: 0,
   },
   // Stretch-friendly Liquid-Glass обёртка лейбла даты: позволяет ужиматься
   // под доступную ширину, чтобы при длинном «Понедельник, 14 апреля» текст

@@ -28,7 +28,7 @@ import { SectionHeader } from './SectionHeader';
 type PaletteType = ReturnType<typeof usePalette>;
 
 export const GroupsListScreen = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const Palette = usePalette();
@@ -50,7 +50,8 @@ export const GroupsListScreen = () => {
     const facultySections = groupByFaculty(remaining);
     const pinned = buildPinnedSection(items, pinnedNames);
     return pinned ? [pinned, ...facultySections] : facultySections;
-  }, [items, pinnedNames]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, pinnedNames, i18n.language]);
 
   // Tab bar высоту приходится добавлять вручную — см. TAB_BAR_HEIGHT в
   // theme/spacing.ts. insets.bottom покрывает только home-indicator.
