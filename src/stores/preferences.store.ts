@@ -39,6 +39,11 @@ interface PreferencesState {
   /** Actual resolved scheme — avoids depending on the async useColorScheme(). */
   resolvedScheme: ResolvedScheme;
   language: LanguageChoice;
+  /** When true, days before today are hidden from the schedule list. */
+  hidePastLessons: boolean;
+  /** Data source toggles — which backends to use for schedule data. */
+  sourceBsuirApi: boolean;
+  sourceICloud: boolean;
 
   togglePinnedGroup(name: string): void;
   togglePinnedEmployee(urlId: string): void;
@@ -47,6 +52,9 @@ interface PreferencesState {
   setSubgroup(key: string, value: SubgroupChoice): void;
   setTheme(theme: ThemeChoice): void;
   setLanguage(language: LanguageChoice): void;
+  setHidePastLessons(value: boolean): void;
+  setSourceBsuirApi(value: boolean): void;
+  setSourceICloud(value: boolean): void;
 }
 
 const toggleInArray = (arr: string[], value: string): string[] =>
@@ -63,6 +71,9 @@ export const usePreferencesStore = create<PreferencesState>()(
       theme: 'auto' as ThemeChoice,
       resolvedScheme: resolveScheme('auto'),
       language: 'ru' as LanguageChoice,
+      hidePastLessons: true,
+      sourceBsuirApi: true,
+      sourceICloud: true,
 
       togglePinnedGroup: (name) =>
         set((s) => ({ pinnedGroups: toggleInArray(s.pinnedGroups, name) })),
@@ -95,6 +106,18 @@ export const usePreferencesStore = create<PreferencesState>()(
         }
       },
       setLanguage: (language) => set({ language }),
+      setHidePastLessons: (value) => set({ hidePastLessons: value }),
+      setSourceBsuirApi: (value) => {
+        // At least one source must be enabled.
+        const icloud = get().sourceICloud;
+        if (!value && !icloud) return;
+        set({ sourceBsuirApi: value });
+      },
+      setSourceICloud: (value) => {
+        const api = get().sourceBsuirApi;
+        if (!value && !api) return;
+        set({ sourceICloud: value });
+      },
     }),
     {
       name: 'preferences-v1',
@@ -107,6 +130,9 @@ export const usePreferencesStore = create<PreferencesState>()(
         subgroupByKey: state.subgroupByKey,
         theme: state.theme,
         language: state.language,
+        hidePastLessons: state.hidePastLessons,
+        sourceBsuirApi: state.sourceBsuirApi,
+        sourceICloud: state.sourceICloud,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

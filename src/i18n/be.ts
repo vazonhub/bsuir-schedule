@@ -14,6 +14,8 @@ export const be: TranslationKeys = {
     search: 'Пошук',
     clear: 'Ачысціць',
     nothingFound: 'Няма вынікаў пошуку',
+    done: 'Гатова',
+    cancel: 'Адмена',
   },
 
   mySchedule: {
@@ -25,6 +27,7 @@ export const be: TranslationKeys = {
   schedule: {
     notFound: 'Няма вынікаў пошуку',
     exams: 'Экзамены',
+    goToToday: 'Перайсці да сёння',
     goToExams: 'Перайсці да экзаменаў',
     goToSchedule: 'Перайсці да раскладу',
     pin: 'Замацаваць расклад',
@@ -101,5 +104,18 @@ export const be: TranslationKeys = {
     themeLight: 'Светлая',
     themeDark: 'Цёмная',
     languageSection: 'Мова',
+    scheduleSection: 'Расклад',
+    hidePastLessons: 'Хаваць мінулыя заняткі',
+    networkSection: 'Сетка & Даныя',
+    availabilityLabel: 'Даступнасць',
+    sourceBsuirApi: 'iis.bsuir.by',
+    sourceICloud: 'apple.com',
+    availabilityHint: 'Выберыце, адкуль праграма будзе атрымліваць даныя раскладу. iis.bsuir.by — афіцыйны API БДУІР. apple.com — рэзервовая копія ў iCloud, сінхранізуецца паміж вашымі прыладамі і працуе як fallback, калі API недаступны.',
+    dataLabel: 'Даныя',
+    clearCache: 'Ачысціць кэш',
+    clearCacheConfirm: 'Кэш раскладаў будзе выдалены. Даныя загрузяцца нанова пры наступным адкрыцці.',
+    clearCacheDone: 'Кэш ачышчаны',
+    refreshWidget: 'Абнавіць віджэт',
+    refreshWidgetDone: 'Віджэт абноўлены',
   },
 };

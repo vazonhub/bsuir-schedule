@@ -14,6 +14,8 @@ export const ru = {
     search: 'Поиск',
     clear: 'Очистить',
     nothingFound: 'Ничего не найдено',
+    done: 'Готово',
+    cancel: 'Отмена',
   },
 
   // My Schedule
@@ -27,6 +29,7 @@ export const ru = {
   schedule: {
     notFound: 'Расписание не найдено',
     exams: 'Экзамены',
+    goToToday: 'Перейти к сегодня',
     goToExams: 'Перейти к экзаменам',
     goToSchedule: 'Перейти к расписанию',
     pin: 'Закрепить расписание',
@@ -111,6 +114,19 @@ export const ru = {
     themeLight: 'Светлая',
     themeDark: 'Тёмная',
     languageSection: 'Язык',
+    scheduleSection: 'Расписание',
+    hidePastLessons: 'Скрывать прошедшие пары',
+    networkSection: 'Сеть & Данные',
+    availabilityLabel: 'Доступность',
+    sourceBsuirApi: 'iis.bsuir.by',
+    sourceICloud: 'apple.com',
+    availabilityHint: 'Выберите, откуда приложение будет получать данные расписания. iis.bsuir.by — официальный API БГУИР. apple.com — резервная копия в iCloud, синхронизируется между вашими устройствами и работает как fallback, если API недоступен.',
+    dataLabel: 'Данные',
+    clearCache: 'Очистить кэш',
+    clearCacheConfirm: 'Кэш расписаний будет удалён. Данные загрузятся заново при следующем открытии.',
+    clearCacheDone: 'Кэш очищен',
+    refreshWidget: 'Обновить виджет',
+    refreshWidgetDone: 'Виджет обновлён',
   },
 } as const;
 

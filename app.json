@@ -21,7 +21,8 @@
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.by.vazon.bsuirschedule"
-        ]
+        ],
+        "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)by.vazon.bsuirschedule"
       }
     },
     "android": {
@@ -40,6 +41,7 @@
     "plugins": [
       "expo-router",
       "./plugins/withWidget",
+      "./plugins/withICloudKVStore",
       "expo-font",
       [
         "expo-splash-screen",

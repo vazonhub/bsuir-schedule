@@ -1,13 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { LanguageChoice, ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Spacing } from '@theme';
+import { Radius, Spacing } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -19,6 +21,7 @@ export const SettingsScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const isDark = useIsDark();
+  const router = useRouter();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const theme = usePreferencesStore((s) => s.theme);
   const setTheme = usePreferencesStore((s) => s.setTheme);
@@ -62,6 +65,29 @@ export const SettingsScreen = () => {
           appearance={isDark ? 'dark' : 'light'}
         />
       </View>
+
+      <View style={styles.navSection}>
+        <View style={styles.card}>
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={() => router.push('/(tabs)/(settings)/schedule')}
+          >
+            <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
+            <Text style={styles.navLabel}>{t('settings.scheduleSection')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+          </Pressable>
+        </View>
+        <View style={styles.card}>
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={() => router.push('/(tabs)/(settings)/network')}
+          >
+            <Ionicons name="cloud-outline" size={20} color={Palette.accent} />
+            <Text style={styles.navLabel}>{t('settings.networkSection')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+          </Pressable>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -82,6 +108,10 @@ const makeStyles = (Palette: PaletteType) =>
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
     },
+    navSection: {
+      paddingHorizontal: Spacing.screenPadding,
+      gap: Spacing.cardGap,
+    },
     sectionTitle: {
       fontSize: 13,
       fontWeight: '600',
@@ -89,5 +119,25 @@ const makeStyles = (Palette: PaletteType) =>
       textTransform: 'uppercase',
       letterSpacing: 0.3,
       paddingHorizontal: Spacing.xs,
+    },
+    card: {
+      backgroundColor: Palette.card,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+    },
+    navRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.lg,
+      paddingVertical: Spacing.cardPaddingY,
+      paddingHorizontal: Spacing.cardPaddingX,
+    },
+    navRowPressed: {
+      backgroundColor: Palette.cardPressed,
+    },
+    navLabel: {
+      flex: 1,
+      fontSize: 16,
+      color: Palette.textPrimary,
     },
   });

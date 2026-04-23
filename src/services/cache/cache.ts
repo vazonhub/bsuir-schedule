@@ -46,6 +46,22 @@ export const cache = {
   },
 };
 
+/**
+ * Remove all TTL-cache entries and the persisted schedule store.
+ * Leaves preferences (theme, language, pins) untouched.
+ */
+export const clearLocalCache = async (): Promise<void> => {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const cacheKeys = allKeys.filter((k) => k.startsWith(PREFIX));
+    if (cacheKeys.length > 0) await AsyncStorage.multiRemove(cacheKeys);
+    // Also clear the Zustand-persisted schedule store.
+    await AsyncStorage.removeItem('schedule-cache-v1');
+  } catch {
+    // Best-effort.
+  }
+};
+
 /** TTL constants (milliseconds). */
 export const TTL = {
   /** 24 hours — for groups / employees lists. */

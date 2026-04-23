@@ -14,6 +14,8 @@ export const en: TranslationKeys = {
     search: 'Search',
     clear: 'Clear',
     nothingFound: 'Nothing found',
+    done: 'Done',
+    cancel: 'Cancel',
   },
 
   mySchedule: {
@@ -25,6 +27,7 @@ export const en: TranslationKeys = {
   schedule: {
     notFound: 'Schedule not found',
     exams: 'Exams',
+    goToToday: 'Go to today',
     goToExams: 'Go to exams',
     goToSchedule: 'Go to schedule',
     pin: 'Pin schedule',
@@ -101,5 +104,18 @@ export const en: TranslationKeys = {
     themeLight: 'Light',
     themeDark: 'Dark',
     languageSection: 'Language',
+    scheduleSection: 'Schedule',
+    hidePastLessons: 'Hide past lessons',
+    networkSection: 'Network & Data',
+    availabilityLabel: 'Availability',
+    sourceBsuirApi: 'iis.bsuir.by',
+    sourceICloud: 'apple.com',
+    availabilityHint: 'Choose where the app fetches schedule data from. iis.bsuir.by is the official BSUIR API. apple.com is an iCloud backup that syncs across your devices and works as a fallback when the API is unavailable.',
+    dataLabel: 'Data',
+    clearCache: 'Clear cache',
+    clearCacheConfirm: 'Schedule cache will be deleted. Data will reload on next launch.',
+    clearCacheDone: 'Cache cleared',
+    refreshWidget: 'Refresh widget',
+    refreshWidgetDone: 'Widget refreshed',
   },
 };

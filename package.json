@@ -17,13 +17,14 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npm run prebuild --clear && npx expo run:ios",
+    "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-async-storage/async-storage": "~2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-segmented-control/segmented-control": "^2.5.7",
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/native-stack": "^7.3.16",

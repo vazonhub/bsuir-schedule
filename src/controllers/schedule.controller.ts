@@ -2,6 +2,7 @@ import type { AxiosError } from 'axios';
 
 import type { ScheduleDto } from '@models/dto';
 import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
+import { pullScheduleFromCloud, pushScheduleToCloud } from '@services/cloud/syncService';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
@@ -45,6 +46,7 @@ export const ScheduleController = {
     try {
       const data = await GroupsApi.schedule(groupName);
       store.setSchedule(groupName, data);
+      void pushScheduleToCloud(groupName, data);
       // Update widget if this is the default group.
       if (groupName === usePreferencesStore.getState().defaultGroup) {
         void updateWidgetSnapshot();
@@ -53,7 +55,13 @@ export const ScheduleController = {
       if (isNotFound(e)) {
         store.setSchedule(groupName, EMPTY_SCHEDULE);
       } else {
-        store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы');
+        // Try iCloud fallback before giving up.
+        const cloudData = await pullScheduleFromCloud(groupName);
+        if (cloudData) {
+          store.setSchedule(groupName, cloudData);
+        } else {
+          store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы');
+        }
       }
     } finally {
       store.setLoadingKey(null);
@@ -69,13 +77,19 @@ export const ScheduleController = {
     try {
       const data = await EmployeesApi.schedule(urlId);
       store.setSchedule(urlId, data);
+      void pushScheduleToCloud(urlId, data);
     } catch (e) {
       if (isNotFound(e)) {
         store.setSchedule(urlId, EMPTY_SCHEDULE);
       } else {
-        store.setError(
-          e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
-        );
+        const cloudData = await pullScheduleFromCloud(urlId);
+        if (cloudData) {
+          store.setSchedule(urlId, cloudData);
+        } else {
+          store.setError(
+            e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
+          );
+        }
       }
     } finally {
       store.setLoadingKey(null);

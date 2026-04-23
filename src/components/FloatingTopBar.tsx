@@ -33,6 +33,11 @@ interface Props {
   isCurrentDateToday?: boolean;
   /** Подсветить лейбл красным, если это «завтра». */
   isCurrentDateTomorrow?: boolean;
+  /** Called when user taps the date label to open date picker. */
+  onDatePress?(): void;
+  /** Show a "back to today" button when viewing past dates. */
+  showTodayButton?: boolean;
+  onScrollToToday?(): void;
   /** Show an exams shortcut button (hidden when already viewing exams). */
   showExamsButton?: boolean;
   onScrollToExams?(): void;
@@ -62,6 +67,8 @@ export const FloatingTopBar = ({
   currentDate,
   isCurrentDateToday = false,
   isCurrentDateTomorrow = false,
+  showTodayButton = false,
+  onScrollToToday,
   showExamsButton = false,
   onScrollToExams,
   showScheduleButton = false,
@@ -69,6 +76,7 @@ export const FloatingTopBar = ({
   isDefaultSchedule = false,
   defaultGroupName,
   onChangeDefaultGroup,
+  onDatePress,
 }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
@@ -110,6 +118,7 @@ export const FloatingTopBar = ({
 
         {dayLabel && (
           <GlassButton
+            onPress={onDatePress}
             height={38}
             shape="pill"
             active={isCurrentDateToday || isCurrentDateTomorrow}
@@ -133,7 +142,15 @@ export const FloatingTopBar = ({
       </View>
 
       <View style={styles.right}>
-        {showExamsButton && onScrollToExams && (
+        {showTodayButton && onScrollToToday ? (
+          <GlassButton
+            onPress={onScrollToToday}
+            size={38}
+            accessibilityLabel={t('schedule.goToToday')}
+          >
+            <Ionicons name="time" size={18} color="#34C759" />
+          </GlassButton>
+        ) : showExamsButton && onScrollToExams ? (
           <GlassButton
             onPress={onScrollToExams}
             size={38}
@@ -141,8 +158,7 @@ export const FloatingTopBar = ({
           >
             <Ionicons name="school" size={18} color="#FF9500" />
           </GlassButton>
-        )}
-        {showScheduleButton && onScrollToSchedule && (
+        ) : showScheduleButton && onScrollToSchedule ? (
           <GlassButton
             onPress={onScrollToSchedule}
             size={38}
@@ -150,7 +166,7 @@ export const FloatingTopBar = ({
           >
             <Ionicons name="time" size={18} color="#34C759" />
           </GlassButton>
-        )}
+        ) : null}
         <GlassButton
           onPress={onTogglePin}
           size={38}

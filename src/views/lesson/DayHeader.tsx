@@ -17,6 +17,8 @@ interface Props {
   isTomorrow?: boolean;
   /** True for exam session sections — hides week number. */
   isExam?: boolean;
+  /** True when the day is strictly before today. */
+  isPast?: boolean;
 }
 
 /**
@@ -24,14 +26,14 @@ interface Props {
  * screen background; opaque `backgroundColor` ensures it cleanly hides cards
  * scrolling behind it when the section list pins it to the top.
  */
-export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false }: Props) => {
+export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false }: Props) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   return (
     <View style={styles.wrap}>
       <Text
-        style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow]}
+        style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
         numberOfLines={1}
       >
         {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
@@ -59,5 +61,8 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   tomorrow: {
     color: Palette.destructive,
+  },
+  past: {
+    opacity: 0.4,
   },
 });

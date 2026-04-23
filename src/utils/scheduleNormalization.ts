@@ -84,6 +84,8 @@ interface FlattenOptions {
    * Если когда-нибудь пригодится «вчерашний» контекст — увеличить.
    */
   daysInPast?: number;
+  /** Show all lessons from semester start, ignoring `daysInPast`. */
+  showAll?: boolean;
 }
 
 /**
@@ -125,7 +127,9 @@ export const flattenSchedule = (
   if (!startDate || !endDate) return [];
 
   const todayStart = startOfLocalDay(today);
-  const earliest = addDays(todayStart, -(options.daysInPast ?? 0));
+  const earliest = options.showAll
+    ? startDate
+    : addDays(todayStart, -(options.daysInPast ?? 0));
 
   const out: NormalizedLesson[] = [];
 

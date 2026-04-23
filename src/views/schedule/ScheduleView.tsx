@@ -1,9 +1,11 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Platform, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -18,8 +20,8 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Spacing, TAB_BAR_HEIGHT } from '@theme';
-import { addDays, isSameDay } from '@utils/date';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
 import { getLessonTimeStatus } from '@utils/lesson';
 import {
   findUpcomingSectionIndex,
@@ -106,7 +108,8 @@ export const ScheduleView = ({
     }
   }, []);
 
-  // Pin / subgroup state — persisted via AsyncStorage.
+  // Pin / subgroup / hide-past state — persisted via AsyncStorage.
+  const hidePastLessons = usePreferencesStore((s) => s.hidePastLessons);
   const subgroup = usePreferencesStore(selectSubgroup(entityKey));
   const setSubgroup = usePreferencesStore((s) => s.setSubgroup);
   const togglePinnedGroup = usePreferencesStore((s) => s.togglePinnedGroup);
@@ -129,9 +132,11 @@ export const ScheduleView = ({
   );
 
   const regularSections = useMemo(() => {
-    const flat = flattenSchedule(schedule, currentWeek, today);
+    const flat = flattenSchedule(schedule, currentWeek, today, {
+      showAll: !hidePastLessons,
+    });
     return groupLessonsByDay(flat);
-  }, [schedule, currentWeek, today]);
+  }, [schedule, currentWeek, today, hidePastLessons]);
 
   const examSections = useMemo(() => {
     const flat = flattenExams(schedule, currentWeek, today);
@@ -210,30 +215,80 @@ export const ScheduleView = ({
     [entityKey, setSubgroup],
   );
 
+  const scrollToSection = useCallback(
+    (sectionIndex: number, animated = true) => {
+      if (sections.length === 0) return;
+      listRef.current?.scrollToLocation({
+        sectionIndex,
+        itemIndex: 0,
+        animated,
+        viewPosition: 0,
+        viewOffset: topInset,
+      });
+    },
+    [sections.length, topInset],
+  );
+
   const handleScrollToExams = useCallback(() => {
-    if (!hasExams || sections.length === 0) return;
-    listRef.current?.scrollToLocation({
-      sectionIndex: firstExamSectionIndex,
-      itemIndex: 0,
-      animated: true,
-      viewPosition: 0,
-      viewOffset: topInset,
-    });
-  }, [hasExams, sections.length, firstExamSectionIndex, topInset]);
+    if (!hasExams) return;
+    scrollToSection(firstExamSectionIndex);
+  }, [hasExams, firstExamSectionIndex, scrollToSection]);
 
   const handleScrollToSchedule = useCallback(() => {
-    if (regularSections.length === 0 || sections.length === 0) return;
+    if (regularSections.length === 0) return;
     const targetIndex = upcomingIndex >= 0 && upcomingIndex < regularSections.length
       ? upcomingIndex
       : 0;
-    listRef.current?.scrollToLocation({
-      sectionIndex: targetIndex,
-      itemIndex: 0,
-      animated: true,
-      viewPosition: 0,
-      viewOffset: topInset,
-    });
-  }, [regularSections.length, sections.length, upcomingIndex, topInset]);
+    scrollToSection(targetIndex);
+  }, [regularSections.length, upcomingIndex, scrollToSection]);
+
+  const handleScrollToToday = useCallback(() => {
+    if (upcomingIndex < 0) return;
+    scrollToSection(upcomingIndex);
+  }, [upcomingIndex, scrollToSection]);
+
+  // ───── Date Picker ─────
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [datePickerInitialDate, setDatePickerInitialDate] = useState(today);
+
+  const scrollToDate = useCallback(
+    (target: Date) => {
+      if (sections.length === 0) return;
+      const targetTime = target.getTime();
+      let bestIndex = -1;
+      for (let i = 0; i < sections.length; i++) {
+        const s = sections[i];
+        if (!s) continue;
+        if (s.date.getTime() >= targetTime) {
+          bestIndex = i;
+          break;
+        }
+        bestIndex = i;
+      }
+      if (bestIndex < 0) return;
+      scrollToSection(bestIndex);
+    },
+    [sections, scrollToSection],
+  );
+
+  const handleDatePickerChange = useCallback(
+    (_event: DateTimePickerEvent, selected?: Date) => {
+      // On Android the picker auto-dismisses on select/cancel.
+      if (Platform.OS === 'android') setDatePickerVisible(false);
+      if (!selected) return;
+      const target = startOfLocalDay(selected);
+      scrollToDate(target);
+    },
+    [scrollToDate],
+  );
+
+  const handleDatePickerDismiss = useCallback(() => {
+    setDatePickerVisible(false);
+  }, []);
+
+  // Date range for the picker — bounded by schedule sections.
+  const datePickerMinDate = sections[0]?.date;
+  const datePickerMaxDate = sections[sections.length - 1]?.date;
 
   /** True если данная пара актуальна для выбранной подгруппы. */
   const isMineSubgroup = useCallback(
@@ -245,17 +300,23 @@ export const ScheduleView = ({
     [subgroup],
   );
 
-  // Счётчик для принудительной перемерки секций после смены подгруппы:
-  // карточки меняют высоту (compact ↔ full), сдвигая заголовки ниже.
+  // Счётчик для принудительной перемерки секций после смены подгруппы
+  // или набора секций (hidePastLessons toggle): карточки меняют высоту /
+  // состав, сдвигая заголовки ниже.
   const [measureKey, setMeasureKey] = useState(0);
   const prevSubgroupRef = useRef(subgroup);
+  const prevSectionsLenRef = useRef(sections.length);
   useEffect(() => {
-    if (prevSubgroupRef.current !== subgroup) {
+    const changed =
+      prevSubgroupRef.current !== subgroup ||
+      prevSectionsLenRef.current !== sections.length;
+    if (changed) {
       prevSubgroupRef.current = subgroup;
+      prevSectionsLenRef.current = sections.length;
       sectionOffsetsRef.current.clear();
       setMeasureKey((k) => k + 1);
     }
-  }, [subgroup]);
+  }, [subgroup, sections.length]);
 
   // ───── Текущий «топовый» день для шапки ─────
   // Sticky-заголовок дня выключен (см. SectionList ниже) — вместо него
@@ -274,6 +335,12 @@ export const ScheduleView = ({
     const initial = sections[upcomingIndex >= 0 ? upcomingIndex : 0];
     if (initial) setTopSection(initial);
   }, [sections, upcomingIndex]);
+
+  const handleDatePress = useCallback(() => {
+    void hapticLight();
+    setDatePickerInitialDate(topSection?.date ?? today);
+    setDatePickerVisible(true);
+  }, [topSection?.date, today]);
 
   const sectionsRef = useRef(sections);
   useEffect(() => {
@@ -386,6 +453,8 @@ export const ScheduleView = ({
         // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
         stickySectionHeadersEnabled={false}
         contentContainerStyle={contentStyle}
+        initialNumToRender={20}
+        windowSize={11}
         // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
         // показывается ниже FloatingTopBar, а не за ним.
         contentInset={isIOS ? { top: topInset } : undefined}
@@ -414,20 +483,35 @@ export const ScheduleView = ({
           <LessonCard
             lesson={item}
             compact={!isMineSubgroup(item.raw.numSubgroup)}
-            timeStatus={isSameDay(item.date, today) ? getLessonTimeStatus(item, now) : null}
+            timeStatus={
+              isSameDay(item.date, today)
+                ? getLessonTimeStatus(item, now)
+                : item.isPast
+                  ? { kind: 'past' as const }
+                  : null
+            }
             onPress={() => handleLessonPress(item)}
           />
         )}
         onScrollToIndexFailed={(info) => {
+          // Jump close to the target so it gets rendered, then
+          // finish with an animated scroll for a smooth landing.
+          const approxOffset = info.averageItemLength * info.index;
+          const scrollResponder = (listRef.current as unknown as {
+            getScrollResponder?: () => {
+              scrollTo?: (opts: { y: number; animated: boolean }) => void;
+            } | null;
+          })?.getScrollResponder?.();
+          scrollResponder?.scrollTo?.({ y: approxOffset, animated: false });
           setTimeout(() => {
             listRef.current?.scrollToLocation({
               sectionIndex: Math.min(info.index, sections.length - 1),
               itemIndex: 0,
-              animated: false,
+              animated: true,
               viewPosition: 0,
               viewOffset: topInset,
             });
-          }, 120);
+          }, 100);
         }}
         refreshControl={
           onRefresh ? (
@@ -448,14 +532,58 @@ export const ScheduleView = ({
         currentDate={topSection?.date}
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
-        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam}
+        showTodayButton={
+          !!topSection && (
+            topSection.date.getTime() < today.getTime() ||
+            !!topSection.isExam
+          )
+        }
+        onScrollToToday={handleScrollToToday}
+        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam && (topSection?.date.getTime() ?? 0) >= today.getTime()}
         onScrollToExams={handleScrollToExams}
-        showScheduleButton={hasExams && regularSections.length > 0 && !!topSection?.isExam}
-        onScrollToSchedule={handleScrollToSchedule}
         isDefaultSchedule={isDefaultSchedule}
         defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
         onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
+        onDatePress={handleDatePress}
       />
+      {/* Date Picker */}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={datePickerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={handleDatePickerDismiss}
+        >
+          <Pressable style={styles.datePickerBackdrop} onPress={handleDatePickerDismiss}>
+            <Pressable style={styles.datePickerSheet}>
+              <DateTimePicker
+                value={datePickerInitialDate}
+                mode="date"
+                display="inline"
+                minimumDate={datePickerMinDate}
+                maximumDate={datePickerMaxDate}
+                onChange={handleDatePickerChange}
+                locale="ru-RU"
+                accentColor={Palette.accent}
+              />
+              <Pressable style={styles.datePickerDone} onPress={handleDatePickerDismiss}>
+                <Text style={styles.datePickerDoneText}>{t('common.done')}</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : (
+        datePickerVisible && (
+          <DateTimePicker
+            value={datePickerInitialDate}
+            mode="date"
+            display="default"
+            minimumDate={datePickerMinDate}
+            maximumDate={datePickerMaxDate}
+            onChange={handleDatePickerChange}
+          />
+        )
+      )}
       <LessonDetailsSheet
         ref={sheetRef}
         lesson={selectedLesson}
@@ -501,6 +629,7 @@ const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDa
         isToday={isSameDay(section.date, today)}
         isTomorrow={isSameDay(section.date, addDays(today, 1))}
         isExam={section.isExam}
+        isPast={section.date.getTime() < today.getTime()}
       />
     </View>
   );
@@ -553,5 +682,30 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     color: Palette.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  datePickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerSheet: {
+    backgroundColor: Palette.card,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    marginHorizontal: Spacing.screenPadding,
+    width: '90%',
+    maxWidth: 380,
+  },
+  datePickerDone: {
+    alignSelf: 'flex-end',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
+  },
+  datePickerDoneText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Palette.accent,
   },
 });
