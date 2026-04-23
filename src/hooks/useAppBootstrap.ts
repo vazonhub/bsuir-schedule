@@ -4,6 +4,7 @@ import { Appearance, AppState } from 'react-native';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { prefetchPinned } from '@services/prefetch';
+import { trackUsageAndMaybeRequestReview } from '@services/review';
 import { updateWidgetSnapshot } from '@services/widget';
 import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -26,6 +27,7 @@ export const useAppBootstrap = () => {
     void EmployeesController.loadAll();
     void prefetchPinned().then(() => updateWidgetSnapshot());
     void registerWidgetBackgroundFetch();
+    void trackUsageAndMaybeRequestReview();
   }, []);
 
   useEffect(() => {
