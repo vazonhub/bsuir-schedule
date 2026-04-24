@@ -1,8 +1,11 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import {
+  Dimensions,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   SectionList,
@@ -18,10 +21,12 @@ import { SkeletonEmployeesList } from '@components/Skeleton';
 import { EmployeesController } from '@controllers/employees.controller';
 import { useEmployeeSearch } from '@hooks/useEmployeeSearch';
 import { usePalette } from '@hooks/usePalette';
+import type { EmployeeDto } from '@models/dto';
 import { useEmployeesStore } from '@stores/employees.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
-import { PINNED_SECTION_KEY, buildAllEmployeesSection, buildPinnedEmployeeSection } from '@utils/employeeGrouping';
+import type { EmployeeSection } from '@utils/employeeGrouping';
+import { PINNED_SECTION_KEY, buildAlphabetSections, buildPinnedEmployeeSection } from '@utils/employeeGrouping';
 
 import { EmployeeRow } from './EmployeeRow';
 
@@ -39,13 +44,18 @@ export const EmployeesListScreen = () => {
 
   const { query, setQuery, isSearching, filtered } = useEmployeeSearch(items);
   const pinnedUrlIds = usePreferencesStore((s) => s.pinnedEmployees);
+  const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null);
+  const sectionListRef = useRef<SectionList>(null);
 
   const sections = useMemo(() => {
     const pinned = buildPinnedEmployeeSection(items, pinnedUrlIds);
-    const all = buildAllEmployeesSection(items, pinnedUrlIds);
-    return pinned ? [pinned, all] : [all];
+    const alphabet = buildAlphabetSections(items, pinnedUrlIds);
+    return pinned ? [pinned, ...alphabet] : alphabet;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, pinnedUrlIds, i18n.language]);
+
+  const hasPinned = sections.some((s) => s.key === PINNED_SECTION_KEY);
+
 
   // Tab bar высоту приходится добавлять вручную — см. TAB_BAR_HEIGHT в
   // theme/spacing.ts. insets.bottom покрывает только home-indicator.
@@ -130,6 +140,7 @@ export const EmployeesListScreen = () => {
                   item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
                 )
               }
+              onPhotoPress={setFullscreenPhoto}
             />
           )}
           refreshControl={refreshControl}
@@ -140,41 +151,64 @@ export const EmployeesListScreen = () => {
           }
         />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(e) => String(e.id)}
-          stickySectionHeadersEnabled
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={listContent}
-          renderSectionHeader={({ section }) => (
-            <View style={styles.sectionHeader}>
-              {section.key === PINNED_SECTION_KEY && (
-                <Ionicons name="star" size={13} color={Palette.accent} />
-              )}
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-            </View>
-          )}
-          renderItem={({ item }) => (
-            <EmployeeRow
-              employee={item}
-              onPress={() =>
-                handlePress(
-                  item.urlId,
-                  item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
-                )
-              }
-            />
-          )}
-          refreshControl={refreshControl}
-        />
+        <View style={styles.listWrapper}>
+          <SectionList
+            ref={sectionListRef as never}
+            sections={sections}
+            keyExtractor={(e) => String(e.id)}
+            stickySectionHeadersEnabled
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={listContent}
+            renderSectionHeader={({ section }) => (
+              <View
+                style={styles.sectionHeader}
+              >
+                {section.key === PINNED_SECTION_KEY && (
+                  <Ionicons name="star" size={13} color={Palette.accent} />
+                )}
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              </View>
+            )}
+            renderItem={({ item }) => (
+              <EmployeeRow
+                employee={item}
+                onPress={() =>
+                  handlePress(
+                    item.urlId,
+                    item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
+                  )
+                }
+                onPhotoPress={setFullscreenPhoto}
+              />
+            )}
+            refreshControl={refreshControl}
+          />
+        </View>
       )}
+      <Modal
+        visible={fullscreenPhoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFullscreenPhoto(null)}
+      >
+        <Pressable style={styles.photoBackdrop} onPress={() => setFullscreenPhoto(null)}>
+          <Image
+            source={fullscreenPhoto ?? undefined}
+            style={styles.photoFull}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            accessibilityIgnoresInvertColors
+          />
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.background },
+  listWrapper: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
   emptyContent: { flexGrow: 1 },
   error: {
@@ -207,4 +241,14 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   retryPressed: { opacity: 0.7 },
   retryLabel: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  photoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoFull: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
+  },
 });

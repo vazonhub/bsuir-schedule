@@ -15,6 +15,7 @@ struct WidgetLesson: Codable {
     let teacherPhotoUrl: String?
     let numSubgroup: Int
     let isMine: Bool
+    let note: String?
 }
 
 struct WidgetDayBlock: Codable {
@@ -302,6 +303,14 @@ struct LessonRow: View {
                             .lineLimit(1)
                     }
                 }
+
+                if !compact, let note = lesson.note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
@@ -316,26 +325,27 @@ struct LessonRow: View {
         }
     }
 
-    /// Compact row for lessons of another subgroup — dashed outline, single line.
+    /// Compact row for lessons of another subgroup — dashed outline.
     private var compactRow: some View {
-        HStack(spacing: 4) {
-            Text(lesson.subject)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Text(lesson.subject)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
 
-            Text("· \(lesson.startTime)–\(lesson.endTime)")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+                if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                    Text("\(lesson.numSubgroup) п/г")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(Color(hex: lesson.typeColorHex))
+                }
 
-            if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
-                Text("\(lesson.numSubgroup) п/г")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(Color(hex: lesson.typeColorHex))
+                Spacer(minLength: 0)
             }
 
-            Spacer(minLength: 0)
+            Text("\(lesson.startTime)–\(lesson.endTime)")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 6)
@@ -411,11 +421,11 @@ struct SmallWidgetView: View {
                         Spacer()
                     }
 
-                    Spacer(minLength: 0)
-
                     ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
                         LessonRow(lesson: lesson, photo: nil, compact: true)
                     }
+
+                    Spacer(minLength: 0)
                 }
             } else {
                 EmptyStateView(allDone: !snap.today.lessons.isEmpty)

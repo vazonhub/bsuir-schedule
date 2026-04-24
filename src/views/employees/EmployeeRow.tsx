@@ -12,6 +12,7 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Props {
   employee: EmployeeDto;
   onPress(): void;
+  onPhotoPress?(photoLink: string): void;
 }
 
 const buildInitials = (e: EmployeeDto): string => {
@@ -28,7 +29,7 @@ const buildSubtitle = (e: EmployeeDto): string | null => {
   return null;
 };
 
-export const EmployeeRow = ({ employee, onPress }: Props) => {
+export const EmployeeRow = ({ employee, onPress, onPhotoPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -41,7 +42,9 @@ export const EmployeeRow = ({ employee, onPress }: Props) => {
       accessibilityRole="button"
       accessibilityLabel={t('employees.teacherLabel', { name: `${employee.lastName} ${employee.firstName} ${employee.middleName}` })}
     >
-      <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
+      <Pressable onPress={() => onPhotoPress?.(employee.photoLink)} hitSlop={4}>
+        <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
+      </Pressable>
       <View style={styles.main}>
         <Text style={styles.title} numberOfLines={1}>
           {[employee.lastName, employee.firstName, employee.middleName]

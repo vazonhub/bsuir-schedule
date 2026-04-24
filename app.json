@@ -42,6 +42,8 @@
       "expo-router",
       "./plugins/withWidget",
       "./plugins/withICloudKVStore",
+      "./plugins/withStoreKit",
+      "./plugins/withAlternateIcons",
       "expo-font",
       [
         "expo-splash-screen",

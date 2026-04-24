@@ -2,19 +2,22 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Modal, Platform, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Modal, Platform, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
+import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import {
+  selectBlockedLessons,
   selectIsEmployeePinned,
   selectIsGroupPinned,
   selectSubgroup,
@@ -22,7 +25,7 @@ import {
 } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
-import { getLessonTimeStatus } from '@utils/lesson';
+import { buildLessonBlockId, getLessonTimeStatus } from '@utils/lesson';
 import {
   findUpcomingSectionIndex,
   flattenExams,
@@ -47,6 +50,10 @@ interface Props {
   entityType: 'group' | 'employee';
   onRefresh?(): void;
   refreshing?: boolean;
+  /** Static title shown instead of the date label on detail pages (group number or employee FIO). */
+  title?: string;
+  /** Avatar URL shown in the top bar (employee photo). */
+  avatarUri?: string | null;
   /** True when rendered as the root "My Schedule" tab (no back button). */
   isDefaultSchedule?: boolean;
   /** Label shown in the FloatingTopBar pill when `isDefaultSchedule` (group name or "Фамилия И.О."). */
@@ -60,6 +67,8 @@ export const ScheduleView = ({
   entityType,
   onRefresh,
   refreshing = false,
+  title,
+  avatarUri,
   isDefaultSchedule = false,
   defaultLabel,
 }: Props) => {
@@ -76,6 +85,11 @@ export const ScheduleView = ({
   const [, forceRender] = useReducer((x: number) => x + 1, 0);
   const selectedLesson = lessonRef.current;
 
+  const [fullscreenPhoto, setFullscreenPhoto] = useState(false);
+  const handleAvatarPress = useCallback(() => {
+    if (avatarUri) setFullscreenPhoto(true);
+  }, [avatarUri]);
+
   // When a dismiss animation is still in flight, present() is silently
   // ignored by BottomSheetModal.  We force-dismiss first, then re-present
   // once the animation finishes (onDismiss fires).
@@ -86,27 +100,42 @@ export const ScheduleView = ({
     lessonRef.current = lesson;
     forceRender();
 
-    // Try to present — if the sheet is idle this works immediately.
-    // If a dismiss animation is in progress, present() is a no-op,
-    // so we stash the lesson and force-dismiss; handleSheetDismiss
-    // will re-present once the animation settles.
     const sheet = sheetRef.current;
     if (sheet) {
+      // Ставим pending — если шит в процессе dismiss-анимации,
+      // present() будет проигнорирован, и handleSheetDismiss подхватит.
       pendingLessonRef.current = lesson;
       sheet.dismiss();
       sheet.present();
     }
   }, []);
 
+  // Когда шит реально открылся (index >= 0) — очищаем pending,
+  // чтобы обычный свайп-закрытие не переоткрывал шит.
+  const handleSheetChange = useCallback((index: number) => {
+    if (index >= 0) {
+      pendingLessonRef.current = null;
+    }
+  }, []);
+
   const handleSheetDismiss = useCallback(() => {
     const pending = pendingLessonRef.current;
     if (pending) {
-      // A new lesson was requested while the sheet was dismissing.
-      // Data is already in lessonRef — just re-present.
+      // Новая пара запрошена пока шит закрывался — переоткрываем.
       pendingLessonRef.current = null;
       sheetRef.current?.present();
     }
   }, []);
+
+  // Закрываем модалку при уходе с экрана (смена вкладки, back).
+  const navigation = useNavigation();
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      pendingLessonRef.current = null;
+      sheetRef.current?.dismiss();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   // Pin / subgroup / hide-past state — persisted via AsyncStorage.
   const hidePastLessons = usePreferencesStore((s) => s.hidePastLessons);
@@ -116,6 +145,15 @@ export const ScheduleView = ({
   const togglePinnedEmployee = usePreferencesStore((s) => s.togglePinnedEmployee);
   const isPinned = usePreferencesStore(
     entityType === 'group' ? selectIsGroupPinned(entityKey) : selectIsEmployeePinned(entityKey),
+  );
+
+  const blockedSelector = useMemo(() => selectBlockedLessons(entityKey), [entityKey]);
+  const blockedList = usePreferencesStore(blockedSelector);
+  const blockedSet = useMemo(() => new Set(blockedList), [blockedList]);
+  const toggleBlockedLesson = usePreferencesStore((s) => s.toggleBlockedLesson);
+  const isLessonBlocked = useCallback(
+    (lesson: NormalizedLesson): boolean => blockedSet.has(buildLessonBlockId(lesson)),
+    [blockedSet],
   );
 
   const now = useNow();
@@ -168,22 +206,53 @@ export const ScheduleView = ({
   // а не под чёлкой).
   const topInset = insets.top + 38 + Spacing.lg;
 
-  // Auto-scroll to the closest upcoming day on first render / data change.
+  // Auto-scroll to the closest upcoming day.
   // `viewOffset: topInset` гарантирует, что заголовок дня приземляется под
-  // FloatingTopBar, а не под статус-баром (иначе дата уехала бы за край экрана).
-  useEffect(() => {
-    if (upcomingIndex < 0 || sections.length === 0) return;
-    const id = setTimeout(() => {
-      listRef.current?.scrollToLocation({
-        sectionIndex: upcomingIndex,
+  // FloatingTopBar, а не под статус-баром.
+  const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
+
+  const jumpToUpcoming = useCallback(
+    (delay: number) => {
+      if (upcomingIndex < 0 || sections.length === 0) return undefined;
+      const target = upcomingIndex;
+      const opts = {
+        sectionIndex: target,
         itemIndex: 0,
         animated: false,
-        viewPosition: 0,
+        viewPosition: 0 as const,
         viewOffset: topInset,
-      });
-    }, 80);
-    return () => clearTimeout(id);
-  }, [upcomingIndex, sections, topInset]);
+      };
+      const ids: ReturnType<typeof setTimeout>[] = [];
+      // Multiple attempts — SectionList without getItemLayout needs
+      // several passes to land on the correct position.
+      for (const d of [delay, delay + 150, delay + 500]) {
+        ids.push(setTimeout(() => {
+          try { listRef.current?.scrollToLocation(opts); } catch { /* unmounted */ }
+        }, d));
+      }
+      return ids;
+    },
+    [upcomingIndex, sections.length, topInset],
+  );
+
+  // 1) При первом рендере / смене расписания — мгновенный jump.
+  useEffect(() => {
+    const ids = jumpToUpcoming(50);
+    return () => { ids?.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleIdentity]);
+
+  // 2) При переключении hidePastLessons — jump с задержкой на layout.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const ids = jumpToUpcoming(300);
+    return () => { ids?.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidePastLessons]);
 
   const isIOS = Platform.OS === 'ios';
 
@@ -218,13 +287,17 @@ export const ScheduleView = ({
   const scrollToSection = useCallback(
     (sectionIndex: number, animated = true) => {
       if (sections.length === 0) return;
-      listRef.current?.scrollToLocation({
+      const opts = {
         sectionIndex,
         itemIndex: 0,
         animated,
-        viewPosition: 0,
+        viewPosition: 0 as const,
         viewOffset: topInset,
-      });
+      };
+      listRef.current?.scrollToLocation(opts);
+      // scrollToLocation без getItemLayout оценивает позицию приблизительно —
+      // повторный вызов после завершения первой анимации «дотягивает» до цели.
+      setTimeout(() => listRef.current?.scrollToLocation(opts), 350);
     },
     [sections.length, topInset],
   );
@@ -433,6 +506,9 @@ export const ScheduleView = ({
           onTogglePin={handleTogglePin}
           subgroup={subgroup}
           onSubgroupChange={handleSubgroupChange}
+          title={title}
+          avatarUri={avatarUri}
+          onAvatarPress={handleAvatarPress}
           isDefaultSchedule={isDefaultSchedule}
           defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
           onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
@@ -483,6 +559,7 @@ export const ScheduleView = ({
           <LessonCard
             lesson={item}
             compact={!isMineSubgroup(item.raw.numSubgroup)}
+            blocked={isLessonBlocked(item)}
             timeStatus={
               isSameDay(item.date, today)
                 ? getLessonTimeStatus(item, now)
@@ -494,8 +571,7 @@ export const ScheduleView = ({
           />
         )}
         onScrollToIndexFailed={(info) => {
-          // Jump close to the target so it gets rendered, then
-          // finish with an animated scroll for a smooth landing.
+          // Jump close to the target so it gets rendered, then retry.
           const approxOffset = info.averageItemLength * info.index;
           const scrollResponder = (listRef.current as unknown as {
             getScrollResponder?: () => {
@@ -507,7 +583,7 @@ export const ScheduleView = ({
             listRef.current?.scrollToLocation({
               sectionIndex: Math.min(info.index, sections.length - 1),
               itemIndex: 0,
-              animated: true,
+              animated: false,
               viewPosition: 0,
               viewOffset: topInset,
             });
@@ -533,14 +609,19 @@ export const ScheduleView = ({
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
         showTodayButton={
-          !!topSection && (
+          !!topSection && upcomingIndex >= 0 && (
+            // В прошлом (старые пары видны только когда hidePastLessons выключен)
             topSection.date.getTime() < today.getTime() ||
+            // На экзаменах
             !!topSection.isExam
           )
         }
         onScrollToToday={handleScrollToToday}
         showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam && (topSection?.date.getTime() ?? 0) >= today.getTime()}
         onScrollToExams={handleScrollToExams}
+        title={title}
+        avatarUri={avatarUri}
+        onAvatarPress={handleAvatarPress}
         isDefaultSchedule={isDefaultSchedule}
         defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
         onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
@@ -590,7 +671,30 @@ export const ScheduleView = ({
         currentWeek={currentWeek}
         entityType={entityType}
         onDismiss={handleSheetDismiss}
+        onChange={handleSheetChange}
+        isBlocked={selectedLesson ? isLessonBlocked(selectedLesson) : false}
+        onToggleBlock={selectedLesson ? () => {
+          toggleBlockedLesson(entityKey, buildLessonBlockId(selectedLesson));
+        } : undefined}
       />
+      {avatarUri ? (
+        <Modal
+          visible={fullscreenPhoto}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFullscreenPhoto(false)}
+        >
+          <Pressable style={styles.photoBackdrop} onPress={() => setFullscreenPhoto(false)}>
+            <Image
+              source={avatarUri}
+              style={styles.photoFull}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              accessibilityIgnoresInvertColors
+            />
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   );
 };
@@ -641,12 +745,13 @@ interface ExamsSeparatorProps {
 
 const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
   const { t } = useTranslation();
+  const examIcon = useIconName('exam');
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   return (
     <View style={styles.examsSeparator}>
       <View style={styles.examsSeparatorLine} />
       <View style={styles.examsSeparatorContent}>
-        <Ionicons name="school" size={14} color={Palette.textSecondary} />
+        <Ionicons name={examIcon as never} size={14} color={Palette.textSecondary} />
         <Text style={styles.examsSeparatorText}>{t('schedule.exams')}</Text>
       </View>
       <View style={styles.examsSeparatorLine} />
@@ -707,5 +812,15 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: Palette.accent,
+  },
+  photoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoFull: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
   },
 });

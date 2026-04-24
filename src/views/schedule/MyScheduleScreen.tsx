@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FloatingTopBar } from '@components/FloatingTopBar';
+import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
@@ -70,7 +71,6 @@ const EmptyState = ({ onSelect }: { onSelect(): void }) => {
 // ────────────────────────────────────────────────────────────────
 
 const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
-  const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const router = useRouter();
@@ -78,6 +78,7 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
   const currentWeek = useScheduleStore((s) => s.currentWeek);
   const loadingKey = useScheduleStore((s) => s.loadingKey);
   const error = useScheduleStore((s) => s.error);
+  const errorKind = useScheduleStore((s) => s.errorKind);
   const pinned = usePreferencesStore(selectIsGroupPinned(groupName));
   const togglePin = usePreferencesStore((s) => s.togglePinnedGroup);
   const subgroup = usePreferencesStore(selectSubgroup(groupName));
@@ -107,15 +108,7 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
             defaultGroupName={groupName}
             onChangeDefaultGroup={() => router.push('/(tabs)/(amy)/pick-group')}
           />
-          <View style={styles.center}>
-            <Text style={styles.error}>{error}</Text>
-            <Pressable
-              onPress={load}
-              style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
-            >
-              <Text style={styles.retryLabel}>{t('common.retry')}</Text>
-            </Pressable>
-          </View>
+          <ScheduleError kind={errorKind} onRetry={load} />
         </View>
       );
     }
@@ -143,7 +136,6 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
 // ────────────────────────────────────────────────────────────────
 
 const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) => {
-  const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const router = useRouter();
@@ -151,6 +143,7 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
   const currentWeek = useScheduleStore((s) => s.currentWeek);
   const loadingKey = useScheduleStore((s) => s.loadingKey);
   const error = useScheduleStore((s) => s.error);
+  const errorKind = useScheduleStore((s) => s.errorKind);
   const pinned = usePreferencesStore(selectIsEmployeePinned(employee.urlId));
   const togglePin = usePreferencesStore((s) => s.togglePinnedEmployee);
 
@@ -176,15 +169,7 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
             defaultGroupName={employee.fio}
             onChangeDefaultGroup={() => router.push('/(tabs)/(amy)/pick-group')}
           />
-          <View style={styles.center}>
-            <Text style={styles.error}>{error}</Text>
-            <Pressable
-              onPress={load}
-              style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
-            >
-              <Text style={styles.retryLabel}>{t('common.retry')}</Text>
-            </Pressable>
-          </View>
+          <ScheduleError kind={errorKind} onRetry={load} />
         </View>
       );
     }
@@ -241,13 +226,4 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   selectBtnPressed: { opacity: 0.7 },
   selectBtnLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  error: { color: Palette.destructive, textAlign: 'center', marginBottom: Spacing.xl },
-  retryBtn: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    backgroundColor: Palette.accent,
-  },
-  retryBtnPressed: { opacity: 0.7 },
-  retryLabel: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });

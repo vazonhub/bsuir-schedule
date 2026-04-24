@@ -1,17 +1,19 @@
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
-import { forwardRef, useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { forwardRef, useCallback, useMemo, useState } from 'react';
+import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto, LessonStudentGroupDto, WeekNumber } from '@models/dto';
 import { Radius, Spacing } from '@theme';
 import { getDayNames } from '@utils/date';
 import { hapticLight } from '@utils/haptics';
-import { getLessonAccentColor, getLessonTypeFullName } from '@utils/lesson';
+import { getLessonTypeFullName } from '@utils/lesson';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/colors';
 
@@ -22,10 +24,15 @@ interface Props {
   currentWeek: WeekNumber;
   entityType: 'group' | 'employee';
   onDismiss?(): void;
+  onChange?(index: number): void;
+  /** Текущее состояние блокировки выбранной пары. */
+  isBlocked?: boolean;
+  /** Callback для toggle блокировки. Если не передан — кнопка не показывается. */
+  onToggleBlock?(): void;
 }
 
 export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
-  ({ lesson, currentWeek, entityType, onDismiss }, ref) => {
+  ({ lesson, currentWeek, entityType, onDismiss, onChange, isBlocked, onToggleBlock }, ref) => {
     const { t } = useTranslation();
     const router = useRouter();
     const segments = useSegments() as string[];
@@ -33,6 +40,12 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
+
+    const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null);
+
+    const handleAvatarPress = useCallback((photoLink: string) => {
+      if (photoLink) setFullscreenPhoto(photoLink);
+    }, []);
 
     const handleEmployeePress = useCallback(
       (employee: EmployeeDto) => {
@@ -77,8 +90,13 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
       [router, ref, currentTab],
     );
 
+    const getLessonColor = useGetLessonAccentColor();
+    const subgroupIcon = useIconName('subgroup');
+    const blockIcon = useIconName('block');
+    const clockIcon = useIconName('clock');
+    const locationIcon = useIconName('location');
     const raw = lesson?.raw ?? null;
-    const accent = raw ? getLessonAccentColor(raw.lessonTypeAbbrev) : FALLBACK;
+    const accent = raw ? getLessonColor(raw.lessonTypeAbbrev) : FALLBACK;
     const typeFull = raw ? getLessonTypeFullName(raw.lessonTypeAbbrev) : '';
     const days = getDayNames();
     const months = t('date.months', { returnObjects: true }) as string[];
@@ -100,19 +118,43 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={onDismiss}
+        onChange={onChange}
       >
         {lesson && raw && <BottomSheetScrollView contentContainerStyle={styles.content}>
-          {/* Type chip */}
+          {/* Type chip + block button */}
           <View style={styles.chipRow}>
-            <View style={[styles.typeChip, { backgroundColor: accent + '1A' }]}>
-              <View style={[styles.typeDot, { backgroundColor: accent }]} />
-              <Text style={[styles.typeText, { color: accent }]}>{typeFull}</Text>
-            </View>
-            {showSubgroup && (
-              <View style={styles.subgroupChip}>
-                <Ionicons name="person" size={14} color={Palette.textSecondary} />
-                <Text style={styles.subgroupText}>{t('lesson.subgroup', { n: raw.numSubgroup })}</Text>
+            <View style={styles.chipGroup}>
+              <View style={[styles.typeChip, { backgroundColor: accent + '1A' }]}>
+                <View style={[styles.typeDot, { backgroundColor: accent }]} />
+                <Text style={[styles.typeText, { color: accent }]}>{typeFull}</Text>
               </View>
+              {showSubgroup && (
+                <View style={styles.subgroupChip}>
+                  <Ionicons name={subgroupIcon as never} size={14} color={Palette.textSecondary} />
+                  <Text style={styles.subgroupText}>{t('lesson.subgroup', { n: raw.numSubgroup })}</Text>
+                </View>
+              )}
+            </View>
+            {onToggleBlock && (
+              <Pressable
+                onPress={() => {
+                  void hapticLight();
+                  onToggleBlock();
+                }}
+                hitSlop={8}
+                style={[
+                  styles.blockButton,
+                  isBlocked
+                    ? { backgroundColor: Palette.destructive + '1A' }
+                    : { backgroundColor: Palette.background },
+                ]}
+              >
+                <Ionicons
+                  name={blockIcon as never}
+                  size={16}
+                  color={isBlocked ? Palette.destructive : Palette.textTertiary}
+                />
+              </Pressable>
             )}
           </View>
 
@@ -121,7 +163,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
 
           {/* Date & Time */}
           <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={18} color={Palette.textSecondary} />
+            <Ionicons name={clockIcon as never} size={18} color={Palette.textSecondary} />
             <Text style={styles.infoText}>
               {lesson.startTime} — {lesson.endTime}, {dateStr}
             </Text>
@@ -130,7 +172,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
           {/* Auditory */}
           {auditories.length > 0 && (
             <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={18} color={Palette.textSecondary} />
+              <Ionicons name={locationIcon as never} size={18} color={Palette.textSecondary} />
               <Text style={styles.infoText}>{auditories}</Text>
             </View>
           )}
@@ -187,26 +229,39 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
               <Text style={styles.sectionTitle}>
                 {employees.length === 1 ? t('lesson.teacher') : t('lesson.teachers')}
               </Text>
-              {employees.map((emp) => (
-                <Pressable
-                  key={emp.id}
-                  onPress={() => handleEmployeePress(emp)}
-                  style={({ pressed }) => [styles.personCard, pressed && styles.personCardPressed]}
-                >
-                  <Avatar uri={emp.photoLink} initials={`${emp.lastName?.[0] ?? ''}${emp.firstName?.[0] ?? ''}`} size={40} />
-                  <View style={styles.personInfo}>
-                    <Text style={styles.personName} numberOfLines={1}>
-                      {[emp.lastName, emp.firstName, emp.middleName].filter(Boolean).join(' ')}
-                    </Text>
-                    {(emp.degree || emp.rank) && (
-                      <Text style={styles.personSub} numberOfLines={1}>
-                        {[emp.rank, emp.degree].filter(Boolean).join(', ')}
-                      </Text>
+              {employees.map((emp) => {
+                const isDanilovaOaip =
+                  emp.lastName === 'Данилова' &&
+                  emp.firstName === 'Галина' &&
+                  emp.middleName === 'Владимировна' &&
+                  raw.subject === 'ОАиП';
+                return (
+                  <View key={emp.id}>
+                    <Pressable
+                      onPress={() => handleEmployeePress(emp)}
+                      style={({ pressed }) => [styles.personCard, pressed && styles.personCardPressed]}
+                    >
+                      <Pressable onPress={() => handleAvatarPress(emp.photoLink)}>
+                        <Avatar uri={emp.photoLink} initials={`${emp.lastName?.[0] ?? ''}${emp.firstName?.[0] ?? ''}`} size={40} />
+                      </Pressable>
+                      <View style={styles.personInfo}>
+                        <Text style={styles.personName} numberOfLines={1}>
+                          {[emp.lastName, emp.firstName, emp.middleName].filter(Boolean).join(' ')}
+                        </Text>
+                        {(emp.degree || emp.rank) && (
+                          <Text style={styles.personSub} numberOfLines={1}>
+                            {[emp.rank, emp.degree].filter(Boolean).join(', ')}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.chevron}>&rsaquo;</Text>
+                    </Pressable>
+                    {isDanilovaOaip && (
+                      <Text style={styles.easterEgg}>не забудь про творческий блок!</Text>
                     )}
                   </View>
-                  <Text style={styles.chevron}>&rsaquo;</Text>
-                </Pressable>
-              ))}
+                );
+              })}
             </View>
           )}
 
@@ -237,6 +292,22 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
             </View>
           )}
         </BottomSheetScrollView>}
+        <Modal
+          visible={fullscreenPhoto !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFullscreenPhoto(null)}
+        >
+          <Pressable style={styles.photoBackdrop} onPress={() => setFullscreenPhoto(null)}>
+            <Image
+              source={fullscreenPhoto ?? undefined}
+              style={styles.photoFull}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              accessibilityIgnoresInvertColors
+            />
+          </Pressable>
+        </Modal>
       </BottomSheetModal>
     );
   },
@@ -258,8 +329,14 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   chipRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chipGroup: {
+    flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.md,
+    flex: 1,
   },
   typeChip: {
     flexDirection: 'row',
@@ -291,6 +368,14 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: Palette.textSecondary,
+  },
+  blockButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.md,
   },
   subject: {
     fontSize: 20,
@@ -401,5 +486,23 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     fontSize: 22,
     lineHeight: 22,
     color: Palette.textTertiary,
+  },
+  easterEgg: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: Palette.textTertiary,
+    textAlign: 'right',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xs,
+  },
+  photoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoFull: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
   },
 });

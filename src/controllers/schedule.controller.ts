@@ -5,10 +5,24 @@ import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
 import { pullScheduleFromCloud, pushScheduleToCloud } from '@services/cloud/syncService';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
+import type { ErrorKind } from '@stores/schedule.store';
 import { useScheduleStore } from '@stores/schedule.store';
 
 const isNotFound = (e: unknown): boolean =>
   (e as AxiosError)?.response?.status === 404;
+
+/** Определяет тип ошибки: сервер лёг (5xx/timeout) или проблема с сетью. */
+const classifyError = (e: unknown): ErrorKind => {
+  const axErr = e as AxiosError | undefined;
+  const status = axErr?.response?.status;
+  // 5xx — сервер лёг
+  if (status && status >= 500) return 'server';
+  // Таймаут или нет ответа от сервера (нет интернета / DNS / сервер не отвечает)
+  if (axErr?.code === 'ECONNABORTED' || axErr?.code === 'ERR_NETWORK' || !axErr?.response) {
+    return 'network';
+  }
+  return 'generic';
+};
 
 const EMPTY_SCHEDULE: ScheduleDto = {
   startDate: null,
@@ -33,7 +47,7 @@ export const ScheduleController = {
       const week = await ScheduleApi.currentWeek();
       store.setCurrentWeek(week);
     } catch (e) {
-      store.setError(e instanceof Error ? e.message : 'Не удалось получить текущую неделю');
+      store.setError(e instanceof Error ? e.message : 'Не удалось получить текущую неделю', classifyError(e));
     }
   },
 
@@ -60,7 +74,7 @@ export const ScheduleController = {
         if (cloudData) {
           store.setSchedule(groupName, cloudData);
         } else {
-          store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы');
+          store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы', classifyError(e));
         }
       }
     } finally {
@@ -88,6 +102,7 @@ export const ScheduleController = {
         } else {
           store.setError(
             e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
+            classifyError(e),
           );
         }
       }

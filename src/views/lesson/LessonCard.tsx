@@ -4,10 +4,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { Radius, Spacing } from '@theme';
-import { getLessonAccentColor, getLessonBreakRange } from '@utils/lesson';
+import { getLessonBreakRange } from '@utils/lesson';
 import type { LessonTimeStatus } from '@utils/lesson';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -20,6 +21,8 @@ interface Props {
    * предмета, пунктирная рамка цвета типа занятия, прозрачный фон.
    */
   compact?: boolean;
+  /** Заблокированная (замьюченная) пара — красная окантовка, compact-вид. */
+  blocked?: boolean;
   /**
    * Состояние пары относительно «сейчас» — `null` если пара не сегодня
    * (тогда никакой подсветки не накладываем).
@@ -41,14 +44,20 @@ const buildAvatarInitials = (lesson: NormalizedLesson): string => {
   return `${first.lastName?.[0] ?? ''}${first.firstName?.[0] ?? ''}`;
 };
 
-export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Props) => {
+const BLOCKED_BG_LIGHT = 'rgba(255, 59, 48, 0.06)';
+const BLOCKED_BG_DARK = 'rgba(255, 59, 48, 0.12)';
+
+export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, timeStatus }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const isDark = useIsDark();
   const pastOverlayColor = isDark ? PAST_OVERLAY_DARK : PAST_OVERLAY_LIGHT;
   const breakOverlayColor = isDark ? BREAK_OVERLAY_DARK : BREAK_OVERLAY_LIGHT;
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
-  const accent = getLessonAccentColor(lesson.raw.lessonTypeAbbrev);
+  const getLessonColor = useGetLessonAccentColor();
+  const subgroupIcon = useIconName('subgroup');
+  const blockIcon = useIconName('block');
+  const accent = getLessonColor(lesson.raw.lessonTypeAbbrev);
 
   // Ширина «прошедшей» серой заливки. 0 = ничего не закрашено,
   // 1 = карточка полностью закрашена (пара уже прошла).
@@ -72,6 +81,36 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
     !!breakRange &&
     timeStatus?.kind === 'ongoing' &&
     timeStatus.progress < breakRange.startFraction;
+
+  if (blocked) {
+    const blockedBg = isDark ? BLOCKED_BG_DARK : BLOCKED_BG_LIGHT;
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={!onPress}
+        style={({ pressed }) => [
+          styles.compact,
+          { borderColor: Palette.destructive, backgroundColor: blockedBg },
+          pressed && onPress && styles.compactPressed,
+        ]}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={`${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, ${t('lesson.blocked')}`}
+      >
+        <Text style={styles.compactText} numberOfLines={1}>
+          {lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
+        </Text>
+        {(lesson.raw.numSubgroup === 1 || lesson.raw.numSubgroup === 2) && (
+          <View style={styles.subgroupChip}>
+            <Ionicons name={subgroupIcon as never} size={12} color={Palette.textSecondary} />
+            <Text style={styles.subgroupNumber}>{lesson.raw.numSubgroup}</Text>
+          </View>
+        )}
+        <View style={styles.blockedIcon}>
+          <Ionicons name={blockIcon as never} size={14} color={Palette.destructive} />
+        </View>
+      </Pressable>
+    );
+  }
 
   if (compact) {
     const compactNumSubgroup = lesson.raw.numSubgroup;
@@ -97,7 +136,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
         </Text>
         {showCompactSubgroup && (
           <View style={styles.subgroupChip}>
-            <Ionicons name="person" size={12} color={Palette.textSecondary} />
+            <Ionicons name={subgroupIcon as never} size={12} color={Palette.textSecondary} />
             <Text style={styles.subgroupNumber}>{compactNumSubgroup}</Text>
           </View>
         )}
@@ -172,7 +211,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, timeStatus }: Pro
           <View style={styles.right}>
             {showSubgroup && (
               <View style={styles.subgroupChip}>
-                <Ionicons name="person" size={16} color={Palette.textSecondary} />
+                <Ionicons name={subgroupIcon as never} size={16} color={Palette.textSecondary} />
                 <Text style={styles.subgroupNumber}>{numSubgroup}</Text>
               </View>
             )}
@@ -263,6 +302,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   subgroupChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 20,
     gap: 3,
   },
   subgroupNumber: {
@@ -304,6 +344,10 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     backgroundColor: 'transparent',
+  },
+  blockedIcon: {
+    minHeight: 20,
+    justifyContent: 'center',
   },
   compactPressed: { opacity: 0.5 },
   compactText: {

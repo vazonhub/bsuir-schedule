@@ -4,15 +4,18 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 
+export type ErrorKind = 'server' | 'network' | 'generic';
+
 interface ScheduleState {
   /** Cached schedules keyed by their identifier (group name or employee urlId). */
   byKey: Record<string, ScheduleDto | undefined>;
   loadingKey: string | null;
   error: string | null;
+  errorKind: ErrorKind | null;
   currentWeek: CurrentWeekNumber | null;
   setSchedule(key: string, schedule: ScheduleDto): void;
   setLoadingKey(key: string | null): void;
-  setError(message: string | null): void;
+  setError(message: string | null, kind?: ErrorKind): void;
   setCurrentWeek(week: CurrentWeekNumber | null): void;
 }
 
@@ -22,11 +25,12 @@ export const useScheduleStore = create<ScheduleState>()(
       byKey: {},
       loadingKey: null,
       error: null,
+      errorKind: null,
       currentWeek: null,
       setSchedule: (key, schedule) =>
         set((s) => ({ byKey: { ...s.byKey, [key]: schedule } })),
       setLoadingKey: (loadingKey) => set({ loadingKey }),
-      setError: (error) => set({ error }),
+      setError: (error, kind) => set({ error, errorKind: error ? (kind ?? 'generic') : null }),
       setCurrentWeek: (currentWeek) => set({ currentWeek }),
     }),
     {

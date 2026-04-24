@@ -1,6 +1,6 @@
 import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
-import { getLessonAccentColor } from '@utils/lesson';
+import { buildLessonBlockId, getLessonAccentColor } from '@utils/lesson';
 import { flattenSchedule, flattenExams } from '@utils/scheduleNormalization';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
@@ -17,6 +17,8 @@ export interface WidgetLesson {
   numSubgroup: number;
   /** True if this lesson belongs to the user's selected subgroup (or is shared). */
   isMine: boolean;
+  /** Optional note/annotation for this lesson. */
+  note: string | null;
 }
 
 export interface WidgetDayBlock {
@@ -82,6 +84,7 @@ const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): Wid
     teacherPhotoUrl: lesson.raw.employees?.[0]?.photoLink ?? null,
     numSubgroup: numSub,
     isMine,
+    note: lesson.raw.note ?? null,
   };
 };
 
@@ -113,14 +116,18 @@ export const buildWidgetSnapshot = (
   groupName: string,
   subgroup: SubgroupChoice,
   strings: WidgetStrings,
+  blockedIds?: Set<string>,
 ): WidgetSnapshot => {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  // Flatten regular + exams together
+  // Flatten regular + exams together, filtering out blocked lessons
   const regularLessons = flattenSchedule(schedule, currentWeek, now);
   const examLessons = flattenExams(schedule, currentWeek, now);
-  const all = [...regularLessons, ...examLessons].sort(
+  const unblocked = [...regularLessons, ...examLessons].filter(
+    (l) => !blockedIds || !blockedIds.has(buildLessonBlockId(l)),
+  );
+  const all = unblocked.sort(
     (a, b) => a.date.getTime() - b.date.getTime() || a.startTime.localeCompare(b.startTime),
   );
 

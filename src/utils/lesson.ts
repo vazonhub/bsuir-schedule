@@ -1,11 +1,19 @@
 import i18n from '@i18n';
+import { usePreferencesStore } from '@stores/preferences.store';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import type { KnownLessonType } from '@theme/colors';
 import type { LessonTypeAbbrev } from '@models/dto';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
+/**
+ * Non-hook version that reads overrides from store.getState().
+ * Used in non-React contexts (widget data, etc.).
+ */
 export const getLessonAccentColor = (type: LessonTypeAbbrev | null | undefined): string => {
   if (!type) return FALLBACK_LESSON_COLOR;
+  const overrides = usePreferencesStore.getState().lessonColorOverrides;
+  const override = overrides[type as KnownLessonType];
+  if (override) return override;
   return (
     LESSON_TYPE_COLORS[type as KnownLessonType] ??
     FALLBACK_LESSON_COLOR
@@ -78,6 +86,18 @@ export const getLessonTimeStatus = (
  * когда перерыв начнётся. `null`, если время не парсится или пара
  * короче перерыва.
  */
+/**
+ * Стабильный идентификатор «шаблона» пары для блокировки.
+ * Одинаковый для всех вхождений одной и той же пары на разных неделях.
+ */
+export const buildLessonBlockId = (lesson: NormalizedLesson): string => {
+  const raw = lesson.raw;
+  if (raw.dateLesson) {
+    return `exam:${raw.dateLesson}:${raw.startLessonTime}:${raw.subject}:${raw.numSubgroup}`;
+  }
+  return `${lesson.dayName}:${raw.startLessonTime}:${raw.subject}:${raw.numSubgroup}`;
+};
+
 export const getLessonBreakRange = (
   lesson: NormalizedLesson,
 ): {

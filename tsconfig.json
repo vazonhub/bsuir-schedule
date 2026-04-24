@@ -45,6 +45,9 @@
       "@hooks/*": [
         "src/hooks/*"
       ],
+      "@constants/*": [
+        "src/constants/*"
+      ],
       "@i18n": [
         "src/i18n/index.ts"
       ]
