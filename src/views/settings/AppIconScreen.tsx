@@ -5,7 +5,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,21 +25,20 @@ const COLUMNS = 4;
 const MIN_GAP = 8;
 
 const getCurrentIconName = (): string | null => {
-  if (Platform.OS !== 'ios') return null;
   try {
-    const RNChangeIcon = require('react-native-change-icon');
-    return RNChangeIcon.getIconName?.() ?? null;
+    const { getAppIconName } = require('expo-alternate-app-icons');
+    return getAppIconName() ?? null;
   } catch {
     return null;
   }
 };
 
 const changeIcon = async (key: string | null): Promise<void> => {
-  const RNChangeIcon = require('react-native-change-icon');
+  const { setAlternateAppIcon, resetAppIcon } = require('expo-alternate-app-icons');
   if (key === null) {
-    await RNChangeIcon.resetIcon();
+    await resetAppIcon();
   } else {
-    await RNChangeIcon.changeIcon(key);
+    await setAlternateAppIcon(key);
   }
 };
 
@@ -50,6 +48,11 @@ export const AppIconScreen = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+
+  const { width: screenWidth } = useWindowDimensions();
+  const gridWidth = screenWidth - Spacing.screenPadding * 2;
+  const iconSize = Math.floor((gridWidth - MIN_GAP * (COLUMNS - 1)) / COLUMNS) - 8;
+  const iconGap = Math.floor((gridWidth - (iconSize + 8) * COLUMNS) / (COLUMNS - 1));
 
   const [currentIcon, setCurrentIcon] = useState<string | null>(() => getCurrentIconName());
 
@@ -100,19 +103,19 @@ export const AppIconScreen = () => {
         {APP_ICON_SECTIONS.map((section) => (
           <View key={section.titleKey}>
             <Text style={styles.sectionTitle}>{t(section.titleKey)}</Text>
-            <View style={styles.grid}>
+            <View style={[styles.grid, { gap: iconGap }]}>
               {section.icons.map((icon) => {
                 const isSelected = icon.key === currentIcon;
                 return (
                   <Pressable
                     key={icon.key ?? 'default'}
                     onPress={() => handleSelect(icon.key)}
-                    style={styles.iconWrap}
+                    style={[styles.iconWrap, { width: iconSize + 8 }]}
                   >
                     <View style={[styles.iconBorder, isSelected && { borderColor: Palette.accent }]}>
                       <Image
                         source={icon.preview}
-                        style={styles.iconImage}
+                        style={{ width: iconSize, height: iconSize, borderRadius: Radius.md - 2 }}
                         contentFit="cover"
                       />
                     </View>
@@ -165,22 +168,15 @@ const makeStyles = (Palette: PaletteType) =>
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: ICON_GAP,
     },
     iconWrap: {
       alignItems: 'center',
-      width: ICON_SIZE + 8,
     },
     iconBorder: {
       borderRadius: Radius.md,
       borderWidth: 3,
       borderColor: 'transparent',
       overflow: 'hidden',
-    },
-    iconImage: {
-      width: ICON_SIZE,
-      height: ICON_SIZE,
-      borderRadius: Radius.md - 2,
     },
     iconLabel: {
       fontSize: 10,

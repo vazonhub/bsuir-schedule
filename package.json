@@ -17,7 +17,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npx expo prebuild --clean && npx expo run:ios",
+    "ios:build": "npx expo prebuild && npx expo run:ios",
     "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
     "axios": "^1.15.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-alternate-app-icons": "^8.0.0",
     "expo-background-fetch": "~14.0.9",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",
@@ -49,7 +50,6 @@
     "react-dom": "19.1.0",
     "react-i18next": "^17.0.3",
     "react-native": "0.81.5",
-    "react-native-change-icon": "^5.0.0",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-iap": "^14.7.20",
     "react-native-nitro-modules": "^0.35.5",
