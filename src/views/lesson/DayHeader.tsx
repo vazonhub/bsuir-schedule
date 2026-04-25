@@ -19,6 +19,8 @@ interface Props {
   isExam?: boolean;
   /** True when the day is strictly before today. */
   isPast?: boolean;
+  /** State holiday name to display as a badge. */
+  holidayName?: string;
 }
 
 /**
@@ -26,18 +28,27 @@ interface Props {
  * screen background; opaque `backgroundColor` ensures it cleanly hides cards
  * scrolling behind it when the section list pins it to the top.
  */
-export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false }: Props) => {
+export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   return (
     <View style={styles.wrap}>
-      <Text
-        style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
-        numberOfLines={1}
-      >
-        {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
-      </Text>
+      <View style={styles.row}>
+        <Text
+          style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
+          numberOfLines={1}
+        >
+          {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
+        </Text>
+        {holidayName != null && (
+          <View style={styles.holidayBadge}>
+            <Text style={styles.holidayText} numberOfLines={1}>
+              {holidayName}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -48,6 +59,11 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     paddingTop: Spacing.sectionTop,
     paddingBottom: Spacing.sectionBottom,
     backgroundColor: Palette.background,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   text: {
     fontSize: 13,
@@ -64,5 +80,17 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   past: {
     opacity: 0.4,
+  },
+  holidayBadge: {
+    backgroundColor: Palette.accent + '1A', // 10% opacity
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    flexShrink: 1,
+  },
+  holidayText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Palette.accent,
   },
 });

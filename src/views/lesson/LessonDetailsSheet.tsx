@@ -53,7 +53,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
         const params = {
           urlId: employee.urlId,
-          fio: employee.fio ?? `${employee.lastName} ${employee.firstName?.[0] ?? ''}.`,
+          fio: employee.fio ?? `${employee.lastName} ${employee.firstName?.[0] ?? ''}.${employee.middleName?.[0] ? employee.middleName[0] + '.' : ''}`,
         };
         switch (currentTab) {
           case '(employees)':

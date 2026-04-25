@@ -191,6 +191,7 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.navSection}>
+        {/* TODO 2.1: Иконка приложения + реклама
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
@@ -201,6 +202,8 @@ export const SettingsScreen = () => {
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
+        */}
+        {/* TODO 2.1: Внешний вид + реклама
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
@@ -208,6 +211,17 @@ export const SettingsScreen = () => {
           >
             <Ionicons name="color-palette-outline" size={20} color={Palette.accent} />
             <Text style={styles.navLabel}>{t('settings.appearanceSection')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+          </Pressable>
+        </View>
+        */}
+        <View style={styles.card}>
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/holidays'); }}
+          >
+            <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
+            <Text style={styles.navLabel}>{t('settings.holidaysSection')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>

@@ -57,7 +57,7 @@ export const EmployeeScheduleScreen = () => {
       currentWeek={currentWeek}
       entityKey={key}
       entityType="employee"
-      title={schedule.employeeDto?.fio ?? (schedule.employeeDto ? `${schedule.employeeDto.lastName} ${schedule.employeeDto.firstName[0] ?? ''}.` : undefined)}
+      title={schedule.employeeDto?.fio ?? (schedule.employeeDto ? `${schedule.employeeDto.lastName} ${schedule.employeeDto.firstName?.[0] ?? ''}.${schedule.employeeDto.middleName?.[0] ? schedule.employeeDto.middleName[0] + '.' : ''}` : undefined)}
       avatarUri={schedule.employeeDto?.photoLink}
       onRefresh={load}
       refreshing={isLoading}

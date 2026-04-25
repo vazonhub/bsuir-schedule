@@ -3,6 +3,7 @@ import { Appearance, AppState } from 'react-native';
 
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
+import { HolidaysController } from '@controllers/holidays.controller';
 import { prefetchPinned } from '@services/prefetch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
@@ -24,6 +25,7 @@ export const useAppBootstrap = () => {
     // Initial load on app start.
     void GroupsController.loadAll();
     void EmployeesController.loadAll();
+    void HolidaysController.sync(new Date().getFullYear());
     void prefetchPinned().then(() => updateWidgetSnapshot());
     void registerWidgetBackgroundFetch();
   }, []);
@@ -37,6 +39,7 @@ export const useAppBootstrap = () => {
 
       void GroupsController.loadAll();
       void EmployeesController.loadAll();
+      void HolidaysController.sync(new Date().getFullYear());
       void prefetchPinned().then(() => updateWidgetSnapshot());
     });
     return () => sub.remove();

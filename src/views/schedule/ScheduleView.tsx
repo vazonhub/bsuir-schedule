@@ -24,7 +24,9 @@ import {
   usePreferencesStore,
 } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
 import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
+import { findHolidayName, toDateISO } from '@utils/holidays';
 import { buildLessonBlockId, getLessonTimeStatus } from '@utils/lesson';
 import {
   findUpcomingSectionIndex,
@@ -167,6 +169,14 @@ export const ScheduleView = ({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [now.getFullYear(), now.getMonth(), now.getDate()],
+  );
+
+  const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())] ?? []);
+  const userAdded = useHolidaysStore((s) => s.userAdded);
+  const userRemoved = useHolidaysStore((s) => s.userRemoved);
+  const holidays = useMemo(
+    () => getMergedHolidays(apiHolidays, userAdded, userRemoved),
+    [apiHolidays, userAdded, userRemoved],
   );
 
   const regularSections = useMemo(() => {
@@ -551,6 +561,7 @@ export const ScheduleView = ({
                 today={today}
                 onMeasure={measureSection}
                 measureKey={measureKey}
+                holidayName={findHolidayName(toDateISO(s.date), holidays) ?? undefined}
               />
             </>
           );
@@ -708,6 +719,8 @@ interface MeasuredDayHeaderProps {
   onMeasure(section: ScheduleSection, node: View | null): void;
   /** Changing this value forces a re-measure (e.g. after subgroup switch). */
   measureKey?: number;
+  /** Holiday name for this day, if any. */
+  holidayName?: string;
 }
 
 /**
@@ -715,7 +728,7 @@ interface MeasuredDayHeaderProps {
  * контенте скролла. `collapsable={false}` — чтобы на Android view не схлопнулся
  * в родителя и `measureLayout` мог его найти.
  */
-const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDayHeaderProps) => {
+const MeasuredDayHeader = ({ section, today, onMeasure, measureKey, holidayName }: MeasuredDayHeaderProps) => {
   const ref = useRef<View>(null);
   useEffect(() => {
     if (measureKey != null && measureKey > 0) {
@@ -734,6 +747,7 @@ const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDa
         isTomorrow={isSameDay(section.date, addDays(today, 1))}
         isExam={section.isExam}
         isPast={section.date.getTime() < today.getTime()}
+        holidayName={holidayName}
       />
     </View>
   );

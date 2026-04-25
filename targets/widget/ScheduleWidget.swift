@@ -24,6 +24,7 @@ struct WidgetDayBlock: Codable {
     let dayOfMonth: Int
     let month: Int
     let lessons: [WidgetLesson]
+    let holidayName: String?
 }
 
 struct WidgetSnapshot: Codable {
@@ -263,6 +264,7 @@ struct LessonRow: View {
     let lesson: WidgetLesson
     let photo: Data?
     var compact: Bool = false
+    var showNote: Bool = false
 
     var body: some View {
         if lesson.isMine {
@@ -304,7 +306,7 @@ struct LessonRow: View {
                     }
                 }
 
-                if !compact, let note = lesson.note, !note.isEmpty {
+                if showNote, let note = lesson.note, !note.isEmpty {
                     Text(note)
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
@@ -358,16 +360,34 @@ struct LessonRow: View {
 
 struct EmptyStateView: View {
     var allDone: Bool = false
+    var holidayName: String? = nil
+    var displayBlock: WidgetDayBlock? = nil
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: allDone ? "checkmark.circle" : "calendar")
-                .font(.title2)
-                .foregroundColor(.secondary)
-            Text(allDone ? "На сегодня пар больше нет" : "Нет пар")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            if let holiday = holidayName {
+                Image(systemName: "star.fill")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                Text(holiday)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                if let block = displayBlock {
+                    Text(formatDayLabel(block))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Image(systemName: allDone ? "checkmark.circle" : "calendar")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                Text(allDone ? "На сегодня пар больше нет" : "Нет пар")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -406,7 +426,9 @@ struct SmallWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let lessons = Array(entry.visibleLessons.prefix(2))
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
@@ -443,7 +465,9 @@ struct MediumWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let lessons = Array(entry.visibleLessons.prefix(3))
                 VStack(alignment: .leading, spacing: 4) {
                     WidgetHeader(
@@ -474,7 +498,9 @@ struct LargeWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let visible = Array(entry.visibleLessons.prefix(7))
                 VStack(alignment: .leading, spacing: 6) {
                     WidgetHeader(
@@ -484,7 +510,7 @@ struct LargeWidgetView: View {
                     )
 
                     ForEach(Array(visible.enumerated()), id: \.offset) { index, lesson in
-                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""])
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], showNote: true)
                         if index < visible.count - 1 {
                             Divider()
                         }

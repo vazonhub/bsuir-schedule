@@ -137,7 +137,7 @@ export const EmployeesListScreen = () => {
               onPress={() =>
                 handlePress(
                   item.urlId,
-                  item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
+                  item.fio ?? `${item.lastName} ${item.firstName?.[0] ?? ''}.${item.middleName?.[0] ? item.middleName[0] + '.' : ''}`,
                 )
               }
               onPhotoPress={setFullscreenPhoto}
@@ -176,7 +176,7 @@ export const EmployeesListScreen = () => {
                 onPress={() =>
                   handlePress(
                     item.urlId,
-                    item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
+                    item.fio ?? `${item.lastName} ${item.firstName?.[0] ?? ''}.${item.middleName?.[0] ? item.middleName[0] + '.' : ''}`,
                   )
                 }
                 onPhotoPress={setFullscreenPhoto}

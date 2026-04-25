@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { Platform } from 'react-native';
 
+import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
@@ -67,7 +68,11 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
     description: t('widget.description'),
   };
 
-  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings, blockedIds);
+  const year = new Date().getFullYear();
+  const { byYear, userAdded, userRemoved } = useHolidaysStore.getState();
+  const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved);
+
+  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings, blockedIds, holidays);
   await writeSnapshot(snapshot);
   reloadWidgetTimelines();
 };

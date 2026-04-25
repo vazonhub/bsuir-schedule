@@ -1,5 +1,7 @@
+import type { Holiday } from '@models/holiday';
 import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
+import { findHolidayName } from '@utils/holidays';
 import { buildLessonBlockId, getLessonAccentColor } from '@utils/lesson';
 import { flattenSchedule, flattenExams } from '@utils/scheduleNormalization';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
@@ -31,6 +33,8 @@ export interface WidgetDayBlock {
   /** Month 0..11. */
   month: number;
   lessons: WidgetLesson[];
+  /** State holiday name, if this day is a public holiday. */
+  holidayName: string | null;
 }
 
 export interface WidgetStrings {
@@ -95,12 +99,13 @@ const toDateISO = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
-const toDayBlock = (date: Date, lessons: NormalizedLesson[], subgroup: SubgroupChoice): WidgetDayBlock => ({
+const toDayBlock = (date: Date, lessons: NormalizedLesson[], subgroup: SubgroupChoice, holidays: Holiday[]): WidgetDayBlock => ({
   dateISO: toDateISO(date),
   dayOfWeek: date.getDay(),
   dayOfMonth: date.getDate(),
   month: date.getMonth(),
   lessons: lessons.map((l) => toWidgetLesson(l, subgroup)),
+  holidayName: findHolidayName(toDateISO(date), holidays),
 });
 
 /**
@@ -117,6 +122,7 @@ export const buildWidgetSnapshot = (
   subgroup: SubgroupChoice,
   strings: WidgetStrings,
   blockedIds?: Set<string>,
+  holidays: Holiday[] = [],
 ): WidgetSnapshot => {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -140,7 +146,7 @@ export const buildWidgetSnapshot = (
   if (futureLessons.length > 0) {
     const nextDate = futureLessons[0]!.date;
     const nextDayLessons = futureLessons.filter((l) => l.date.getTime() === nextDate.getTime());
-    nextDayBlock = toDayBlock(nextDate, nextDayLessons, subgroup);
+    nextDayBlock = toDayBlock(nextDate, nextDayLessons, subgroup, holidays);
   }
 
   return {
@@ -148,7 +154,7 @@ export const buildWidgetSnapshot = (
     generatedAt: now.toISOString(),
     currentWeek,
     subgroup,
-    today: toDayBlock(todayStart, todayLessons, subgroup),
+    today: toDayBlock(todayStart, todayLessons, subgroup, holidays),
     nextDay: nextDayBlock,
     strings,
   };
