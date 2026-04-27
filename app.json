@@ -22,7 +22,8 @@
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.by.vazon.bsuirschedule"
-        ]
+        ],
+        "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)by.vazon.bsuirschedule"
       }
     },
     "android": {
@@ -41,6 +42,37 @@
     "plugins": [
       "expo-router",
       "./plugins/withWidget",
+      "./plugins/withICloudKVStore",
+      "./plugins/withStoreKit",
+      [
+        "expo-alternate-app-icons",
+        [
+          "./assets/icons/icon-bg-dark.png",
+          "./assets/icons/icon-bg-red.png",
+          "./assets/icons/icon-bg-orange.png",
+          "./assets/icons/icon-bg-green.png",
+          "./assets/icons/icon-bg-purple.png",
+          "./assets/icons/icon-bg-blue.png",
+          "./assets/icons/icon-bg-pink.png",
+          "./assets/icons/icon-bg-teal.png",
+          "./assets/icons/icon-light-classic-blue.png",
+          "./assets/icons/icon-light-black.png",
+          "./assets/icons/icon-light-blue.png",
+          "./assets/icons/icon-light-purple.png",
+          "./assets/icons/icon-light-red.png",
+          "./assets/icons/icon-light-green.png",
+          "./assets/icons/icon-dark-blue.png",
+          "./assets/icons/icon-dark-green.png",
+          "./assets/icons/icon-dark-red.png",
+          "./assets/icons/icon-dark-orange.png",
+          "./assets/icons/icon-dark-purple.png",
+          "./assets/icons/icon-grad-blue-purple.png",
+          "./assets/icons/icon-grad-red-orange.png",
+          "./assets/icons/icon-grad-green-teal.png",
+          "./assets/icons/icon-grad-pink-purple.png",
+          "./assets/icons/icon-grad-midnight.png"
+        ]
+      ],
       "expo-font",
       [
         "expo-splash-screen",

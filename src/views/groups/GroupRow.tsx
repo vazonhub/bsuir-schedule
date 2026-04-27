@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { usePalette } from '@hooks/usePalette';
 import type { StudentGroupDto } from '@models/dto';
 import { Radius, Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -24,14 +25,15 @@ export const GroupRow = ({ group, onPress }: Props) => {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
       accessibilityLabel={t('groups.groupLabel', { name: group.name, speciality: group.specialityName, course: group.course })}
+      accessibilityHint={t('a11y.openGroupSchedule')}
     >
       <View style={styles.main}>
-        <Text style={styles.title}>{group.name}</Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
+        <Text {...textProps('headline')} style={styles.title}>{group.name}</Text>
+        <Text {...textProps('footnote')} style={styles.subtitle} numberOfLines={1}>
           {group.facultyAbbrev} &middot; {group.specialityAbbrev} &middot; {group.course} курс
         </Text>
       </View>
-      <Text style={styles.chevron}>&rsaquo;</Text>
+      <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">&rsaquo;</Text>
     </Pressable>
   );
 };

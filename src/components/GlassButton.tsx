@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { AccessibilityState, StyleProp, ViewStyle } from 'react-native';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { useGlassTint, useIsDark, usePalette } from '@hooks/usePalette';
@@ -19,6 +19,8 @@ interface Props {
   /** Round (`pill`) or rounded-rect (`Radius.lg`). */
   shape?: 'pill' | 'rect';
   accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityState?: AccessibilityState;
   /** When true the button is rendered with a stronger fill — use for the
    * primary "active" state of toggle controls (e.g. pinned). */
   active?: boolean;
@@ -41,6 +43,8 @@ export const GlassButton = ({
   height,
   shape = 'pill',
   accessibilityLabel,
+  accessibilityHint,
+  accessibilityState,
   active = false,
   activeColor,
   style: styleProp,
@@ -57,6 +61,8 @@ export const GlassButton = ({
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={accessibilityState}
       style={({ pressed }) => [
         styles.wrap,
         { minWidth: size, height: heightPx, borderRadius: radius },

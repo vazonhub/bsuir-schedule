@@ -1,26 +1,33 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Platform, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Modal, Platform, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
+import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import {
+  selectBlockedLessons,
   selectIsEmployeePinned,
   selectIsGroupPinned,
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Spacing, TAB_BAR_HEIGHT } from '@theme';
-import { addDays, isSameDay } from '@utils/date';
-import { getLessonTimeStatus } from '@utils/lesson';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
+import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
+import { findHolidayName, toDateISO } from '@utils/holidays';
+import { buildLessonBlockId, getLessonTimeStatus } from '@utils/lesson';
 import {
   findUpcomingSectionIndex,
   flattenExams,
@@ -45,6 +52,10 @@ interface Props {
   entityType: 'group' | 'employee';
   onRefresh?(): void;
   refreshing?: boolean;
+  /** Static title shown instead of the date label on detail pages (group number or employee FIO). */
+  title?: string;
+  /** Avatar URL shown in the top bar (employee photo). */
+  avatarUri?: string | null;
   /** True when rendered as the root "My Schedule" tab (no back button). */
   isDefaultSchedule?: boolean;
   /** Label shown in the FloatingTopBar pill when `isDefaultSchedule` (group name or "Фамилия И.О."). */
@@ -58,6 +69,8 @@ export const ScheduleView = ({
   entityType,
   onRefresh,
   refreshing = false,
+  title,
+  avatarUri,
   isDefaultSchedule = false,
   defaultLabel,
 }: Props) => {
@@ -74,6 +87,11 @@ export const ScheduleView = ({
   const [, forceRender] = useReducer((x: number) => x + 1, 0);
   const selectedLesson = lessonRef.current;
 
+  const [fullscreenPhoto, setFullscreenPhoto] = useState(false);
+  const handleAvatarPress = useCallback(() => {
+    if (avatarUri) setFullscreenPhoto(true);
+  }, [avatarUri]);
+
   // When a dismiss animation is still in flight, present() is silently
   // ignored by BottomSheetModal.  We force-dismiss first, then re-present
   // once the animation finishes (onDismiss fires).
@@ -84,35 +102,60 @@ export const ScheduleView = ({
     lessonRef.current = lesson;
     forceRender();
 
-    // Try to present — if the sheet is idle this works immediately.
-    // If a dismiss animation is in progress, present() is a no-op,
-    // so we stash the lesson and force-dismiss; handleSheetDismiss
-    // will re-present once the animation settles.
     const sheet = sheetRef.current;
     if (sheet) {
+      // Ставим pending — если шит в процессе dismiss-анимации,
+      // present() будет проигнорирован, и handleSheetDismiss подхватит.
       pendingLessonRef.current = lesson;
       sheet.dismiss();
       sheet.present();
     }
   }, []);
 
+  // Когда шит реально открылся (index >= 0) — очищаем pending,
+  // чтобы обычный свайп-закрытие не переоткрывал шит.
+  const handleSheetChange = useCallback((index: number) => {
+    if (index >= 0) {
+      pendingLessonRef.current = null;
+    }
+  }, []);
+
   const handleSheetDismiss = useCallback(() => {
     const pending = pendingLessonRef.current;
     if (pending) {
-      // A new lesson was requested while the sheet was dismissing.
-      // Data is already in lessonRef — just re-present.
+      // Новая пара запрошена пока шит закрывался — переоткрываем.
       pendingLessonRef.current = null;
       sheetRef.current?.present();
     }
   }, []);
 
-  // Pin / subgroup state — persisted via AsyncStorage.
+  // Закрываем модалку при уходе с экрана (смена вкладки, back).
+  const navigation = useNavigation();
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('blur', () => {
+      pendingLessonRef.current = null;
+      sheetRef.current?.dismiss();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // Pin / subgroup / hide-past state — persisted via AsyncStorage.
+  const hidePastLessons = usePreferencesStore((s) => s.hidePastLessons);
   const subgroup = usePreferencesStore(selectSubgroup(entityKey));
   const setSubgroup = usePreferencesStore((s) => s.setSubgroup);
   const togglePinnedGroup = usePreferencesStore((s) => s.togglePinnedGroup);
   const togglePinnedEmployee = usePreferencesStore((s) => s.togglePinnedEmployee);
   const isPinned = usePreferencesStore(
     entityType === 'group' ? selectIsGroupPinned(entityKey) : selectIsEmployeePinned(entityKey),
+  );
+
+  const blockedSelector = useMemo(() => selectBlockedLessons(entityKey), [entityKey]);
+  const blockedList = usePreferencesStore(blockedSelector);
+  const blockedSet = useMemo(() => new Set(blockedList), [blockedList]);
+  const toggleBlockedLesson = usePreferencesStore((s) => s.toggleBlockedLesson);
+  const isLessonBlocked = useCallback(
+    (lesson: NormalizedLesson): boolean => blockedSet.has(buildLessonBlockId(lesson)),
+    [blockedSet],
   );
 
   const now = useNow();
@@ -128,10 +171,20 @@ export const ScheduleView = ({
     [now.getFullYear(), now.getMonth(), now.getDate()],
   );
 
+  const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())] ?? []);
+  const userAdded = useHolidaysStore((s) => s.userAdded);
+  const userRemoved = useHolidaysStore((s) => s.userRemoved);
+  const holidays = useMemo(
+    () => getMergedHolidays(apiHolidays, userAdded, userRemoved),
+    [apiHolidays, userAdded, userRemoved],
+  );
+
   const regularSections = useMemo(() => {
-    const flat = flattenSchedule(schedule, currentWeek, today);
+    const flat = flattenSchedule(schedule, currentWeek, today, {
+      showAll: !hidePastLessons,
+    });
     return groupLessonsByDay(flat);
-  }, [schedule, currentWeek, today]);
+  }, [schedule, currentWeek, today, hidePastLessons]);
 
   const examSections = useMemo(() => {
     const flat = flattenExams(schedule, currentWeek, today);
@@ -163,22 +216,53 @@ export const ScheduleView = ({
   // а не под чёлкой).
   const topInset = insets.top + 38 + Spacing.lg;
 
-  // Auto-scroll to the closest upcoming day on first render / data change.
+  // Auto-scroll to the closest upcoming day.
   // `viewOffset: topInset` гарантирует, что заголовок дня приземляется под
-  // FloatingTopBar, а не под статус-баром (иначе дата уехала бы за край экрана).
-  useEffect(() => {
-    if (upcomingIndex < 0 || sections.length === 0) return;
-    const id = setTimeout(() => {
-      listRef.current?.scrollToLocation({
-        sectionIndex: upcomingIndex,
+  // FloatingTopBar, а не под статус-баром.
+  const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
+
+  const jumpToUpcoming = useCallback(
+    (delay: number) => {
+      if (upcomingIndex < 0 || sections.length === 0) return undefined;
+      const target = upcomingIndex;
+      const opts = {
+        sectionIndex: target,
         itemIndex: 0,
         animated: false,
-        viewPosition: 0,
+        viewPosition: 0 as const,
         viewOffset: topInset,
-      });
-    }, 80);
-    return () => clearTimeout(id);
-  }, [upcomingIndex, sections, topInset]);
+      };
+      const ids: ReturnType<typeof setTimeout>[] = [];
+      // Multiple attempts — SectionList without getItemLayout needs
+      // several passes to land on the correct position.
+      for (const d of [delay, delay + 150, delay + 500]) {
+        ids.push(setTimeout(() => {
+          try { listRef.current?.scrollToLocation(opts); } catch { /* unmounted */ }
+        }, d));
+      }
+      return ids;
+    },
+    [upcomingIndex, sections.length, topInset],
+  );
+
+  // 1) При первом рендере / смене расписания — мгновенный jump.
+  useEffect(() => {
+    const ids = jumpToUpcoming(50);
+    return () => { ids?.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleIdentity]);
+
+  // 2) При переключении hidePastLessons — jump с задержкой на layout.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const ids = jumpToUpcoming(300);
+    return () => { ids?.forEach(clearTimeout); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidePastLessons]);
 
   const isIOS = Platform.OS === 'ios';
 
@@ -210,30 +294,84 @@ export const ScheduleView = ({
     [entityKey, setSubgroup],
   );
 
+  const scrollToSection = useCallback(
+    (sectionIndex: number, animated = true) => {
+      if (sections.length === 0) return;
+      const opts = {
+        sectionIndex,
+        itemIndex: 0,
+        animated,
+        viewPosition: 0 as const,
+        viewOffset: topInset,
+      };
+      listRef.current?.scrollToLocation(opts);
+      // scrollToLocation без getItemLayout оценивает позицию приблизительно —
+      // повторный вызов после завершения первой анимации «дотягивает» до цели.
+      setTimeout(() => listRef.current?.scrollToLocation(opts), 350);
+    },
+    [sections.length, topInset],
+  );
+
   const handleScrollToExams = useCallback(() => {
-    if (!hasExams || sections.length === 0) return;
-    listRef.current?.scrollToLocation({
-      sectionIndex: firstExamSectionIndex,
-      itemIndex: 0,
-      animated: true,
-      viewPosition: 0,
-      viewOffset: topInset,
-    });
-  }, [hasExams, sections.length, firstExamSectionIndex, topInset]);
+    if (!hasExams) return;
+    scrollToSection(firstExamSectionIndex);
+  }, [hasExams, firstExamSectionIndex, scrollToSection]);
 
   const handleScrollToSchedule = useCallback(() => {
-    if (regularSections.length === 0 || sections.length === 0) return;
+    if (regularSections.length === 0) return;
     const targetIndex = upcomingIndex >= 0 && upcomingIndex < regularSections.length
       ? upcomingIndex
       : 0;
-    listRef.current?.scrollToLocation({
-      sectionIndex: targetIndex,
-      itemIndex: 0,
-      animated: true,
-      viewPosition: 0,
-      viewOffset: topInset,
-    });
-  }, [regularSections.length, sections.length, upcomingIndex, topInset]);
+    scrollToSection(targetIndex);
+  }, [regularSections.length, upcomingIndex, scrollToSection]);
+
+  const handleScrollToToday = useCallback(() => {
+    if (upcomingIndex < 0) return;
+    scrollToSection(upcomingIndex);
+  }, [upcomingIndex, scrollToSection]);
+
+  // ───── Date Picker ─────
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [datePickerInitialDate, setDatePickerInitialDate] = useState(today);
+
+  const scrollToDate = useCallback(
+    (target: Date) => {
+      if (sections.length === 0) return;
+      const targetTime = target.getTime();
+      let bestIndex = -1;
+      for (let i = 0; i < sections.length; i++) {
+        const s = sections[i];
+        if (!s) continue;
+        if (s.date.getTime() >= targetTime) {
+          bestIndex = i;
+          break;
+        }
+        bestIndex = i;
+      }
+      if (bestIndex < 0) return;
+      scrollToSection(bestIndex);
+    },
+    [sections, scrollToSection],
+  );
+
+  const handleDatePickerChange = useCallback(
+    (_event: DateTimePickerEvent, selected?: Date) => {
+      // On Android the picker auto-dismisses on select/cancel.
+      if (Platform.OS === 'android') setDatePickerVisible(false);
+      if (!selected) return;
+      const target = startOfLocalDay(selected);
+      scrollToDate(target);
+    },
+    [scrollToDate],
+  );
+
+  const handleDatePickerDismiss = useCallback(() => {
+    setDatePickerVisible(false);
+  }, []);
+
+  // Date range for the picker — bounded by schedule sections.
+  const datePickerMinDate = sections[0]?.date;
+  const datePickerMaxDate = sections[sections.length - 1]?.date;
 
   /** True если данная пара актуальна для выбранной подгруппы. */
   const isMineSubgroup = useCallback(
@@ -245,17 +383,23 @@ export const ScheduleView = ({
     [subgroup],
   );
 
-  // Счётчик для принудительной перемерки секций после смены подгруппы:
-  // карточки меняют высоту (compact ↔ full), сдвигая заголовки ниже.
+  // Счётчик для принудительной перемерки секций после смены подгруппы
+  // или набора секций (hidePastLessons toggle): карточки меняют высоту /
+  // состав, сдвигая заголовки ниже.
   const [measureKey, setMeasureKey] = useState(0);
   const prevSubgroupRef = useRef(subgroup);
+  const prevSectionsLenRef = useRef(sections.length);
   useEffect(() => {
-    if (prevSubgroupRef.current !== subgroup) {
+    const changed =
+      prevSubgroupRef.current !== subgroup ||
+      prevSectionsLenRef.current !== sections.length;
+    if (changed) {
       prevSubgroupRef.current = subgroup;
+      prevSectionsLenRef.current = sections.length;
       sectionOffsetsRef.current.clear();
       setMeasureKey((k) => k + 1);
     }
-  }, [subgroup]);
+  }, [subgroup, sections.length]);
 
   // ───── Текущий «топовый» день для шапки ─────
   // Sticky-заголовок дня выключен (см. SectionList ниже) — вместо него
@@ -274,6 +418,12 @@ export const ScheduleView = ({
     const initial = sections[upcomingIndex >= 0 ? upcomingIndex : 0];
     if (initial) setTopSection(initial);
   }, [sections, upcomingIndex]);
+
+  const handleDatePress = useCallback(() => {
+    void hapticLight();
+    setDatePickerInitialDate(topSection?.date ?? today);
+    setDatePickerVisible(true);
+  }, [topSection?.date, today]);
 
   const sectionsRef = useRef(sections);
   useEffect(() => {
@@ -366,6 +516,9 @@ export const ScheduleView = ({
           onTogglePin={handleTogglePin}
           subgroup={subgroup}
           onSubgroupChange={handleSubgroupChange}
+          title={title}
+          avatarUri={avatarUri}
+          onAvatarPress={handleAvatarPress}
           isDefaultSchedule={isDefaultSchedule}
           defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
           onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
@@ -386,6 +539,8 @@ export const ScheduleView = ({
         // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
         stickySectionHeadersEnabled={false}
         contentContainerStyle={contentStyle}
+        initialNumToRender={20}
+        windowSize={11}
         // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
         // показывается ниже FloatingTopBar, а не за ним.
         contentInset={isIOS ? { top: topInset } : undefined}
@@ -406,6 +561,7 @@ export const ScheduleView = ({
                 today={today}
                 onMeasure={measureSection}
                 measureKey={measureKey}
+                holidayName={findHolidayName(toDateISO(s.date), holidays) ?? undefined}
               />
             </>
           );
@@ -414,11 +570,26 @@ export const ScheduleView = ({
           <LessonCard
             lesson={item}
             compact={!isMineSubgroup(item.raw.numSubgroup)}
-            timeStatus={isSameDay(item.date, today) ? getLessonTimeStatus(item, now) : null}
+            blocked={isLessonBlocked(item)}
+            timeStatus={
+              isSameDay(item.date, today)
+                ? getLessonTimeStatus(item, now)
+                : item.isPast
+                  ? { kind: 'past' as const }
+                  : null
+            }
             onPress={() => handleLessonPress(item)}
           />
         )}
         onScrollToIndexFailed={(info) => {
+          // Jump close to the target so it gets rendered, then retry.
+          const approxOffset = info.averageItemLength * info.index;
+          const scrollResponder = (listRef.current as unknown as {
+            getScrollResponder?: () => {
+              scrollTo?: (opts: { y: number; animated: boolean }) => void;
+            } | null;
+          })?.getScrollResponder?.();
+          scrollResponder?.scrollTo?.({ y: approxOffset, animated: false });
           setTimeout(() => {
             listRef.current?.scrollToLocation({
               sectionIndex: Math.min(info.index, sections.length - 1),
@@ -427,7 +598,7 @@ export const ScheduleView = ({
               viewPosition: 0,
               viewOffset: topInset,
             });
-          }, 120);
+          }, 100);
         }}
         refreshControl={
           onRefresh ? (
@@ -448,21 +619,93 @@ export const ScheduleView = ({
         currentDate={topSection?.date}
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
-        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam}
+        showTodayButton={
+          !!topSection && upcomingIndex >= 0 && (
+            // В прошлом (старые пары видны только когда hidePastLessons выключен)
+            topSection.date.getTime() < today.getTime() ||
+            // На экзаменах
+            !!topSection.isExam
+          )
+        }
+        onScrollToToday={handleScrollToToday}
+        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam && (topSection?.date.getTime() ?? 0) >= today.getTime()}
         onScrollToExams={handleScrollToExams}
-        showScheduleButton={hasExams && regularSections.length > 0 && !!topSection?.isExam}
-        onScrollToSchedule={handleScrollToSchedule}
+        title={title}
+        avatarUri={avatarUri}
+        onAvatarPress={handleAvatarPress}
         isDefaultSchedule={isDefaultSchedule}
         defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
         onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
+        onDatePress={handleDatePress}
       />
+      {/* Date Picker */}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={datePickerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={handleDatePickerDismiss}
+        >
+          <Pressable style={styles.datePickerBackdrop} onPress={handleDatePickerDismiss}>
+            <Pressable style={styles.datePickerSheet}>
+              <DateTimePicker
+                value={datePickerInitialDate}
+                mode="date"
+                display="inline"
+                minimumDate={datePickerMinDate}
+                maximumDate={datePickerMaxDate}
+                onChange={handleDatePickerChange}
+                locale="ru-RU"
+                accentColor={Palette.accent}
+              />
+              <Pressable style={styles.datePickerDone} onPress={handleDatePickerDismiss}>
+                <Text style={styles.datePickerDoneText}>{t('common.done')}</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      ) : (
+        datePickerVisible && (
+          <DateTimePicker
+            value={datePickerInitialDate}
+            mode="date"
+            display="default"
+            minimumDate={datePickerMinDate}
+            maximumDate={datePickerMaxDate}
+            onChange={handleDatePickerChange}
+          />
+        )
+      )}
       <LessonDetailsSheet
         ref={sheetRef}
         lesson={selectedLesson}
         currentWeek={currentWeek}
         entityType={entityType}
         onDismiss={handleSheetDismiss}
+        onChange={handleSheetChange}
+        isBlocked={selectedLesson ? isLessonBlocked(selectedLesson) : false}
+        onToggleBlock={selectedLesson ? () => {
+          toggleBlockedLesson(entityKey, buildLessonBlockId(selectedLesson));
+        } : undefined}
       />
+      {avatarUri ? (
+        <Modal
+          visible={fullscreenPhoto}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFullscreenPhoto(false)}
+        >
+          <Pressable style={styles.photoBackdrop} onPress={() => setFullscreenPhoto(false)}>
+            <Image
+              source={avatarUri}
+              style={styles.photoFull}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              accessibilityIgnoresInvertColors
+            />
+          </Pressable>
+        </Modal>
+      ) : null}
     </View>
   );
 };
@@ -476,6 +719,8 @@ interface MeasuredDayHeaderProps {
   onMeasure(section: ScheduleSection, node: View | null): void;
   /** Changing this value forces a re-measure (e.g. after subgroup switch). */
   measureKey?: number;
+  /** Holiday name for this day, if any. */
+  holidayName?: string;
 }
 
 /**
@@ -483,7 +728,7 @@ interface MeasuredDayHeaderProps {
  * контенте скролла. `collapsable={false}` — чтобы на Android view не схлопнулся
  * в родителя и `measureLayout` мог его найти.
  */
-const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDayHeaderProps) => {
+const MeasuredDayHeader = ({ section, today, onMeasure, measureKey, holidayName }: MeasuredDayHeaderProps) => {
   const ref = useRef<View>(null);
   useEffect(() => {
     if (measureKey != null && measureKey > 0) {
@@ -501,6 +746,8 @@ const MeasuredDayHeader = ({ section, today, onMeasure, measureKey }: MeasuredDa
         isToday={isSameDay(section.date, today)}
         isTomorrow={isSameDay(section.date, addDays(today, 1))}
         isExam={section.isExam}
+        isPast={section.date.getTime() < today.getTime()}
+        holidayName={holidayName}
       />
     </View>
   );
@@ -512,12 +759,13 @@ interface ExamsSeparatorProps {
 
 const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
   const { t } = useTranslation();
+  const examIcon = useIconName('exam');
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   return (
     <View style={styles.examsSeparator}>
       <View style={styles.examsSeparatorLine} />
       <View style={styles.examsSeparatorContent}>
-        <Ionicons name="school" size={14} color={Palette.textSecondary} />
+        <Ionicons name={examIcon as never} size={14} color={Palette.textSecondary} />
         <Text style={styles.examsSeparatorText}>{t('schedule.exams')}</Text>
       </View>
       <View style={styles.examsSeparatorLine} />
@@ -553,5 +801,40 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     color: Palette.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  datePickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  datePickerSheet: {
+    backgroundColor: Palette.card,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    marginHorizontal: Spacing.screenPadding,
+    width: '90%',
+    maxWidth: 380,
+  },
+  datePickerDone: {
+    alignSelf: 'flex-end',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
+  },
+  datePickerDoneText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Palette.accent,
+  },
+  photoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoFull: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').width,
   },
 });

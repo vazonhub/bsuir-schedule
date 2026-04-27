@@ -6,12 +6,14 @@ import { Avatar } from '@components/Avatar';
 import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto } from '@models/dto';
 import { Radius, Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
 interface Props {
   employee: EmployeeDto;
   onPress(): void;
+  onPhotoPress?(photoLink: string): void;
 }
 
 const buildInitials = (e: EmployeeDto): string => {
@@ -28,7 +30,7 @@ const buildSubtitle = (e: EmployeeDto): string | null => {
   return null;
 };
 
-export const EmployeeRow = ({ employee, onPress }: Props) => {
+export const EmployeeRow = ({ employee, onPress, onPhotoPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -40,21 +42,24 @@ export const EmployeeRow = ({ employee, onPress }: Props) => {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
       accessibilityLabel={t('employees.teacherLabel', { name: `${employee.lastName} ${employee.firstName} ${employee.middleName}` })}
+      accessibilityHint={t('a11y.openEmployeeSchedule')}
     >
-      <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
+      <Pressable onPress={() => onPhotoPress?.(employee.photoLink)} hitSlop={4} importantForAccessibility="no">
+        <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
+      </Pressable>
       <View style={styles.main}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text {...textProps('headline')} style={styles.title} numberOfLines={1}>
           {[employee.lastName, employee.firstName, employee.middleName]
             .filter(Boolean)
             .join(' ')}
         </Text>
         {subtitle && (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text {...textProps('footnote')} style={styles.subtitle} numberOfLines={1}>
             {subtitle}
           </Text>
         )}
       </View>
-      <Text style={styles.chevron}>&rsaquo;</Text>
+      <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">&rsaquo;</Text>
     </Pressable>
   );
 };

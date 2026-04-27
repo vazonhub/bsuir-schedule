@@ -1,6 +1,8 @@
+import type { Holiday } from '@models/holiday';
 import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
-import { getLessonAccentColor } from '@utils/lesson';
+import { findHolidayName } from '@utils/holidays';
+import { buildLessonBlockId, getLessonAccentColor } from '@utils/lesson';
 import { flattenSchedule, flattenExams } from '@utils/scheduleNormalization';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
@@ -17,6 +19,8 @@ export interface WidgetLesson {
   numSubgroup: number;
   /** True if this lesson belongs to the user's selected subgroup (or is shared). */
   isMine: boolean;
+  /** Optional note/annotation for this lesson. */
+  note: string | null;
 }
 
 export interface WidgetDayBlock {
@@ -29,6 +33,8 @@ export interface WidgetDayBlock {
   /** Month 0..11. */
   month: number;
   lessons: WidgetLesson[];
+  /** State holiday name, if this day is a public holiday. */
+  holidayName: string | null;
 }
 
 export interface WidgetStrings {
@@ -82,6 +88,7 @@ const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): Wid
     teacherPhotoUrl: lesson.raw.employees?.[0]?.photoLink ?? null,
     numSubgroup: numSub,
     isMine,
+    note: lesson.raw.note ?? null,
   };
 };
 
@@ -92,12 +99,13 @@ const toDateISO = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
-const toDayBlock = (date: Date, lessons: NormalizedLesson[], subgroup: SubgroupChoice): WidgetDayBlock => ({
+const toDayBlock = (date: Date, lessons: NormalizedLesson[], subgroup: SubgroupChoice, holidays: Holiday[]): WidgetDayBlock => ({
   dateISO: toDateISO(date),
   dayOfWeek: date.getDay(),
   dayOfMonth: date.getDate(),
   month: date.getMonth(),
   lessons: lessons.map((l) => toWidgetLesson(l, subgroup)),
+  holidayName: findHolidayName(toDateISO(date), holidays),
 });
 
 /**
@@ -113,14 +121,19 @@ export const buildWidgetSnapshot = (
   groupName: string,
   subgroup: SubgroupChoice,
   strings: WidgetStrings,
+  blockedIds?: Set<string>,
+  holidays: Holiday[] = [],
 ): WidgetSnapshot => {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  // Flatten regular + exams together
+  // Flatten regular + exams together, filtering out blocked lessons
   const regularLessons = flattenSchedule(schedule, currentWeek, now);
   const examLessons = flattenExams(schedule, currentWeek, now);
-  const all = [...regularLessons, ...examLessons].sort(
+  const unblocked = [...regularLessons, ...examLessons].filter(
+    (l) => !blockedIds || !blockedIds.has(buildLessonBlockId(l)),
+  );
+  const all = unblocked.sort(
     (a, b) => a.date.getTime() - b.date.getTime() || a.startTime.localeCompare(b.startTime),
   );
 
@@ -133,7 +146,7 @@ export const buildWidgetSnapshot = (
   if (futureLessons.length > 0) {
     const nextDate = futureLessons[0]!.date;
     const nextDayLessons = futureLessons.filter((l) => l.date.getTime() === nextDate.getTime());
-    nextDayBlock = toDayBlock(nextDate, nextDayLessons, subgroup);
+    nextDayBlock = toDayBlock(nextDate, nextDayLessons, subgroup, holidays);
   }
 
   return {
@@ -141,7 +154,7 @@ export const buildWidgetSnapshot = (
     generatedAt: now.toISOString(),
     currentWeek,
     subgroup,
-    today: toDayBlock(todayStart, todayLessons, subgroup),
+    today: toDayBlock(todayStart, todayLessons, subgroup, holidays),
     nextDay: nextDayBlock,
     strings,
   };

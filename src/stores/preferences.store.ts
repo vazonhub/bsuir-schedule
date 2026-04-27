@@ -4,6 +4,22 @@ import { Appearance } from 'react-native';
 
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
 import { getSystemScheme } from '@utils/systemScheme';
+import type { KnownLessonType } from '@theme/colors';
+
+export type LessonColorOverrides = Partial<Record<KnownLessonType, string>>;
+
+export interface IconOverrides {
+  exam?: string;
+  today?: string;
+  subgroup?: string;
+  favorites?: string;
+  location?: string;
+  clock?: string;
+  block?: string;
+}
+
+/** Per-icon-slot color overrides. Only exam and today have customizable colors. */
+export type IconColorOverrides = Partial<Record<string, string>>;
 
 /**
  * `0` — общая (без подгруппы или «все»), `1` / `2` — конкретная подгруппа.
@@ -39,6 +55,11 @@ interface PreferencesState {
   /** Actual resolved scheme — avoids depending on the async useColorScheme(). */
   resolvedScheme: ResolvedScheme;
   language: LanguageChoice;
+  /** When true, days before today are hidden from the schedule list. */
+  hidePastLessons: boolean;
+  /** Data source toggles — which backends to use for schedule data. */
+  sourceBsuirApi: boolean;
+  sourceICloud: boolean;
 
   togglePinnedGroup(name: string): void;
   togglePinnedEmployee(urlId: string): void;
@@ -47,6 +68,24 @@ interface PreferencesState {
   setSubgroup(key: string, value: SubgroupChoice): void;
   setTheme(theme: ThemeChoice): void;
   setLanguage(language: LanguageChoice): void;
+  setHidePastLessons(value: boolean): void;
+  setSourceBsuirApi(value: boolean): void;
+  setSourceICloud(value: boolean): void;
+  /** Заблокированные пары: entityKey → массив block-ID. */
+  blockedLessons: Record<string, string[]>;
+  toggleBlockedLesson(entityKey: string, blockId: string): void;
+
+  /** Appearance customization */
+  lessonColorOverrides: LessonColorOverrides;
+  iconOverrides: IconOverrides;
+  iconColorOverrides: IconColorOverrides;
+  setLessonColor(type: KnownLessonType, color: string): void;
+  resetLessonColor(type: KnownLessonType): void;
+  setIcon(slot: keyof IconOverrides, iconName: string): void;
+  resetIcon(slot: keyof IconOverrides): void;
+  setIconColor(slot: string, color: string): void;
+  resetIconColor(slot: string): void;
+  resetAllAppearance(): void;
 }
 
 const toggleInArray = (arr: string[], value: string): string[] =>
@@ -63,6 +102,13 @@ export const usePreferencesStore = create<PreferencesState>()(
       theme: 'auto' as ThemeChoice,
       resolvedScheme: resolveScheme('auto'),
       language: 'ru' as LanguageChoice,
+      hidePastLessons: true,
+      sourceBsuirApi: true,
+      sourceICloud: true,
+      blockedLessons: {},
+      lessonColorOverrides: {},
+      iconOverrides: {},
+      iconColorOverrides: {},
 
       togglePinnedGroup: (name) =>
         set((s) => ({ pinnedGroups: toggleInArray(s.pinnedGroups, name) })),
@@ -95,6 +141,53 @@ export const usePreferencesStore = create<PreferencesState>()(
         }
       },
       setLanguage: (language) => set({ language }),
+      setHidePastLessons: (value) => set({ hidePastLessons: value }),
+      setSourceBsuirApi: (value) => {
+        // At least one source must be enabled.
+        const icloud = get().sourceICloud;
+        if (!value && !icloud) return;
+        set({ sourceBsuirApi: value });
+      },
+      setSourceICloud: (value) => {
+        const api = get().sourceBsuirApi;
+        if (!value && !api) return;
+        set({ sourceICloud: value });
+      },
+      toggleBlockedLesson: (entityKey, blockId) =>
+        set((s) => {
+          const current = s.blockedLessons[entityKey] ?? [];
+          const next = current.includes(blockId)
+            ? current.filter((id) => id !== blockId)
+            : [...current, blockId];
+          return { blockedLessons: { ...s.blockedLessons, [entityKey]: next } };
+        }),
+
+      setLessonColor: (type, color) =>
+        set((s) => ({ lessonColorOverrides: { ...s.lessonColorOverrides, [type]: color } })),
+      resetLessonColor: (type) =>
+        set((s) => {
+          const next = { ...s.lessonColorOverrides };
+          delete next[type];
+          return { lessonColorOverrides: next };
+        }),
+      setIcon: (slot, iconName) =>
+        set((s) => ({ iconOverrides: { ...s.iconOverrides, [slot]: iconName } })),
+      resetIcon: (slot) =>
+        set((s) => {
+          const next = { ...s.iconOverrides };
+          delete next[slot];
+          return { iconOverrides: next };
+        }),
+      setIconColor: (slot, color) =>
+        set((s) => ({ iconColorOverrides: { ...s.iconColorOverrides, [slot]: color } })),
+      resetIconColor: (slot) =>
+        set((s) => {
+          const next = { ...s.iconColorOverrides };
+          delete next[slot];
+          return { iconColorOverrides: next };
+        }),
+      resetAllAppearance: () =>
+        set({ lessonColorOverrides: {}, iconOverrides: {}, iconColorOverrides: {} }),
     }),
     {
       name: 'preferences-v1',
@@ -107,6 +200,13 @@ export const usePreferencesStore = create<PreferencesState>()(
         subgroupByKey: state.subgroupByKey,
         theme: state.theme,
         language: state.language,
+        hidePastLessons: state.hidePastLessons,
+        sourceBsuirApi: state.sourceBsuirApi,
+        sourceICloud: state.sourceICloud,
+        blockedLessons: state.blockedLessons,
+        lessonColorOverrides: state.lessonColorOverrides,
+        iconOverrides: state.iconOverrides,
+        iconColorOverrides: state.iconColorOverrides,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -141,3 +241,9 @@ export const selectIsEmployeePinned = (urlId: string) => (s: PreferencesState) =
 /** Selector helper: subgroup chosen for `key` (default `0` = all). */
 export const selectSubgroup = (key: string) => (s: PreferencesState): SubgroupChoice =>
   s.subgroupByKey[key] ?? 0;
+
+const EMPTY_BLOCKED: string[] = [];
+
+/** Selector helper: blocked lesson IDs for `entityKey`. */
+export const selectBlockedLessons = (entityKey: string) => (s: PreferencesState): string[] =>
+  s.blockedLessons[entityKey] ?? EMPTY_BLOCKED;

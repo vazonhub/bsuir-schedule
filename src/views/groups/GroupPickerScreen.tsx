@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GlassButton } from '@components/GlassButton';
 import { SearchBar } from '@components/SearchBar';
 import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { hapticSuccess } from '@utils/haptics';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
@@ -27,6 +28,7 @@ import { useEmployeesStore } from '@stores/employees.store';
 import { useGroupsStore } from '@stores/groups.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { textProps } from '@theme/typography';
 import { PINNED_SECTION_KEY, buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
 import {
   PINNED_SECTION_KEY as PINNED_EMP_KEY,
@@ -55,19 +57,25 @@ export const GroupPickerScreen = () => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const isDark = useIsDark();
+  const reduceMotion = useReduceMotion();
   const [activeTab, setActiveTab] = useState<PickerTab>('groups');
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const switchTab = useCallback((tab: PickerTab) => {
     if (tab === activeTab) return;
     setActiveTab(tab);
-    Animated.spring(slideAnim, {
-      toValue: tab === 'groups' ? 0 : 1,
-      useNativeDriver: true,
-      friction: 26,
-      tension: 170,
-    }).start();
-  }, [activeTab, slideAnim]);
+    const toValue = tab === 'groups' ? 0 : 1;
+    if (reduceMotion) {
+      slideAnim.setValue(toValue);
+    } else {
+      Animated.spring(slideAnim, {
+        toValue,
+        useNativeDriver: true,
+        friction: 26,
+        tension: 170,
+      }).start();
+    }
+  }, [activeTab, slideAnim, reduceMotion]);
 
   // ─── Groups ───
   const groups = useGroupsStore((s) => s.items);
@@ -143,7 +151,7 @@ export const GroupPickerScreen = () => {
       onPress={() =>
         handleEmployeePress(
           item.urlId,
-          item.fio ?? `${item.lastName} ${item.firstName[0] ?? ''}.`,
+          item.fio ?? `${item.lastName} ${item.firstName?.[0] ?? ''}.${item.middleName?.[0] ? item.middleName[0] + '.' : ''}`,
         )
       }
     />
@@ -173,9 +181,9 @@ export const GroupPickerScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Text style={styles.backChevron}>&#8249;</Text>
+          <Text maxFontSizeMultiplier={1} style={styles.backChevron}>&#8249;</Text>
         </GlassButton>
-        <Text style={styles.title} numberOfLines={1}>{t('groups.pickerTitle')}</Text>
+        <Text {...textProps('title')} style={styles.title} numberOfLines={1}>{t('groups.pickerTitle')}</Text>
       </View>
 
       {/* ─── Segmented control ─── */}
@@ -217,7 +225,7 @@ export const GroupPickerScreen = () => {
                   renderItem={renderGroupRow}
                   ListEmptyComponent={
                     <View style={styles.center}>
-                      <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+                      <Text {...textProps('body')} style={styles.empty}>{t('common.nothingFound')}</Text>
                     </View>
                   }
                 />
@@ -262,7 +270,7 @@ export const GroupPickerScreen = () => {
                   renderItem={renderEmployeeRow}
                   ListEmptyComponent={
                     <View style={styles.center}>
-                      <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+                      <Text {...textProps('body')} style={styles.empty}>{t('common.nothingFound')}</Text>
                     </View>
                   }
                 />
@@ -279,7 +287,7 @@ export const GroupPickerScreen = () => {
                       {section.key === PINNED_EMP_KEY && (
                         <Ionicons name="star" size={13} color={Palette.accent} />
                       )}
-                      <Text style={styles.sectionTitle}>{section.title}</Text>
+                      <Text {...textProps('footnote')} style={styles.sectionTitle}>{section.title}</Text>
                     </View>
                   )}
                   renderItem={renderEmployeeRow}

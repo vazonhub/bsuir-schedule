@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
 import type { WeekNumber } from '@models/dto';
 import { Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 import { formatDayHeader, formatExamDayHeader } from '@utils/date';
+import { buildLabel } from '@utils/a11y';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -17,6 +20,10 @@ interface Props {
   isTomorrow?: boolean;
   /** True for exam session sections — hides week number. */
   isExam?: boolean;
+  /** True when the day is strictly before today. */
+  isPast?: boolean;
+  /** State holiday name to display as a badge. */
+  holidayName?: string;
 }
 
 /**
@@ -24,18 +31,36 @@ interface Props {
  * screen background; opaque `backgroundColor` ensures it cleanly hides cards
  * scrolling behind it when the section list pins it to the top.
  */
-export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false }: Props) => {
+export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
+  const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
+  const dayText = isExam ? formatExamDayHeader(date) : formatDayHeader(date, week);
+  const a11yLabel = buildLabel(
+    dayText,
+    isToday && t('date.today'),
+    isTomorrow && t('date.tomorrow'),
+    holidayName,
+  );
+
   return (
-    <View style={styles.wrap}>
-      <Text
-        style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow]}
-        numberOfLines={1}
-      >
-        {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
-      </Text>
+    <View style={styles.wrap} accessibilityRole="header" accessibilityLabel={a11yLabel}>
+      <View style={styles.row}>
+        <Text
+          {...textProps('footnote')}
+          style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
+        >
+          {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
+        </Text>
+        {holidayName != null && (
+          <View style={styles.holidayBadge}>
+            <Text maxFontSizeMultiplier={1} style={styles.holidayText} numberOfLines={1}>
+              {holidayName}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -46,6 +71,11 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     paddingTop: Spacing.sectionTop,
     paddingBottom: Spacing.sectionBottom,
     backgroundColor: Palette.background,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   text: {
     fontSize: 13,
@@ -59,5 +89,20 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   tomorrow: {
     color: Palette.destructive,
+  },
+  past: {
+    opacity: 0.4,
+  },
+  holidayBadge: {
+    backgroundColor: Palette.accent + '1A', // 10% opacity
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    flexShrink: 1,
+  },
+  holidayText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Palette.accent,
   },
 });

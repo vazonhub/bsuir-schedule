@@ -45,3 +45,25 @@ export const buildAllEmployeesSection = (
     data,
   };
 };
+
+/**
+ * Group non-pinned employees by the first letter of their last name.
+ * Returns an array of sections sorted alphabetically.
+ */
+export const buildAlphabetSections = (
+  employees: EmployeeDto[],
+  pinnedUrlIds: string[],
+): EmployeeSection[] => {
+  const pinnedSet = new Set(pinnedUrlIds);
+  const map = new Map<string, EmployeeDto[]>();
+  for (const e of employees) {
+    if (pinnedSet.has(e.urlId)) continue;
+    const letter = (e.lastName[0] ?? '?').toUpperCase();
+    const arr = map.get(letter);
+    if (arr) arr.push(e);
+    else map.set(letter, [e]);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b, 'ru'))
+    .map(([letter, data]) => ({ key: letter, title: letter, data }));
+};

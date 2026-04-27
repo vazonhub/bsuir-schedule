@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { Radius, Spacing } from '@theme';
 import { FALLBACK_LESSON_COLOR } from '@theme/colors';
@@ -28,15 +29,20 @@ interface BoneProps {
 
 const Bone = ({ width, height, borderRadius = Radius.sm }: BoneProps) => {
   const Palette = usePalette();
-  const opacity = useSharedValue(1);
+  const reduceMotion = useReduceMotion();
+  const opacity = useSharedValue(reduceMotion ? 0.6 : 1);
 
   useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 0.6;
+      return;
+    }
     opacity.value = withRepeat(
       withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, [opacity]);
+  }, [opacity, reduceMotion]);
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
@@ -132,7 +138,7 @@ const SkeletonDayHeader = () => (
 // ─── Composite skeletons for screens ─────────────────────────
 
 export const SkeletonGroupsList = () => (
-  <View style={styles.list}>
+  <View style={styles.list} importantForAccessibility="no-hide-descendants">
     <SkeletonSectionHeader />
     <SkeletonGroupRow />
     <SkeletonGroupRow />
@@ -153,7 +159,7 @@ export const SkeletonGroupsList = () => (
 );
 
 export const SkeletonEmployeesList = () => (
-  <View style={styles.list}>
+  <View style={styles.list} importantForAccessibility="no-hide-descendants">
     <SkeletonSectionHeader />
     <SkeletonEmployeeRow />
     <SkeletonEmployeeRow />
@@ -172,7 +178,7 @@ export const SkeletonSchedule = () => {
   const topInset = insets.top + TOP_BAR_BUTTON_SIZE + Spacing.lg;
 
   return (
-    <View style={styles.scheduleContainer}>
+    <View style={styles.scheduleContainer} importantForAccessibility="no-hide-descendants">
       {/* Floating top bar placeholder */}
       <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
         <Bone width={TOP_BAR_BUTTON_SIZE} height={TOP_BAR_BUTTON_SIZE} borderRadius={TOP_BAR_BUTTON_SIZE / 2} />

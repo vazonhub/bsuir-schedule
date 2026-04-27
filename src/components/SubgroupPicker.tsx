@@ -5,6 +5,7 @@ import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { useTranslation } from 'react-i18next';
 
 import { GlassButton } from '@components/GlassButton';
+import { useIconName } from '@hooks/useAppearance';
 import { hapticLight } from '@utils/haptics';
 import { useGlassTint, useIsDark, usePalette } from '@hooks/usePalette';
 import type { SubgroupChoice } from '@stores/preferences.store';
@@ -25,9 +26,10 @@ interface OptionLabelProps {
   size?: 'sm' | 'md';
   Palette: PaletteType;
   styles: ReturnType<typeof makeStyles>;
+  subgroupIcon: string;
 }
 
-const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles }: OptionLabelProps) => {
+const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles, subgroupIcon }: OptionLabelProps) => {
   const { t } = useTranslation();
   const color = active ? Palette.accent : Palette.textPrimary;
   const iconSize = size === 'sm' ? 16 : 18;
@@ -39,14 +41,14 @@ const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles }: Op
     return (
       <View style={styles.optionInline}>
         <Ionicons name="people" size={iconSize + 2} color={color} />
-        <Text style={textStyle}>{t('subgroup.all')}</Text>
+        <Text maxFontSizeMultiplier={1}style={textStyle}>{t('subgroup.all')}</Text>
       </View>
     );
   }
   return (
     <View style={styles.optionInline}>
-      <Ionicons name="person" size={iconSize} color={color} />
-      <Text style={textStyle}>{value}</Text>
+      <Ionicons name={subgroupIcon as never} size={iconSize} color={color} />
+      <Text maxFontSizeMultiplier={1}style={textStyle}>{value}</Text>
     </View>
   );
 };
@@ -67,6 +69,7 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
   const isDark = useIsDark();
   const glassTint = useGlassTint();
   const styles = useMemo(() => makeStyles(Palette, glassTint), [Palette, glassTint]);
+  const subgroupIcon = useIconName('subgroup');
   const [open, setOpen] = useState(false);
 
   const handleSelect = (next: SubgroupChoice) => {
@@ -83,8 +86,9 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
         shape="pill"
         active={open}
         accessibilityLabel={t('subgroup.label', { value: t(A11Y_LABELS[value]) })}
+        accessibilityState={{ expanded: open }}
       >
-        <OptionLabel value={value} active={open} size="sm" Palette={Palette} styles={styles} />
+        <OptionLabel value={value} active={open} size="sm" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
       </GlassButton>
 
       <Modal
@@ -114,10 +118,12 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
                   key={opt}
                   onPress={() => handleSelect(opt)}
                   style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                  accessibilityRole="button"
                   accessibilityLabel={t(A11Y_LABELS[opt])}
+                  accessibilityState={{ selected: active }}
                 >
-                  <OptionLabel value={opt} active={active} size="md" Palette={Palette} styles={styles} />
-                  {active && <Text style={[styles.check, styles.activeText]}>{'\u2713'}</Text>}
+                  <OptionLabel value={opt} active={active} size="md" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
+                  {active && <Text maxFontSizeMultiplier={1}style={[styles.check, styles.activeText]}>{'\u2713'}</Text>}
                 </Pressable>
               );
             })}

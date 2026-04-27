@@ -20,6 +20,7 @@ import { usePalette } from '@hooks/usePalette';
 import { useGroupsStore } from '@stores/groups.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { textProps } from '@theme/typography';
 import { PINNED_SECTION_KEY, buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
 
 import { GroupRow } from './GroupRow';
@@ -86,12 +87,12 @@ export const GroupsListScreen = () => {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <View style={styles.center}>
-          <Text style={styles.error}>{error}</Text>
+          <Text {...textProps('body')} style={styles.error}>{error}</Text>
           <Pressable
             onPress={handleRefresh}
             style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
           >
-            <Text style={styles.retryLabel}>{t('common.retry')}</Text>
+            <Text {...textProps('callout')} style={styles.retryLabel}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -125,7 +126,7 @@ export const GroupsListScreen = () => {
           refreshControl={refreshControl}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+              <Text {...textProps('body')} style={styles.empty}>{t('common.nothingFound')}</Text>
             </View>
           }
         />

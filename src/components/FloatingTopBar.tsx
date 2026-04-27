@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Avatar } from '@components/Avatar';
 import { GlassButton } from '@components/GlassButton';
 import { SubgroupPicker } from '@components/SubgroupPicker';
+import { useIconColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { Spacing } from '@theme';
@@ -33,12 +35,23 @@ interface Props {
   isCurrentDateToday?: boolean;
   /** Подсветить лейбл красным, если это «завтра». */
   isCurrentDateTomorrow?: boolean;
+  /** Called when user taps the date label to open date picker. */
+  onDatePress?(): void;
+  /** Show a "back to today" button when viewing past dates. */
+  showTodayButton?: boolean;
+  onScrollToToday?(): void;
   /** Show an exams shortcut button (hidden when already viewing exams). */
   showExamsButton?: boolean;
   onScrollToExams?(): void;
   /** Show a "back to schedule" button when viewing exams. */
   showScheduleButton?: boolean;
   onScrollToSchedule?(): void;
+  /** Static title shown instead of the date label (e.g. group number or employee FIO). */
+  title?: string;
+  /** Avatar URL shown next to the title (employee photo). */
+  avatarUri?: string | null;
+  /** Called when user taps the avatar. */
+  onAvatarPress?(): void;
   /** When true, replaces back button with group title and pin with change button. */
   isDefaultSchedule?: boolean;
   /** Group name shown in the top bar (only when `isDefaultSchedule`). */
@@ -62,17 +75,27 @@ export const FloatingTopBar = ({
   currentDate,
   isCurrentDateToday = false,
   isCurrentDateTomorrow = false,
+  showTodayButton = false,
+  onScrollToToday,
   showExamsButton = false,
   onScrollToExams,
   showScheduleButton = false,
   onScrollToSchedule,
+  title,
+  avatarUri,
+  onAvatarPress,
   isDefaultSchedule = false,
   defaultGroupName,
   onChangeDefaultGroup,
+  onDatePress,
 }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const examIcon = useIconName('exam');
+  const todayIcon = useIconName('today');
+  const examColor = useIconColor('exam');
+  const todayColor = useIconColor('today');
   const showSubgroupPicker = subgroup !== undefined && onSubgroupChange !== undefined;
   const dayLabel = currentDate ? formatDayShortCompact(currentDate, new Date()) : null;
   const router = useRouter();
@@ -93,7 +116,7 @@ export const FloatingTopBar = ({
               style={styles.dayLabelChip}
               accessibilityLabel={t('schedule.changeGroup')}
             >
-              <Text style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
+              <Text maxFontSizeMultiplier={1}style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
                 {defaultGroupName}
               </Text>
             </GlassButton>
@@ -104,20 +127,40 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('common.back')}
           >
-            <Text style={styles.back}>&#8249;</Text>
+            <Text maxFontSizeMultiplier={1}style={styles.back}>&#8249;</Text>
           </GlassButton>
         )}
 
-        {dayLabel && (
+        {!isDefaultSchedule && avatarUri ? (
+          <Pressable onPress={onAvatarPress} hitSlop={4}>
+            <Avatar uri={avatarUri} size={32} />
+          </Pressable>
+        ) : null}
+
+        {!isDefaultSchedule && title ? (
           <GlassButton
+            height={38}
+            shape="pill"
+            style={styles.dayLabelChip}
+            accessibilityLabel={title}
+          >
+            <Text maxFontSizeMultiplier={1}style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
+              {title}
+            </Text>
+          </GlassButton>
+        ) : dayLabel ? (
+          <GlassButton
+            onPress={onDatePress}
             height={38}
             shape="pill"
             active={isCurrentDateToday || isCurrentDateTomorrow}
             activeColor={isCurrentDateTomorrow ? Palette.destructive : undefined}
             style={styles.dayLabelChip}
             accessibilityLabel={dayLabel}
+            accessibilityHint={t('a11y.openDatePicker')}
           >
             <Text
+              maxFontSizeMultiplier={1}
               style={[
                 styles.dayLabel,
                 isCurrentDateToday && styles.dayLabelToday,
@@ -129,35 +172,44 @@ export const FloatingTopBar = ({
               {dayLabel}
             </Text>
           </GlassButton>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.right}>
-        {showExamsButton && onScrollToExams && (
+        {showTodayButton && onScrollToToday ? (
+          <GlassButton
+            onPress={onScrollToToday}
+            size={38}
+            accessibilityLabel={t('schedule.goToToday')}
+          >
+            <Ionicons name={todayIcon as never} size={18} color={todayColor} />
+          </GlassButton>
+        ) : showExamsButton && onScrollToExams ? (
           <GlassButton
             onPress={onScrollToExams}
             size={38}
             accessibilityLabel={t('schedule.goToExams')}
           >
-            <Ionicons name="school" size={18} color="#FF9500" />
+            <Ionicons name={examIcon as never} size={18} color={examColor} />
           </GlassButton>
-        )}
-        {showScheduleButton && onScrollToSchedule && (
+        ) : showScheduleButton && onScrollToSchedule ? (
           <GlassButton
             onPress={onScrollToSchedule}
             size={38}
             accessibilityLabel={t('schedule.goToSchedule')}
           >
-            <Ionicons name="time" size={18} color="#34C759" />
+            <Ionicons name={todayIcon as never} size={18} color={todayColor} />
           </GlassButton>
-        )}
+        ) : null}
         <GlassButton
           onPress={onTogglePin}
           size={38}
           active={pinned}
           accessibilityLabel={pinned ? t('schedule.unpin') : t('schedule.pin')}
+          accessibilityHint={t('a11y.togglePin')}
+          accessibilityState={{ selected: pinned }}
         >
-          <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
+          <Text maxFontSizeMultiplier={1}style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
         </GlassButton>
 
         {showSubgroupPicker && (

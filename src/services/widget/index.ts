@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { Platform } from 'react-native';
 
+import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
@@ -46,7 +47,7 @@ const reloadWidgetTimelines = (): void => {
  * on preference changes (subgroup, theme, locale), and by background fetch.
  */
 export const updateWidgetSnapshot = async (): Promise<void> => {
-  const { defaultGroup, subgroupByKey } = usePreferencesStore.getState();
+  const { defaultGroup, subgroupByKey, blockedLessons } = usePreferencesStore.getState();
   if (!defaultGroup) return;
 
   const { byKey, currentWeek } = useScheduleStore.getState();
@@ -54,6 +55,7 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
   if (!schedule || !currentWeek) return;
 
   const subgroup: SubgroupChoice = subgroupByKey[defaultGroup] ?? 0;
+  const blockedIds = new Set(blockedLessons[defaultGroup] ?? []);
 
   const t = i18n.t;
   const strings: WidgetStrings = {
@@ -66,7 +68,11 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
     description: t('widget.description'),
   };
 
-  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings);
+  const year = new Date().getFullYear();
+  const { byYear, userAdded, userRemoved } = useHolidaysStore.getState();
+  const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved);
+
+  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings, blockedIds, holidays);
   await writeSnapshot(snapshot);
   reloadWidgetTimelines();
 };
@@ -76,6 +82,7 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
 let _prev = {
   defaultGroup: usePreferencesStore.getState().defaultGroup,
   subgroupByKey: usePreferencesStore.getState().subgroupByKey,
+  blockedLessons: usePreferencesStore.getState().blockedLessons,
   theme: usePreferencesStore.getState().theme,
   language: usePreferencesStore.getState().language,
 };
@@ -84,10 +91,13 @@ usePreferencesStore.subscribe((state) => {
   const defaultGroup = state.defaultGroup;
   const subgroupForDefault = defaultGroup ? state.subgroupByKey[defaultGroup] : undefined;
   const prevSubgroupForDefault = _prev.defaultGroup ? _prev.subgroupByKey[_prev.defaultGroup] : undefined;
+  const blockedForDefault = defaultGroup ? state.blockedLessons[defaultGroup] : undefined;
+  const prevBlockedForDefault = _prev.defaultGroup ? _prev.blockedLessons[_prev.defaultGroup] : undefined;
 
   const changed =
     defaultGroup !== _prev.defaultGroup ||
     subgroupForDefault !== prevSubgroupForDefault ||
+    blockedForDefault !== prevBlockedForDefault ||
     state.theme !== _prev.theme ||
     state.language !== _prev.language;
 
@@ -95,6 +105,7 @@ usePreferencesStore.subscribe((state) => {
     _prev = {
       defaultGroup: state.defaultGroup,
       subgroupByKey: state.subgroupByKey,
+      blockedLessons: state.blockedLessons,
       theme: state.theme,
       language: state.language,
     };

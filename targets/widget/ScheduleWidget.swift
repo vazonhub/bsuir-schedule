@@ -15,6 +15,7 @@ struct WidgetLesson: Codable {
     let teacherPhotoUrl: String?
     let numSubgroup: Int
     let isMine: Bool
+    let note: String?
 }
 
 struct WidgetDayBlock: Codable {
@@ -23,6 +24,7 @@ struct WidgetDayBlock: Codable {
     let dayOfMonth: Int
     let month: Int
     let lessons: [WidgetLesson]
+    let holidayName: String?
 }
 
 struct WidgetSnapshot: Codable {
@@ -262,6 +264,7 @@ struct LessonRow: View {
     let lesson: WidgetLesson
     let photo: Data?
     var compact: Bool = false
+    var showNote: Bool = false
 
     var body: some View {
         if lesson.isMine {
@@ -302,6 +305,14 @@ struct LessonRow: View {
                             .lineLimit(1)
                     }
                 }
+
+                if showNote, let note = lesson.note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
@@ -316,26 +327,27 @@ struct LessonRow: View {
         }
     }
 
-    /// Compact row for lessons of another subgroup — dashed outline, single line.
+    /// Compact row for lessons of another subgroup — dashed outline.
     private var compactRow: some View {
-        HStack(spacing: 4) {
-            Text(lesson.subject)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Text(lesson.subject)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
 
-            Text("· \(lesson.startTime)–\(lesson.endTime)")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
-                .lineLimit(1)
+                if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                    Text("\(lesson.numSubgroup) п/г")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(Color(hex: lesson.typeColorHex))
+                }
 
-            if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
-                Text("\(lesson.numSubgroup) п/г")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(Color(hex: lesson.typeColorHex))
+                Spacer(minLength: 0)
             }
 
-            Spacer(minLength: 0)
+            Text("\(lesson.startTime)–\(lesson.endTime)")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
         }
         .padding(.vertical, 2)
         .padding(.horizontal, 6)
@@ -348,16 +360,34 @@ struct LessonRow: View {
 
 struct EmptyStateView: View {
     var allDone: Bool = false
+    var holidayName: String? = nil
+    var displayBlock: WidgetDayBlock? = nil
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: allDone ? "checkmark.circle" : "calendar")
-                .font(.title2)
-                .foregroundColor(.secondary)
-            Text(allDone ? "На сегодня пар больше нет" : "Нет пар")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
+            if let holiday = holidayName {
+                Image(systemName: "star.fill")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                Text(holiday)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                if let block = displayBlock {
+                    Text(formatDayLabel(block))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Image(systemName: allDone ? "checkmark.circle" : "calendar")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                Text(allDone ? "На сегодня пар больше нет" : "Нет пар")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -396,7 +426,9 @@ struct SmallWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let lessons = Array(entry.visibleLessons.prefix(2))
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
@@ -411,11 +443,11 @@ struct SmallWidgetView: View {
                         Spacer()
                     }
 
-                    Spacer(minLength: 0)
-
                     ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
                         LessonRow(lesson: lesson, photo: nil, compact: true)
                     }
+
+                    Spacer(minLength: 0)
                 }
             } else {
                 EmptyStateView(allDone: !snap.today.lessons.isEmpty)
@@ -433,7 +465,9 @@ struct MediumWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let lessons = Array(entry.visibleLessons.prefix(3))
                 VStack(alignment: .leading, spacing: 4) {
                     WidgetHeader(
@@ -464,7 +498,9 @@ struct LargeWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if !entry.visibleLessons.isEmpty {
+            if let holiday = entry.displayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
+            } else if !entry.visibleLessons.isEmpty {
                 let visible = Array(entry.visibleLessons.prefix(7))
                 VStack(alignment: .leading, spacing: 6) {
                     WidgetHeader(
@@ -474,7 +510,7 @@ struct LargeWidgetView: View {
                     )
 
                     ForEach(Array(visible.enumerated()), id: \.offset) { index, lesson in
-                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""])
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], showNote: true)
                         if index < visible.count - 1 {
                             Divider()
                         }
