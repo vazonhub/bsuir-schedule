@@ -16,7 +16,8 @@
       "bundleIdentifier": "by.vazon.bsuirschedule",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": ["en", "ru", "be"]
       },
       "entitlements": {
         "com.apple.security.application-groups": [
