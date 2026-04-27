@@ -27,7 +27,7 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        <Text style={styles.icon}>{'\u2315'}</Text>
+        <Text maxFontSizeMultiplier={1}style={styles.icon} importantForAccessibility="no">{'\u2315'}</Text>
         <TextInput
           style={styles.input}
           value={value}
@@ -38,6 +38,7 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
           autoCapitalize="none"
           returnKeyType="search"
           underlineColorAndroid="transparent"
+          maxFontSizeMultiplier={1.5}
           accessibilityLabel={t('common.search')}
         />
         {showClear && (
@@ -46,8 +47,9 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel={t('common.clear')}
+            accessibilityHint={t('a11y.clearSearch')}
           >
-            <Text style={styles.clear}>{'\u00D7'}</Text>
+            <Text maxFontSizeMultiplier={1}style={styles.clear}>{'\u00D7'}</Text>
           </Pressable>
         )}
       </View>
@@ -68,7 +70,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     backgroundColor: Palette.card,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.lg,
-    height: 44,
+    minHeight: 44,
   },
   icon: {
     fontSize: 18,

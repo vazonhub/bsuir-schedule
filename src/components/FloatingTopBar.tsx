@@ -116,7 +116,7 @@ export const FloatingTopBar = ({
               style={styles.dayLabelChip}
               accessibilityLabel={t('schedule.changeGroup')}
             >
-              <Text style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
+              <Text maxFontSizeMultiplier={1}style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
                 {defaultGroupName}
               </Text>
             </GlassButton>
@@ -127,7 +127,7 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('common.back')}
           >
-            <Text style={styles.back}>&#8249;</Text>
+            <Text maxFontSizeMultiplier={1}style={styles.back}>&#8249;</Text>
           </GlassButton>
         )}
 
@@ -144,7 +144,7 @@ export const FloatingTopBar = ({
             style={styles.dayLabelChip}
             accessibilityLabel={title}
           >
-            <Text style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
+            <Text maxFontSizeMultiplier={1}style={styles.dayLabel} numberOfLines={1} ellipsizeMode="tail">
               {title}
             </Text>
           </GlassButton>
@@ -157,8 +157,10 @@ export const FloatingTopBar = ({
             activeColor={isCurrentDateTomorrow ? Palette.destructive : undefined}
             style={styles.dayLabelChip}
             accessibilityLabel={dayLabel}
+            accessibilityHint={t('a11y.openDatePicker')}
           >
             <Text
+              maxFontSizeMultiplier={1}
               style={[
                 styles.dayLabel,
                 isCurrentDateToday && styles.dayLabelToday,
@@ -204,8 +206,10 @@ export const FloatingTopBar = ({
           size={38}
           active={pinned}
           accessibilityLabel={pinned ? t('schedule.unpin') : t('schedule.pin')}
+          accessibilityHint={t('a11y.togglePin')}
+          accessibilityState={{ selected: pinned }}
         >
-          <Text style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
+          <Text maxFontSizeMultiplier={1}style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
         </GlassButton>
 
         {showSubgroupPicker && (

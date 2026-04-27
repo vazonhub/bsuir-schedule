@@ -14,6 +14,7 @@ import type { DefaultEmployee, SubgroupChoice } from '@stores/preferences.store'
 import { usePreferencesStore, selectIsGroupPinned, selectIsEmployeePinned, selectSubgroup } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { Radius, Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 import { ScheduleView } from './ScheduleView';
 
@@ -53,15 +54,15 @@ const EmptyState = ({ onSelect }: { onSelect(): void }) => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.center}>
         <Ionicons name="calendar-outline" size={64} color={Palette.textTertiary} />
-        <Text style={styles.emptyTitle}>{t('mySchedule.title')}</Text>
-        <Text style={styles.emptySubtitle}>
+        <Text {...textProps('title')} style={styles.emptyTitle}>{t('mySchedule.title')}</Text>
+        <Text {...textProps('callout')} style={styles.emptySubtitle}>
           {t('mySchedule.subtitle')}
         </Text>
         <Pressable
           onPress={onSelect}
           style={({ pressed }) => [styles.selectBtn, pressed && styles.selectBtnPressed]}
         >
-          <Text style={styles.selectBtnLabel}>{t('mySchedule.selectGroup')}</Text>
+          <Text {...textProps('body')} style={styles.selectBtnLabel}>{t('mySchedule.selectGroup')}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

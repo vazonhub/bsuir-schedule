@@ -6,6 +6,7 @@ import { Animated, Linking, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
@@ -21,6 +22,7 @@ export const AboutScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const router = useRouter();
+  const reduceMotion = useReduceMotion();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const language = usePreferencesStore((s) => s.language);
 
@@ -30,14 +32,14 @@ export const AboutScreen = () => {
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {
-      Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(
+      Animated.timing(tooltipOpacity, { toValue: 0, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start(
         () => setHintVisible(false),
       );
     } else {
       setHintVisible(true);
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
     }
-  }, [hintVisible, tooltipOpacity]);
+  }, [hintVisible, tooltipOpacity, reduceMotion]);
 
   const openTelegram = useCallback(() => {
     void Linking.openURL('https://t.me/multibelbet');

@@ -1,4 +1,4 @@
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
@@ -11,17 +11,20 @@ import {
   Animated,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import type { LanguageChoice, ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -54,6 +57,7 @@ export const SettingsScreen = () => {
   const language = usePreferencesStore((s) => s.language);
   const setLanguage = usePreferencesStore((s) => s.setLanguage);
 
+  const reduceMotion = useReduceMotion();
   const themeLabels = [t('settings.themeAuto'), t('settings.themeLight'), t('settings.themeDark')];
   const themeIndex = THEME_VALUES.indexOf(theme);
   const langIndex = LANG_VALUES.indexOf(language);
@@ -75,13 +79,13 @@ export const SettingsScreen = () => {
   const showToast = useCallback((message: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
-    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    Animated.timing(toastOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
     toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(
+      Animated.timing(toastOpacity, { toValue: 0, duration: reduceMotion ? 0 : 300, useNativeDriver: true }).start(
         () => setToast(null),
       );
     }, 2500);
-  }, [toastOpacity]);
+  }, [toastOpacity, reduceMotion]);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
@@ -158,10 +162,11 @@ export const SettingsScreen = () => {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+      <Text {...textProps('title')} style={styles.screenTitle}>{t('settings.title')}</Text>
 
+      <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.themeSection')}</Text>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.themeSection')}</Text>
         <SegmentedControl
           values={themeLabels}
           selectedIndex={themeIndex >= 0 ? themeIndex : 0}
@@ -176,7 +181,7 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.languageSection')}</Text>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.languageSection')}</Text>
         <SegmentedControl
           values={LANG_LABELS}
           selectedIndex={langIndex >= 0 ? langIndex : 0}
@@ -191,6 +196,7 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.navSection}>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.interfaceSection')}</Text>
         {/* TODO 2.1: Иконка приложения + реклама
         <View style={styles.card}>
           <Pressable
@@ -198,7 +204,7 @@ export const SettingsScreen = () => {
             onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/app-icon'); }}
           >
             <Ionicons name="sparkles" size={20} color={Palette.accent} />
-            <Text style={styles.navLabel}>{t('settings.appIconSection')}</Text>
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.appIconSection')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
@@ -210,7 +216,7 @@ export const SettingsScreen = () => {
             onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/appearance'); }}
           >
             <Ionicons name="color-palette-outline" size={20} color={Palette.accent} />
-            <Text style={styles.navLabel}>{t('settings.appearanceSection')}</Text>
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.appearanceSection')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
@@ -218,20 +224,36 @@ export const SettingsScreen = () => {
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/holidays'); }}
+            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/accessibility'); }}
+            accessibilityRole="button"
+            accessibilityLabel={t('accessibility.title')}
           >
-            <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
-            <Text style={styles.navLabel}>{t('settings.holidaysSection')}</Text>
+            <Ionicons name="accessibility-outline" size={20} color={Palette.accent} />
+            <Text {...textProps('body')} style={styles.navLabel}>{t('accessibility.title')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/holidays'); }}
+          >
+            <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.holidaysSection')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.navSection}>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.otherSection')}</Text>
+        <View style={styles.card}>
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
             onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/network'); }}
           >
             <Ionicons name="cloud-outline" size={20} color={Palette.accent} />
-            <Text style={styles.navLabel}>{t('settings.networkSection')}</Text>
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.networkSection')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
@@ -241,7 +263,7 @@ export const SettingsScreen = () => {
             onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/about'); }}
           >
             <Ionicons name="information-circle-outline" size={20} color={Palette.accent} />
-            <Text style={styles.navLabel}>{t('settings.aboutSection')}</Text>
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.aboutSection')}</Text>
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
@@ -254,10 +276,11 @@ export const SettingsScreen = () => {
             onPress={handleTipPress}
           >
             <Ionicons name="heart" size={20} color={PINK} />
-            <Text style={styles.tipLabel}>{t('settings.tipJar')}</Text>
+            <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>{t('settings.tipJar')}</Text>
           </Pressable>
         </View>
       </View>
+      </ScrollView>
 
       <BottomSheetModal
         ref={sheetRef}
@@ -266,7 +289,7 @@ export const SettingsScreen = () => {
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
       >
-        <View style={styles.sheetContent}>
+        <BottomSheetScrollView contentContainerStyle={styles.sheetContent}>
           <View style={styles.sheetHero}>
             <View style={styles.heartCircle}>
               <Ionicons name="heart" size={24} color="#FFFFFF" />
@@ -311,7 +334,7 @@ export const SettingsScreen = () => {
               );
             })}
           </View>
-        </View>
+        </BottomSheetScrollView>
       </BottomSheetModal>
 
       {toast && (
@@ -341,6 +364,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     navSection: {
       paddingHorizontal: Spacing.screenPadding,
+      paddingBottom: Spacing.xl,
       gap: Spacing.cardGap,
     },
     sectionTitle: {

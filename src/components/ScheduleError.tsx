@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { usePalette } from '@hooks/usePalette';
 import type { ErrorKind } from '@stores/schedule.store';
 import { Radius, Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -37,13 +38,16 @@ export const ScheduleError = ({ kind, onRetry }: Props) => {
   return (
     <View style={styles.container}>
       <Ionicons name={icon} size={56} color={Palette.textTertiary} />
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.hint}>{hint}</Text>
+      <Text {...textProps('headline')} style={styles.title}>{title}</Text>
+      <Text {...textProps('subhead')} style={styles.hint}>{hint}</Text>
       <Pressable
         onPress={onRetry}
         style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
+        accessibilityRole="button"
+        accessibilityLabel={t('common.retry')}
+        accessibilityHint={t('a11y.retryLoad')}
       >
-        <Text style={styles.retryLabel}>{t('common.retry')}</Text>
+        <Text {...textProps('callout')} style={styles.retryLabel}>{t('common.retry')}</Text>
       </Pressable>
     </View>
   );

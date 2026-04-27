@@ -29,6 +29,7 @@ import {
   TODAY_ICON_CHOICES,
 } from '@constants/iconChoices';
 import { ICON_COLOR_DEFAULTS, ICON_DEFAULTS } from '@hooks/useAppearance';
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
@@ -111,6 +112,7 @@ export const AppearanceScreen = () => {
       JSON.stringify(draftIconColors) !== JSON.stringify(committedIconColors);
   }, [draftColors, draftIcons, draftIconColors, committedColors, committedIcons, committedIconColors]);
 
+  const reduceMotion = useReduceMotion();
   const applyScale = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
   const rowYRef = useRef<Record<string, number>>({});
@@ -202,11 +204,13 @@ export const AppearanceScreen = () => {
       iconOverrides: { ...draftIcons },
       iconColorOverrides: { ...draftIconColors },
     });
-    Animated.sequence([
-      Animated.timing(applyScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
-      Animated.timing(applyScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start();
-  }, [draftColors, draftIcons, draftIconColors, applyScale]);
+    if (!reduceMotion) {
+      Animated.sequence([
+        Animated.timing(applyScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+        Animated.timing(applyScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [draftColors, draftIcons, draftIconColors, applyScale, reduceMotion]);
 
   /** Show reward-ad confirmation, then commit. */
   const applyChanges = useCallback(() => {

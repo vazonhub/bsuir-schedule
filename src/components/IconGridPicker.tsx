@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
 import { usePalette } from '@hooks/usePalette';
@@ -15,7 +16,16 @@ interface Props {
 const CELL_SIZE = 44;
 const CELL_GAP = 8;
 
+/** Clean up Ionicons name for accessibility: "school-outline" → "School" */
+const humanizeIconName = (name: string): string =>
+  name
+    .replace(/-outline$/, '')
+    .replace(/-sharp$/, '')
+    .replace(/-/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase());
+
 export const IconGridPicker = ({ icons, selected, color, onSelect }: Props) => {
+  const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
@@ -31,6 +41,9 @@ export const IconGridPicker = ({ icons, selected, color, onSelect }: Props) => {
               styles.cell,
               isSelected && [styles.cellSelected, { borderColor: color }],
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.iconChoice', { name: humanizeIconName(name) })}
+            accessibilityState={{ selected: isSelected }}
           >
             <Ionicons
               name={name as never}

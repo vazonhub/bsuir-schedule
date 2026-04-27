@@ -14,12 +14,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
 import { usePalette } from '@hooks/usePalette';
-import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
-import { Radius, Spacing } from '@theme';
+import type { Holiday } from '@models/holiday';
+import { useHolidaysStore } from '@stores/holidays.store';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { toDateISO } from '@utils/holidays';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -37,10 +38,39 @@ const formatHolidayDate = (dateISO: string): string => {
   return `${day} ${MONTHS_RU[month] ?? m}`;
 };
 
+/**
+ * Build a flat list of all holidays (API + user-added), sorted by date.
+ * Each entry carries an `isHidden` / `isUserAdded` flag for rendering.
+ */
+interface DisplayHoliday extends Holiday {
+  isHidden: boolean;
+  isUserAdded: boolean;
+}
+
+const buildDisplayList = (
+  apiHolidays: Holiday[],
+  userAdded: Record<string, string>,
+  userRemoved: Record<string, boolean>,
+): DisplayHoliday[] => {
+  const fromApi: DisplayHoliday[] = apiHolidays.map((h) => ({
+    ...h,
+    isHidden: !!userRemoved[h.date],
+    isUserAdded: false,
+  }));
+  const fromUser: DisplayHoliday[] = Object.entries(userAdded).map(([date, name]) => ({
+    date,
+    name,
+    isHidden: false,
+    isUserAdded: true,
+  }));
+  return [...fromApi, ...fromUser].sort((a, b) => a.date.localeCompare(b.date));
+};
+
 export const HolidaysScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const year = new Date().getFullYear();
@@ -52,15 +82,9 @@ export const HolidaysScreen = () => {
   const restoreHoliday = useHolidaysStore((s) => s.restoreHoliday);
   const resetUserOverrides = useHolidaysStore((s) => s.resetUserOverrides);
 
-  const merged = useMemo(
-    () => getMergedHolidays(apiHolidays, userAdded, userRemoved),
+  const holidays = useMemo(
+    () => buildDisplayList(apiHolidays, userAdded, userRemoved),
     [apiHolidays, userAdded, userRemoved],
-  );
-
-  // Removed holidays (to show in a separate section)
-  const removedHolidays = useMemo(
-    () => apiHolidays.filter((h) => userRemoved[h.date]),
-    [apiHolidays, userRemoved],
   );
 
   const hasOverrides = Object.keys(userAdded).length > 0 || Object.keys(userRemoved).length > 0;
@@ -96,14 +120,20 @@ export const HolidaysScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Text style={styles.backChevron}>&#8249;</Text>
+          <Text maxFontSizeMultiplier={1} style={styles.backChevron}>&#8249;</Text>
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
           {t('settings.holidaysSection')}
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md },
+        ]}
+      >
         {/* ── Source info ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.holidaysSource')}</Text>
@@ -122,66 +152,50 @@ export const HolidaysScreen = () => {
           </View>
         </View>
 
-        {/* ── Holiday list ── */}
+        {/* ── Holiday list (all in one, hidden shown inline) ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {t('settings.holidaysListTitle')} · {year}
           </Text>
           <View style={styles.card}>
-            {merged.map((h, i) => {
-              const isUserAdded = userAdded[h.date] != null;
-              return (
-                <View key={h.date}>
-                  {i > 0 && <View style={styles.separator} />}
-                  <View style={styles.holidayRow}>
-                    <View style={styles.holidayInfo}>
-                      <Text style={styles.holidayName}>{h.name}</Text>
-                      <View style={styles.holidayMeta}>
-                        <Text style={styles.holidayDate}>{formatHolidayDate(h.date)}</Text>
-                        {isUserAdded && (
-                          <View style={styles.badge}>
-                            <Text style={styles.badgeText}>{t('settings.holidaysUserAdded')}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <Pressable
-                      hitSlop={12}
-                      onPress={() => removeUserHoliday(h.date)}
-                    >
-                      <Ionicons name="eye-off-outline" size={20} color={Palette.textTertiary} />
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* ── Removed holidays ── */}
-        {removedHolidays.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('settings.holidaysRemoved')}</Text>
-            <View style={styles.card}>
-              {removedHolidays.map((h, i) => (
-                <View key={h.date}>
-                  {i > 0 && <View style={styles.separator} />}
-                  <View style={styles.holidayRow}>
-                    <View style={styles.holidayInfo}>
-                      <Text style={[styles.holidayName, styles.removedText]}>{h.name}</Text>
-                      <Text style={[styles.holidayDate, styles.removedText]}>
+            {holidays.map((h, i) => (
+              <View key={`${h.date}-${h.isUserAdded ? 'u' : 'a'}`}>
+                {i > 0 && <View style={styles.separator} />}
+                <View style={[styles.holidayRow, h.isHidden && styles.holidayRowHidden]}>
+                  <View style={styles.holidayInfo}>
+                    <Text style={[styles.holidayName, h.isHidden && styles.hiddenText]}>
+                      {h.name}
+                    </Text>
+                    <View style={styles.holidayMeta}>
+                      <Text style={[styles.holidayDate, h.isHidden && styles.hiddenText]}>
                         {formatHolidayDate(h.date)}
                       </Text>
+                      {h.isUserAdded && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>{t('settings.holidaysUserAdded')}</Text>
+                        </View>
+                      )}
+                      {h.isHidden && (
+                        <View style={styles.hiddenBadge}>
+                          <Text style={styles.hiddenBadgeText}>{t('settings.holidaysRemoved')}</Text>
+                        </View>
+                      )}
                     </View>
-                    <Pressable hitSlop={12} onPress={() => restoreHoliday(h.date)}>
-                      <Text style={styles.restoreButton}>{t('settings.holidaysRestore')}</Text>
-                    </Pressable>
                   </View>
+                  {h.isHidden ? (
+                    <Pressable hitSlop={12} onPress={() => restoreHoliday(h.date)}>
+                      <Ionicons name="eye-outline" size={20} color={Palette.accent} />
+                    </Pressable>
+                  ) : (
+                    <Pressable hitSlop={12} onPress={() => removeUserHoliday(h.date)}>
+                      <Ionicons name="eye-off-outline" size={20} color={Palette.textTertiary} />
+                    </Pressable>
+                  )}
                 </View>
-              ))}
-            </View>
+              </View>
+            ))}
           </View>
-        )}
+        </View>
 
         {/* ── Actions ── */}
         <View style={styles.section}>
@@ -295,9 +309,7 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '700',
       color: Palette.textPrimary,
     },
-    content: {
-      paddingBottom: 40,
-    },
+    content: {},
     section: {
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
@@ -357,6 +369,9 @@ const makeStyles = (Palette: PaletteType) =>
       paddingHorizontal: Spacing.cardPaddingX,
       gap: Spacing.lg,
     },
+    holidayRowHidden: {
+      opacity: 0.45,
+    },
     holidayInfo: { flex: 1 },
     holidayName: {
       fontSize: 16,
@@ -384,13 +399,19 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
       color: Palette.accent,
     },
-    removedText: {
-      opacity: 0.5,
+    hiddenText: {
+      textDecorationLine: 'line-through',
     },
-    restoreButton: {
-      fontSize: 14,
+    hiddenBadge: {
+      backgroundColor: Palette.textTertiary + '1A',
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: 4,
+    },
+    hiddenBadgeText: {
+      fontSize: 11,
       fontWeight: '600',
-      color: Palette.accent,
+      color: Palette.textTertiary,
     },
     // ── Actions ──
     actionRow: {

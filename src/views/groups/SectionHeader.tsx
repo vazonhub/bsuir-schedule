@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { usePalette } from '@hooks/usePalette';
 import { Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -24,14 +25,16 @@ export const SectionHeader = ({ abbrev, name, pinned }: Props) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
+  const a11yLabel = name ? `${abbrev}, ${name}` : abbrev;
+
   return (
-    <View style={styles.header}>
-      {pinned && <Ionicons name="star" size={13} color={Palette.accent} />}
-      <Text style={styles.abbrev}>{abbrev}</Text>
+    <View style={styles.header} accessibilityRole="header" accessibilityLabel={a11yLabel}>
+      {pinned && <Ionicons name="star" size={13} color={Palette.accent} importantForAccessibility="no" />}
+      <Text {...textProps('footnote')} style={styles.abbrev}>{abbrev}</Text>
       {name ? (
         <>
-          <Text style={styles.dot}>&middot;</Text>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text {...textProps('footnote')} style={styles.dot}>&middot;</Text>
+          <Text {...textProps('footnote')} style={styles.name} numberOfLines={1}>
             {name}
           </Text>
         </>

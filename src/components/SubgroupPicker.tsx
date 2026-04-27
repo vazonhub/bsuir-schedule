@@ -41,14 +41,14 @@ const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles, subg
     return (
       <View style={styles.optionInline}>
         <Ionicons name="people" size={iconSize + 2} color={color} />
-        <Text style={textStyle}>{t('subgroup.all')}</Text>
+        <Text maxFontSizeMultiplier={1}style={textStyle}>{t('subgroup.all')}</Text>
       </View>
     );
   }
   return (
     <View style={styles.optionInline}>
       <Ionicons name={subgroupIcon as never} size={iconSize} color={color} />
-      <Text style={textStyle}>{value}</Text>
+      <Text maxFontSizeMultiplier={1}style={textStyle}>{value}</Text>
     </View>
   );
 };
@@ -86,6 +86,7 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
         shape="pill"
         active={open}
         accessibilityLabel={t('subgroup.label', { value: t(A11Y_LABELS[value]) })}
+        accessibilityState={{ expanded: open }}
       >
         <OptionLabel value={value} active={open} size="sm" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
       </GlassButton>
@@ -117,10 +118,12 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
                   key={opt}
                   onPress={() => handleSelect(opt)}
                   style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+                  accessibilityRole="button"
                   accessibilityLabel={t(A11Y_LABELS[opt])}
+                  accessibilityState={{ selected: active }}
                 >
                   <OptionLabel value={opt} active={active} size="md" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
-                  {active && <Text style={[styles.check, styles.activeText]}>{'\u2713'}</Text>}
+                  {active && <Text maxFontSizeMultiplier={1}style={[styles.check, styles.activeText]}>{'\u2713'}</Text>}
                 </Pressable>
               );
             })}

@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
 import type { WeekNumber } from '@models/dto';
 import { Spacing } from '@theme';
+import { textProps } from '@theme/typography';
 import { formatDayHeader, formatExamDayHeader } from '@utils/date';
+import { buildLabel } from '@utils/a11y';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -29,21 +32,30 @@ interface Props {
  * scrolling behind it when the section list pins it to the top.
  */
 export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
+  const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
+  const dayText = isExam ? formatExamDayHeader(date) : formatDayHeader(date, week);
+  const a11yLabel = buildLabel(
+    dayText,
+    isToday && t('date.today'),
+    isTomorrow && t('date.tomorrow'),
+    holidayName,
+  );
+
   return (
-    <View style={styles.wrap}>
+    <View style={styles.wrap} accessibilityRole="header" accessibilityLabel={a11yLabel}>
       <View style={styles.row}>
         <Text
+          {...textProps('footnote')}
           style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
-          numberOfLines={1}
         >
           {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
         </Text>
         {holidayName != null && (
           <View style={styles.holidayBadge}>
-            <Text style={styles.holidayText} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={1} style={styles.holidayText} numberOfLines={1}>
               {holidayName}
             </Text>
           </View>

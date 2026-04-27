@@ -1,7 +1,9 @@
 import { BlurView } from 'expo-blur';
 import { useCallback, useMemo, useRef } from 'react';
-import { GestureResponderEvent, Platform, StyleSheet, Text, View } from 'react-native';
+import { GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
+import { useIsScreenReader } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { Radius } from '@theme';
 
@@ -22,6 +24,8 @@ interface Props {
  * is shown as a bullet dot (•) instead of the letter.
  */
 export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light' }: Props) => {
+  const { t } = useTranslation();
+  const isScreenReader = useIsScreenReader();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const innerRef = useRef<View>(null);
@@ -67,12 +71,55 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
 
   if (letters.length === 0) return null;
 
+  // When VoiceOver/TalkBack is active, render accessible Pressable buttons
+  // instead of the gesture-based strip.
+  if (isScreenReader) {
+    const accessibleInner = (
+      <View ref={innerRef} style={styles.inner} collapsable={false}>
+        {letters.map((l) => (
+          <Pressable
+            key={l}
+            onPress={() => onSelect(l)}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.alphabetJumpTo', { letter: l })}
+          >
+            <Text maxFontSizeMultiplier={1}style={[styles.letter, l === activeLetter && styles.letterActive]}>
+              {l === activeLetter ? '•' : l}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    );
+
+    return (
+      <View style={styles.container}>
+        {Platform.OS === 'ios' ? (
+          <BlurView
+            intensity={40}
+            tint={scheme === 'dark' ? 'dark' : 'light'}
+            style={styles.blur}
+          >
+            {accessibleInner}
+          </BlurView>
+        ) : (
+          <View style={styles.androidBg}>{accessibleInner}</View>
+        )}
+      </View>
+    );
+  }
+
   const inner = (
     <View ref={innerRef} style={styles.inner} collapsable={false}>
       {letters.map((l) => {
         const isActive = l === activeLetter;
         return (
-          <Text key={l} style={[styles.letter, isActive && styles.letterActive]}>
+          <Text
+            key={l}
+            maxFontSizeMultiplier={1}
+            style={[styles.letter, isActive && styles.letterActive]}
+            accessible={true}
+            accessibilityLabel={t('a11y.alphabetJumpTo', { letter: l })}
+          >
             {isActive ? '•' : l}
           </Text>
         );

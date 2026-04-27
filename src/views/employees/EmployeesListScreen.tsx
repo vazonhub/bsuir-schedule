@@ -25,6 +25,7 @@ import type { EmployeeDto } from '@models/dto';
 import { useEmployeesStore } from '@stores/employees.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { textProps } from '@theme/typography';
 import type { EmployeeSection } from '@utils/employeeGrouping';
 import { PINNED_SECTION_KEY, buildAlphabetSections, buildPinnedEmployeeSection } from '@utils/employeeGrouping';
 
@@ -97,12 +98,12 @@ export const EmployeesListScreen = () => {
     return (
       <SafeAreaView edges={['top']} style={styles.container}>
         <View style={styles.center}>
-          <Text style={styles.error}>{error}</Text>
+          <Text {...textProps('body')} style={styles.error}>{error}</Text>
           <Pressable
             onPress={handleRefresh}
             style={({ pressed }) => [styles.retry, pressed && styles.retryPressed]}
           >
-            <Text style={styles.retryLabel}>{t('common.retry')}</Text>
+            <Text {...textProps('callout')} style={styles.retryLabel}>{t('common.retry')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -146,7 +147,7 @@ export const EmployeesListScreen = () => {
           refreshControl={refreshControl}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.empty}>{t('common.nothingFound')}</Text>
+              <Text {...textProps('body')} style={styles.empty}>{t('common.nothingFound')}</Text>
             </View>
           }
         />
@@ -167,7 +168,7 @@ export const EmployeesListScreen = () => {
                 {section.key === PINNED_SECTION_KEY && (
                   <Ionicons name="star" size={13} color={Palette.accent} />
                 )}
-                <Text style={styles.sectionTitle}>{section.title}</Text>
+                <Text {...textProps('footnote')} style={styles.sectionTitle}>{section.title}</Text>
               </View>
             )}
             renderItem={({ item }) => (

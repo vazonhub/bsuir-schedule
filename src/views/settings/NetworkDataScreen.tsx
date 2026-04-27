@@ -6,6 +6,7 @@ import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
+import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { clearLocalCache } from '@services/cache/cache';
 import { isICloudAvailable } from '@services/cloud/icloud';
@@ -21,6 +22,7 @@ export const NetworkDataScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const router = useRouter();
+  const reduceMotion = useReduceMotion();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const sourceBsuirApi = usePreferencesStore((s) => s.sourceBsuirApi);
@@ -36,13 +38,13 @@ export const NetworkDataScreen = () => {
   const showToast = useCallback((message: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(message);
-    Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    Animated.timing(toastOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
     toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(
+      Animated.timing(toastOpacity, { toValue: 0, duration: reduceMotion ? 0 : 300, useNativeDriver: true }).start(
         () => setToast(null),
       );
     }, 2000);
-  }, [toastOpacity]);
+  }, [toastOpacity, reduceMotion]);
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
@@ -52,14 +54,14 @@ export const NetworkDataScreen = () => {
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {
-      Animated.timing(tooltipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(
+      Animated.timing(tooltipOpacity, { toValue: 0, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start(
         () => setHintVisible(false),
       );
     } else {
       setHintVisible(true);
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
     }
-  }, [hintVisible, tooltipOpacity]);
+  }, [hintVisible, tooltipOpacity, reduceMotion]);
 
   const toggleBsuirApi = useCallback(() => {
     void hapticLight();

@@ -4,12 +4,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { useAccessibility } from '@hooks/useAccessibility';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { Radius, Spacing } from '@theme';
-import { getLessonBreakRange } from '@utils/lesson';
+import { textProps } from '@theme/typography';
+import { getLessonBreakRange, getLessonTypeFullName } from '@utils/lesson';
 import type { LessonTimeStatus } from '@utils/lesson';
+import { buildLabel } from '@utils/a11y';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -54,10 +57,12 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
   const pastOverlayColor = isDark ? PAST_OVERLAY_DARK : PAST_OVERLAY_LIGHT;
   const breakOverlayColor = isDark ? BREAK_OVERLAY_DARK : BREAK_OVERLAY_LIGHT;
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const { isDifferentiateWithoutColorEnabled } = useAccessibility();
   const getLessonColor = useGetLessonAccentColor();
   const subgroupIcon = useIconName('subgroup');
   const blockIcon = useIconName('block');
   const accent = getLessonColor(lesson.raw.lessonTypeAbbrev);
+  const typeAbbrev = lesson.raw.lessonTypeAbbrev;
 
   // Ширина «прошедшей» серой заливки. 0 = ничего не закрашено,
   // 1 = карточка полностью закрашена (пара уже прошла).
@@ -96,13 +101,13 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={`${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, ${t('lesson.blocked')}`}
       >
-        <Text style={styles.compactText} numberOfLines={1}>
-          {lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
+        <Text {...textProps('footnote')} style={styles.compactText} numberOfLines={1}>
+          {isDifferentiateWithoutColorEnabled && typeAbbrev ? `${typeAbbrev} · ` : ''}{lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
         </Text>
         {(lesson.raw.numSubgroup === 1 || lesson.raw.numSubgroup === 2) && (
           <View style={styles.subgroupChip}>
             <Ionicons name={subgroupIcon as never} size={12} color={Palette.textSecondary} />
-            <Text style={styles.subgroupNumber}>{lesson.raw.numSubgroup}</Text>
+            <Text maxFontSizeMultiplier={1}style={styles.subgroupNumber}>{lesson.raw.numSubgroup}</Text>
           </View>
         )}
         <View style={styles.blockedIcon}>
@@ -131,13 +136,13 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
             : `${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}, ${t('lesson.notMySubgroup')}`
         }
       >
-        <Text style={styles.compactText} numberOfLines={1}>
-          {lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
+        <Text {...textProps('footnote')} style={styles.compactText} numberOfLines={1}>
+          {isDifferentiateWithoutColorEnabled && typeAbbrev ? `${typeAbbrev} · ` : ''}{lesson.raw.subject} · {lesson.startTime} — {lesson.endTime}
         </Text>
         {showCompactSubgroup && (
           <View style={styles.subgroupChip}>
             <Ionicons name={subgroupIcon as never} size={12} color={Palette.textSecondary} />
-            <Text style={styles.subgroupNumber}>{compactNumSubgroup}</Text>
+            <Text maxFontSizeMultiplier={1}style={styles.subgroupNumber}>{compactNumSubgroup}</Text>
           </View>
         )}
       </Pressable>
@@ -151,26 +156,49 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
   const showSubgroup = numSubgroup === 1 || numSubgroup === 2;
   const hasRightArea = hasAvatar || showSubgroup;
 
+  const statusLabel =
+    timeStatus?.kind === 'ongoing' ? t('a11y.lessonOngoing') :
+    timeStatus?.kind === 'past' ? t('a11y.lessonPast') :
+    timeStatus?.kind === 'future' ? t('a11y.lessonUpcoming') :
+    null;
+
+  const teacherName = teacherEmployee
+    ? [teacherEmployee.lastName, teacherEmployee.firstName].filter(Boolean).join(' ')
+    : null;
+
+  const fullLabel = buildLabel(
+    getLessonTypeFullName(lesson.raw.lessonTypeAbbrev),
+    lesson.raw.subject,
+    `${lesson.startTime}–${lesson.endTime}`,
+    auditories || null,
+    teacherName,
+    showSubgroup && t('lesson.subgroup', { n: numSubgroup }),
+    statusLabel,
+  );
+
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
       style={({ pressed }) => [styles.card, pressed && onPress && styles.cardPressed]}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={`${lesson.raw.subject}, ${lesson.startTime}–${lesson.endTime}`}
+      accessibilityLabel={fullLabel}
+      accessibilityHint={onPress ? t('a11y.openLessonDetails') : undefined}
     >
-      <View style={[styles.stripe, { backgroundColor: accent }]} />
+      <View style={[styles.stripe, { backgroundColor: accent }]} importantForAccessibility="no" />
 
       <View style={styles.content}>
         {pastFraction > 0 && (
           <View
             pointerEvents="none"
+            importantForAccessibility="no"
             style={[styles.pastOverlay, { width: `${pastFraction * 100}%`, backgroundColor: pastOverlayColor }]}
           />
         )}
         {breakRange && (
           <View
             pointerEvents="none"
+            importantForAccessibility="no"
             style={[
               styles.breakOverlay,
               {
@@ -189,19 +217,29 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
         )}
 
         <View style={styles.body}>
-          <Text style={styles.time}>
-            {lesson.startTime}–{lesson.endTime}
-          </Text>
-          <Text style={styles.subject} numberOfLines={2}>
+          <View style={styles.timeRow}>
+            <Text {...textProps('footnote')} style={styles.time}>
+              {lesson.startTime}–{lesson.endTime}
+            </Text>
+            {isDifferentiateWithoutColorEnabled && typeAbbrev && (
+              <View style={[styles.typeBadge, { backgroundColor: accent + '1A' }]}>
+                <Text {...textProps('tiny')} style={[styles.typeBadgeText, { color: accent }]}>{typeAbbrev}</Text>
+              </View>
+            )}
+            {timeStatus?.kind === 'ongoing' && (
+              <Text maxFontSizeMultiplier={1}style={[styles.nowBadge, { color: Palette.accent }]}>{t('a11y.now')}</Text>
+            )}
+          </View>
+          <Text {...textProps('headline')} style={styles.subject} numberOfLines={2}>
             {lesson.raw.subject}
           </Text>
           {auditories.length > 0 && (
-            <Text style={styles.meta} numberOfLines={1}>
+            <Text {...textProps('footnote')} style={styles.meta} numberOfLines={1}>
               {auditories}
             </Text>
           )}
           {lesson.raw.note && (
-            <Text style={styles.note} numberOfLines={1}>
+            <Text {...textProps('caption')} style={styles.note} numberOfLines={1}>
               {lesson.raw.note}
             </Text>
           )}
@@ -212,7 +250,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
             {showSubgroup && (
               <View style={styles.subgroupChip}>
                 <Ionicons name={subgroupIcon as never} size={16} color={Palette.textSecondary} />
-                <Text style={styles.subgroupNumber}>{numSubgroup}</Text>
+                <Text maxFontSizeMultiplier={1}style={styles.subgroupNumber}>{numSubgroup}</Text>
               </View>
             )}
             {hasAvatar && teacherEmployee && (
@@ -311,6 +349,27 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     color: Palette.textSecondary,
   },
 
+  typeBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  nowBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   time: {
     fontSize: 13,
     fontWeight: '600',

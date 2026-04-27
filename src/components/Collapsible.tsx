@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Animated, StyleSheet, View } from 'react-native';
 
+import { useReduceMotion } from '@hooks/useAccessibility';
+
 interface Props {
   expanded: boolean;
   children: React.ReactNode;
@@ -14,6 +16,7 @@ interface Props {
  * Content is always mounted (for layout measurement) but clipped when collapsed.
  */
 export const Collapsible = ({ expanded, children, duration = 300, style }: Props) => {
+  const reduceMotion = useReduceMotion();
   const animValue = useRef(new Animated.Value(expanded ? 1 : 0)).current;
   const [contentHeight, setContentHeight] = useState(0);
   const measured = useRef(false);
@@ -29,10 +32,10 @@ export const Collapsible = ({ expanded, children, duration = 300, style }: Props
   useEffect(() => {
     Animated.timing(animValue, {
       toValue: expanded ? 1 : 0,
-      duration,
+      duration: reduceMotion ? 0 : duration,
       useNativeDriver: false,
     }).start();
-  }, [expanded, animValue, duration]);
+  }, [expanded, animValue, duration, reduceMotion]);
 
   const height = animValue.interpolate({
     inputRange: [0, 1],
