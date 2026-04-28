@@ -90,7 +90,6 @@ export const SettingsScreen = () => {
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return;
     let cancelled = false;
     const init = async () => {
       try {
@@ -134,7 +133,7 @@ export const SettingsScreen = () => {
     setPurchasing(productId);
     try {
       const RNIap = require('react-native-iap');
-      await RNIap.requestPurchase({
+      const purchase = await RNIap.requestPurchase({
         request: {
           apple: {
             sku: productId,
@@ -144,6 +143,15 @@ export const SettingsScreen = () => {
         },
         type: 'in-app',
       });
+      // On Android, consumables must be consumed so they can be purchased again
+      if (Platform.OS === 'android' && purchase) {
+        const token = Array.isArray(purchase)
+          ? purchase[0]?.purchaseToken
+          : purchase.purchaseToken;
+        if (token) {
+          await RNIap.finishTransaction({ purchase: Array.isArray(purchase) ? purchase[0] : purchase, isConsumable: true });
+        }
+      }
       void hapticSuccess();
       showToast(t('settings.tipJarThanks'));
     } catch (err: unknown) {
@@ -271,7 +279,6 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.tipSection}>
-        {Platform.OS === 'ios' && (
         <View style={styles.tipCard}>
           <Pressable
             style={({ pressed }) => [styles.tipRow, pressed && styles.tipRowPressed]}
@@ -281,7 +288,6 @@ export const SettingsScreen = () => {
             <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>{t('settings.tipJar')}</Text>
           </Pressable>
         </View>
-        )}
       </View>
       </ScrollView>
 

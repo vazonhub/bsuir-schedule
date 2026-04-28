@@ -406,7 +406,7 @@ struct WidgetHeader: View {
                 .foregroundColor(.secondary)
             if let label = dateLabel {
                 Text(label)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.orange)
             }
             Spacer()
@@ -437,7 +437,7 @@ struct SmallWidgetView: View {
                             .foregroundColor(.secondary)
                         if entry.isNextDay, let block = entry.displayBlock {
                             Text(formatDayLabel(block))
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.orange)
                         }
                         Spacer()

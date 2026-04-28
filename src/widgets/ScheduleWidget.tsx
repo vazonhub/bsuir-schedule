@@ -367,7 +367,7 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
       ) : lessons.length > 0 ? (
         <FlexWidget style={{ width: FULL, height: 0, flex: 1, flexDirection: 'column' }}>
           {lessons.slice(0, maxLessons).map((lesson, idx) => (
-            <FlexWidget key={`l${idx}`} style={{ width: FULL, flex: 1, flexDirection: 'column' }}>
+            <FlexWidget key={`l${idx}`} style={{ width: FULL, flex: 1, flexDirection: 'column', marginTop: size !== 'large' && idx > 0 ? 4 : 0 }}>
               {size === 'large' && idx > 0 ? <Divider /> : null}
               <LessonRow
                 lesson={lesson}

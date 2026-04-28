@@ -49,24 +49,27 @@ const reloadWidgetTimelines = (): void => {
       const { ScheduleWidget } = require('../../widgets/ScheduleWidget') as typeof import('../../widgets/ScheduleWidget');
       const React = require('react');
 
-      const render = async (widgetName: string, size: 'small' | 'medium' | 'large') => {
+      const render = async (size: 'small' | 'medium' | 'large') => {
         const raw = await AsyncStorage.getItem(ANDROID_SNAPSHOT_KEY);
         const snap = raw ? JSON.parse(raw) : null;
         return React.createElement(ScheduleWidget, { snapshot: snap, size });
       };
 
-      void requestWidgetUpdate({
-        widgetName: 'ScheduleSmall',
-        renderWidget: () => render('ScheduleSmall', 'small'),
-      });
-      void requestWidgetUpdate({
-        widgetName: 'ScheduleMedium',
-        renderWidget: () => render('ScheduleMedium', 'medium'),
-      });
-      void requestWidgetUpdate({
-        widgetName: 'ScheduleLarge',
-        renderWidget: () => render('ScheduleLarge', 'large'),
-      });
+      const update = async () => {
+        await requestWidgetUpdate({
+          widgetName: 'ScheduleSmall',
+          renderWidget: () => render('small'),
+        });
+        await requestWidgetUpdate({
+          widgetName: 'ScheduleMedium',
+          renderWidget: () => render('medium'),
+        });
+        await requestWidgetUpdate({
+          widgetName: 'ScheduleLarge',
+          renderWidget: () => render('large'),
+        });
+      };
+      void update();
     }
   } catch {
     // Not critical.
