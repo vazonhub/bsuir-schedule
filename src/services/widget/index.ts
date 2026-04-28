@@ -12,30 +12,62 @@ import type { WidgetSnapshot, WidgetStrings } from './widgetData';
 const APP_GROUP = 'group.by.vazon.bsuirschedule';
 const WIDGET_KEY = 'widgetSnapshot';
 
+const ANDROID_SNAPSHOT_KEY = 'android_widget_snapshot';
+
 /**
  * Write a widget snapshot to shared storage so native widget code can read it.
- * Uses react-native-shared-group-preferences for App Group UserDefaults on iOS.
+ * iOS: App Group UserDefaults via react-native-shared-group-preferences.
+ * Android: AsyncStorage (read by headless JS widget task handler).
  */
 const writeSnapshot = async (snapshot: WidgetSnapshot): Promise<void> => {
-  if (Platform.OS !== 'ios') return;
   try {
-    const SharedGroupPreferences = require('react-native-shared-group-preferences').default;
-    await SharedGroupPreferences.setItem(WIDGET_KEY, snapshot, APP_GROUP);
+    if (Platform.OS === 'ios') {
+      const SharedGroupPreferences = require('react-native-shared-group-preferences').default;
+      await SharedGroupPreferences.setItem(WIDGET_KEY, snapshot, APP_GROUP);
+    } else if (Platform.OS === 'android') {
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      await AsyncStorage.setItem(ANDROID_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    }
   } catch {
     // Native module not available or write failed — non-critical.
   }
 };
 
 /**
- * Tell WidgetKit to reload all timelines so the widget picks up fresh data.
+ * Tell the native widget system to refresh.
+ * iOS: WidgetKit timeline reload.
+ * Android: requestWidgetUpdate for all widget sizes.
  */
 const reloadWidgetTimelines = (): void => {
-  if (Platform.OS !== 'ios') return;
   try {
-    const { NativeModules } = require('react-native');
-    // If we have a native bridge module for WidgetKit, call it.
-    // Otherwise this is a no-op — WidgetKit will pick up changes on next timeline refresh.
-    NativeModules.WidgetKitBridge?.reloadAllTimelines?.();
+    if (Platform.OS === 'ios') {
+      const { NativeModules } = require('react-native');
+      NativeModules.WidgetKitBridge?.reloadAllTimelines?.();
+    } else if (Platform.OS === 'android') {
+      const { requestWidgetUpdate } = require('react-native-android-widget') as typeof import('react-native-android-widget');
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      const { ScheduleWidget } = require('../../widgets/ScheduleWidget') as typeof import('../../widgets/ScheduleWidget');
+      const React = require('react');
+
+      const render = async (widgetName: string, size: 'small' | 'medium' | 'large') => {
+        const raw = await AsyncStorage.getItem(ANDROID_SNAPSHOT_KEY);
+        const snap = raw ? JSON.parse(raw) : null;
+        return React.createElement(ScheduleWidget, { snapshot: snap, size });
+      };
+
+      void requestWidgetUpdate({
+        widgetName: 'ScheduleSmall',
+        renderWidget: () => render('ScheduleSmall', 'small'),
+      });
+      void requestWidgetUpdate({
+        widgetName: 'ScheduleMedium',
+        renderWidget: () => render('ScheduleMedium', 'medium'),
+      });
+      void requestWidgetUpdate({
+        widgetName: 'ScheduleLarge',
+        renderWidget: () => render('ScheduleLarge', 'large'),
+      });
+    }
   } catch {
     // Not critical.
   }

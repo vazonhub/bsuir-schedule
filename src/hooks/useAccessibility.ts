@@ -4,6 +4,7 @@ import {
   shouldDifferentiateWithoutColor,
   addDifferentiateWithoutColorListener,
 } from '../../modules/accessibility-info';
+import { usePreferencesStore } from '@stores/preferences.store';
 
 interface AccessibilitySettings {
   isScreenReaderEnabled: boolean;
@@ -89,6 +90,18 @@ export function useAccessibility(): AccessibilitySettings {
       dwcSub?.remove();
     };
   }, []);
+
+  // Android in-app overrides (these system APIs are iOS-only)
+  const androidDwc = usePreferencesStore((s) => s.androidDifferentiateWithoutColor);
+  const androidHc = usePreferencesStore((s) => s.androidHighContrast);
+
+  if (Platform.OS === 'android') {
+    return {
+      ...settings,
+      isDifferentiateWithoutColorEnabled: androidDwc,
+      isDarkerSystemColorsEnabled: androidHc,
+    };
+  }
 
   return settings;
 }

@@ -62,6 +62,11 @@ interface PreferencesState {
   sourceICloud: boolean;
   sourceGoogleDrive: boolean;
 
+  /** Android in-app override: differentiate without color (iOS uses system setting). */
+  androidDifferentiateWithoutColor: boolean;
+  /** Android in-app override: high contrast palette (iOS uses system setting). */
+  androidHighContrast: boolean;
+
   togglePinnedGroup(name: string): void;
   togglePinnedEmployee(urlId: string): void;
   setDefaultGroup(name: string | null): void;
@@ -73,6 +78,8 @@ interface PreferencesState {
   setSourceBsuirApi(value: boolean): void;
   setSourceICloud(value: boolean): void;
   setSourceGoogleDrive(value: boolean): void;
+  setAndroidDifferentiateWithoutColor(value: boolean): void;
+  setAndroidHighContrast(value: boolean): void;
   /** Последняя версия, release notes которой пользователь уже просмотрел. */
   lastSeenVersion: string | null;
   setLastSeenVersion(version: string): void;
@@ -111,6 +118,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       sourceBsuirApi: true,
       sourceICloud: true,
       sourceGoogleDrive: false,
+      androidDifferentiateWithoutColor: false,
+      androidHighContrast: false,
       lastSeenVersion: null,
       blockedLessons: {},
       lessonColorOverrides: {},
@@ -165,6 +174,8 @@ export const usePreferencesStore = create<PreferencesState>()(
         if (!value && !sourceBsuirApi && !sourceICloud) return;
         set({ sourceGoogleDrive: value });
       },
+      setAndroidDifferentiateWithoutColor: (value) => set({ androidDifferentiateWithoutColor: value }),
+      setAndroidHighContrast: (value) => set({ androidHighContrast: value }),
       setLastSeenVersion: (version) => set({ lastSeenVersion: version }),
       toggleBlockedLesson: (entityKey, blockId) =>
         set((s) => {
@@ -217,6 +228,8 @@ export const usePreferencesStore = create<PreferencesState>()(
         sourceBsuirApi: state.sourceBsuirApi,
         sourceICloud: state.sourceICloud,
         sourceGoogleDrive: state.sourceGoogleDrive,
+        androidDifferentiateWithoutColor: state.androidDifferentiateWithoutColor,
+        androidHighContrast: state.androidHighContrast,
         lastSeenVersion: state.lastSeenVersion,
         blockedLessons: state.blockedLessons,
         lessonColorOverrides: state.lessonColorOverrides,

@@ -95,6 +95,41 @@
           }
         }
       ],
+      ["./plugins/withAndroidAccentColor", "#0A84FF"],
+      ["react-native-android-widget", {
+        "widgets": [
+          {
+            "name": "ScheduleSmall",
+            "label": "Bsuir Time",
+            "minWidth": "110dp",
+            "minHeight": "110dp",
+            "targetCellWidth": 2,
+            "targetCellHeight": 2,
+            "description": "Расписание занятий",
+            "updatePeriodMillis": 1800000
+          },
+          {
+            "name": "ScheduleMedium",
+            "label": "Bsuir Time (средний)",
+            "minWidth": "250dp",
+            "minHeight": "110dp",
+            "targetCellWidth": 4,
+            "targetCellHeight": 2,
+            "description": "Расписание занятий",
+            "updatePeriodMillis": 1800000
+          },
+          {
+            "name": "ScheduleLarge",
+            "label": "Bsuir Time (большой)",
+            "minWidth": "250dp",
+            "minHeight": "250dp",
+            "targetCellWidth": 4,
+            "targetCellHeight": 4,
+            "description": "Расписание занятий",
+            "updatePeriodMillis": 1800000
+          }
+        ]
+      }],
       "@react-native-google-signin/google-signin"
     ],
     "extra": {

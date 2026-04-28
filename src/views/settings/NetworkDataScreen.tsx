@@ -124,7 +124,7 @@ export const NetworkDataScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>{t('settings.networkSection')}</Text>
       </View>

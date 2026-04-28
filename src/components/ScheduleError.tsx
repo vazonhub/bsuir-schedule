@@ -36,7 +36,7 @@ export const ScheduleError = ({ kind, onRetry }: Props) => {
     t('error.genericHint');
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityLiveRegion="polite">
       <Ionicons name={icon} size={56} color={Palette.textTertiary} />
       <Text {...textProps('headline')} style={styles.title}>{title}</Text>
       <Text {...textProps('subhead')} style={styles.hint}>{hint}</Text>

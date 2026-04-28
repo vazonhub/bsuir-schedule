@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules } from 'react-native';
 
 import { ScheduleApi } from '@services/api';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -17,7 +17,7 @@ const TASK_NAME = 'WIDGET_REFRESH';
  * (e.g. iPad simulator).
  */
 export const registerWidgetBackgroundFetch = async (): Promise<void> => {
-  if (Platform.OS !== 'ios' || !NativeModules.ExpoTaskManager) return;
+  if (!NativeModules.ExpoTaskManager) return;
 
   const TaskManager = require('expo-task-manager') as typeof import('expo-task-manager');
   const BackgroundFetch = require('expo-background-fetch') as typeof import('expo-background-fetch');

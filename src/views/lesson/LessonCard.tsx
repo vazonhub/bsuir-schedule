@@ -226,7 +226,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
                 <Text {...textProps('tiny')} style={[styles.typeBadgeText, { color: accent }]}>{typeAbbrev}</Text>
               </View>
             )}
-            {timeStatus?.kind === 'ongoing' && (
+            {isDifferentiateWithoutColorEnabled && timeStatus?.kind === 'ongoing' && (
               <Text maxFontSizeMultiplier={1}style={[styles.nowBadge, { color: Palette.accent }]}>{t('a11y.now')}</Text>
             )}
           </View>

@@ -127,7 +127,7 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('common.back')}
           >
-            <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
+            <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
           </GlassButton>
         )}
 

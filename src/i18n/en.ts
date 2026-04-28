@@ -211,6 +211,8 @@ export const en: TranslationKeys = {
     subtitle: 'The app automatically adapts to your device\'s accessibility settings. Current status is shown below.',
     voiceOver: 'VoiceOver',
     voiceOverDesc: 'Voice guidance for interface elements',
+    talkBack: 'TalkBack',
+    talkBackDesc: 'Voice guidance for interface elements',
     reduceMotion: 'Reduce Motion',
     reduceMotionDesc: 'Simplified animations and transitions',
     boldText: 'Bold Text',
@@ -228,6 +230,7 @@ export const en: TranslationKeys = {
     off: 'Off',
     openSettings: 'Open device settings',
     footnote: 'These options are managed in your device\'s system settings. The app supports VoiceOver, Voice Control, Dynamic Type, Reduce Motion, and high contrast mode.',
+    footnoteAndroid: 'Some options like Differentiate Without Color and Increase Contrast can be toggled directly here. Other options are managed in your device\'s system settings.',
   },
 
   a11y: {
