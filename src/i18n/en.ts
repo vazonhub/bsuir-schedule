@@ -257,6 +257,15 @@ export const en: TranslationKeys = {
     now: 'now',
   },
 
+  update: {
+    new: 'New',
+    title: "What's New",
+    openStore: 'Open in Store',
+    close: 'Close',
+    whatsNew: "What's New",
+    noNotes: 'Update information is not available yet.',
+  },
+
   color: {
     red: 'Red',
     lightRed: 'Light red',

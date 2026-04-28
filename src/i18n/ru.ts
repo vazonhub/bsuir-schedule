@@ -269,6 +269,16 @@ export const ru = {
     now: 'сейчас',
   },
 
+  // Update
+  update: {
+    new: 'Новое',
+    title: 'Что нового',
+    openStore: 'Открыть в магазине',
+    close: 'Закрыть',
+    whatsNew: 'Что нового',
+    noNotes: 'Информация об обновлении пока недоступна.',
+  },
+
   // Color names
   color: {
     red: 'Красный',

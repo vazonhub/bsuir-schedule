@@ -2,15 +2,19 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { UpdateBadge } from '@components/UpdateBadge';
+import { UpdateModal } from '@components/UpdateModal';
+import { AppVersionController } from '@controllers/appVersion.controller';
 import { useAppBootstrap } from '@hooks/useAppBootstrap';
 import { useIsDark } from '@hooks/usePalette';
 import '@i18n';
 import { configureGoogleSignIn } from '@services/cloud/googleAuth';
+import { useAppVersionStore } from '@stores/appVersion.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 /**
@@ -26,6 +30,23 @@ export default function RootLayout() {
   const language = usePreferencesStore((s) => s.language);
   const { i18n } = useTranslation();
   const router = useRouter();
+
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+
+  const latestVersion = useAppVersionStore((s) => s.latestVersion);
+  const releaseNotes = useAppVersionStore((s) => s.releaseNotes);
+  const storeUrl = useAppVersionStore((s) => s.storeUrl);
+
+  const openUpdateModal = useCallback(() => {
+    setUpdateModalVisible(true);
+  }, []);
+
+  const closeUpdateModal = useCallback(() => {
+    setUpdateModalVisible(false);
+    if (latestVersion) {
+      AppVersionController.markAsSeen(latestVersion);
+    }
+  }, [latestVersion]);
 
   // Native UIUserInterfaceStyle is synced in preferences.store.ts — both in
   // setTheme() and onRehydrateStorage() — so it updates atomically with the
@@ -57,6 +78,14 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
           </Stack>
+          <UpdateBadge onPress={openUpdateModal} />
+          <UpdateModal
+            visible={updateModalVisible}
+            version={latestVersion}
+            releaseNotes={releaseNotes}
+            storeUrl={storeUrl}
+            onClose={closeUpdateModal}
+          />
           <StatusBar style={isDark ? 'light' : 'dark'} />
         </BottomSheetModalProvider>
       </SafeAreaProvider>

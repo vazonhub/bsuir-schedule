@@ -73,6 +73,9 @@ interface PreferencesState {
   setSourceBsuirApi(value: boolean): void;
   setSourceICloud(value: boolean): void;
   setSourceGoogleDrive(value: boolean): void;
+  /** Последняя версия, release notes которой пользователь уже просмотрел. */
+  lastSeenVersion: string | null;
+  setLastSeenVersion(version: string): void;
   /** Заблокированные пары: entityKey → массив block-ID. */
   blockedLessons: Record<string, string[]>;
   toggleBlockedLesson(entityKey: string, blockId: string): void;
@@ -108,6 +111,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       sourceBsuirApi: true,
       sourceICloud: true,
       sourceGoogleDrive: false,
+      lastSeenVersion: null,
       blockedLessons: {},
       lessonColorOverrides: {},
       iconOverrides: {},
@@ -161,6 +165,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         if (!value && !sourceBsuirApi && !sourceICloud) return;
         set({ sourceGoogleDrive: value });
       },
+      setLastSeenVersion: (version) => set({ lastSeenVersion: version }),
       toggleBlockedLesson: (entityKey, blockId) =>
         set((s) => {
           const current = s.blockedLessons[entityKey] ?? [];
@@ -212,6 +217,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         sourceBsuirApi: state.sourceBsuirApi,
         sourceICloud: state.sourceICloud,
         sourceGoogleDrive: state.sourceGoogleDrive,
+        lastSeenVersion: state.lastSeenVersion,
         blockedLessons: state.blockedLessons,
         lessonColorOverrides: state.lessonColorOverrides,
         iconOverrides: state.iconOverrides,

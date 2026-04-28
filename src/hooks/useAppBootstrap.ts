@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Appearance, AppState } from 'react-native';
 
+import { AppVersionController } from '@controllers/appVersion.controller';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { HolidaysController } from '@controllers/holidays.controller';
@@ -30,6 +31,7 @@ export const useAppBootstrap = () => {
     void prefetchPinned().then(() => updateWidgetSnapshot());
     void registerWidgetBackgroundFetch();
     void trackUsageAndMaybeRequestReview();
+    void AppVersionController.checkForUpdate();
   }, []);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export const useAppBootstrap = () => {
       void EmployeesController.loadAll();
       void HolidaysController.sync(new Date().getFullYear());
       void prefetchPinned().then(() => updateWidgetSnapshot());
+      void AppVersionController.checkForUpdate();
     });
     return () => sub.remove();
   }, []);

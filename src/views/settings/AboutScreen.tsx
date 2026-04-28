@@ -6,8 +6,10 @@ import { Animated, Linking, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
+import { UpdateModal } from '@components/UpdateModal';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
+import { useAppVersionStore } from '@stores/appVersion.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
 
@@ -25,6 +27,11 @@ export const AboutScreen = () => {
   const reduceMotion = useReduceMotion();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const language = usePreferencesStore((s) => s.language);
+
+  const latestVersion = useAppVersionStore((s) => s.latestVersion);
+  const releaseNotes = useAppVersionStore((s) => s.releaseNotes);
+  const storeUrl = useAppVersionStore((s) => s.storeUrl);
+  const [whatsNewVisible, setWhatsNewVisible] = useState(false);
 
   // ── Tooltip ──
   const [hintVisible, setHintVisible] = useState(false);
@@ -96,6 +103,15 @@ export const AboutScreen = () => {
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={() => setWhatsNewVisible(true)}
+          >
+            <Ionicons name="sparkles-outline" size={20} color={Palette.accent} />
+            <Text style={styles.navLabel}>{t('update.whatsNew')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+          </Pressable>
+          <View style={styles.separator} />
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
             onPress={openPrivacyPolicy}
           >
             <Ionicons name="document-text-outline" size={20} color={Palette.accent} />
@@ -104,6 +120,14 @@ export const AboutScreen = () => {
           </Pressable>
         </View>
       </View>
+
+      <UpdateModal
+        visible={whatsNewVisible}
+        version={latestVersion}
+        releaseNotes={releaseNotes}
+        storeUrl={storeUrl}
+        onClose={() => setWhatsNewVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -169,6 +193,11 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.card,
       borderRadius: Radius.lg,
       overflow: 'hidden',
+    },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: Palette.separator,
+      marginLeft: Spacing.cardPaddingX,
     },
     navRow: {
       flexDirection: 'row',

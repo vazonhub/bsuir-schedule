@@ -257,6 +257,15 @@ export const be: TranslationKeys = {
     now: 'зараз',
   },
 
+  update: {
+    new: 'Новае',
+    title: 'Што новага',
+    openStore: 'Адкрыць у краме',
+    close: 'Зачыніць',
+    whatsNew: 'Што новага',
+    noNotes: 'Інфармацыя пра абнаўленне пакуль недаступная.',
+  },
+
   color: {
     red: 'Чырвоны',
     lightRed: 'Светла-чырвоны',
