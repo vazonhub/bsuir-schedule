@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAppBootstrap } from '@hooks/useAppBootstrap';
 import { useIsDark } from '@hooks/usePalette';
 import '@i18n';
+import { configureGoogleSignIn } from '@services/cloud/googleAuth';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 /**
@@ -17,6 +18,8 @@ import { usePreferencesStore } from '@stores/preferences.store';
  * and exposes a stack so we can later push modals at the root level if needed.
  * The `(tabs)` group becomes the only top-level screen of that stack.
  */
+configureGoogleSignIn();
+
 export default function RootLayout() {
   useAppBootstrap();
   const isDark = useIsDark();

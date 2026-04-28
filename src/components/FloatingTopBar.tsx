@@ -127,7 +127,7 @@ export const FloatingTopBar = ({
             size={38}
             accessibilityLabel={t('common.back')}
           >
-            <Text maxFontSizeMultiplier={1}style={styles.back}>&#8249;</Text>
+            <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
           </GlassButton>
         )}
 
@@ -209,7 +209,7 @@ export const FloatingTopBar = ({
           accessibilityHint={t('a11y.togglePin')}
           accessibilityState={{ selected: pinned }}
         >
-          <Text maxFontSizeMultiplier={1}style={[styles.pin, pinned && styles.pinActive]}>{pinned ? '\u2605' : '\u2606'}</Text>
+          <Ionicons name={pinned ? 'star' : 'star-outline'} size={15} color={pinned ? Palette.accent : Palette.textSecondary} />
         </GlassButton>
 
         {showSubgroupPicker && (
@@ -246,13 +246,6 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     gap: Spacing.sm,
     paddingLeft: Spacing.sm,
   },
-  back: {
-    fontSize: 28,
-    lineHeight: 28,
-    fontWeight: '500',
-    color: Palette.textPrimary,
-    marginTop: 0,
-  },
   // Stretch-friendly Liquid-Glass обёртка лейбла даты: позволяет ужиматься
   // под доступную ширину, чтобы при длинном «Понедельник, 14 апреля» текст
   // подрезался многоточием, а не толкал правые контролы.
@@ -272,12 +265,5 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   dayLabelTomorrow: {
     color: Palette.destructive,
-  },
-  pin: {
-    fontSize: 18,
-    color: Palette.textSecondary,
-  },
-  pinActive: {
-    color: Palette.accent,
   },
 });

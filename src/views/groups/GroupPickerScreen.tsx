@@ -181,7 +181,7 @@ export const GroupPickerScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Text maxFontSizeMultiplier={1} style={styles.backChevron}>&#8249;</Text>
+          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
         </GlassButton>
         <Text {...textProps('title')} style={styles.title} numberOfLines={1}>{t('groups.pickerTitle')}</Text>
       </View>
@@ -313,13 +313,6 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
     gap: Spacing.md,
-  },
-  backChevron: {
-    fontSize: 28,
-    lineHeight: 28,
-    fontWeight: '500',
-    color: Palette.textPrimary,
-    marginTop: 0,
   },
   title: {
     flex: 1,

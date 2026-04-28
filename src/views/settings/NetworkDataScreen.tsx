@@ -9,6 +9,8 @@ import { GlassButton } from '@components/GlassButton';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { clearLocalCache } from '@services/cache/cache';
+import { isGoogleSignedIn, signInWithGoogle } from '@services/cloud/googleAuth';
+import { isGoogleDriveAvailable } from '@services/cloud/googleDrive';
 import { isICloudAvailable } from '@services/cloud/icloud';
 import { clearCloudSchedules } from '@services/cloud/syncService';
 import { updateWidgetSnapshot } from '@services/widget';
@@ -29,6 +31,8 @@ export const NetworkDataScreen = () => {
   const setSourceBsuirApi = usePreferencesStore((s) => s.setSourceBsuirApi);
   const sourceICloud = usePreferencesStore((s) => s.sourceICloud);
   const setSourceICloud = usePreferencesStore((s) => s.setSourceICloud);
+  const sourceGoogleDrive = usePreferencesStore((s) => s.sourceGoogleDrive);
+  const setSourceGoogleDrive = usePreferencesStore((s) => s.setSourceGoogleDrive);
 
   // ── Toast ──
   const [toast, setToast] = useState<string | null>(null);
@@ -73,6 +77,20 @@ export const NetworkDataScreen = () => {
     setSourceICloud(!sourceICloud);
   }, [sourceICloud, setSourceICloud]);
 
+  const [googleSignedIn, setGoogleSignedIn] = useState(() => isGoogleSignedIn());
+
+  const toggleGoogleDrive = useCallback(async () => {
+    void hapticLight();
+    if (!googleSignedIn) {
+      const ok = await signInWithGoogle();
+      if (!ok) return;
+      setGoogleSignedIn(true);
+      setSourceGoogleDrive(true);
+      return;
+    }
+    setSourceGoogleDrive(!sourceGoogleDrive);
+  }, [sourceGoogleDrive, setSourceGoogleDrive, googleSignedIn]);
+
   const handleClearCache = useCallback(() => {
     Alert.alert(
       t('settings.clearCache'),
@@ -100,12 +118,13 @@ export const NetworkDataScreen = () => {
   }, [t, showToast]);
 
   const showICloud = Platform.OS === 'ios' && isICloudAvailable;
+  const showGoogleDrive = isGoogleDriveAvailable;
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Text style={styles.backChevron}>&#8249;</Text>
+          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>{t('settings.networkSection')}</Text>
       </View>
@@ -146,6 +165,25 @@ export const NetworkDataScreen = () => {
                 <Text style={styles.sourceLabel}>{t('settings.sourceICloud')}</Text>
                 {sourceICloud && (
                   <Ionicons name="checkmark" size={20} color="#34C759" />
+                )}
+              </Pressable>
+            </>
+          )}
+
+          {showGoogleDrive && (
+            <>
+              <View style={styles.separator} />
+              <Pressable
+                style={({ pressed }) => [styles.sourceRow, pressed && styles.sourceRowPressed]}
+                onPress={toggleGoogleDrive}
+              >
+                <Text style={styles.sourceLabel}>{t('settings.sourceGoogleDrive')}</Text>
+                {googleSignedIn ? (
+                  sourceGoogleDrive && <Ionicons name="checkmark" size={20} color="#34C759" />
+                ) : (
+                  <View style={styles.signInPill}>
+                    <Text style={styles.signInPillText}>{t('settings.signIn')}</Text>
+                  </View>
                 )}
               </Pressable>
             </>
@@ -195,12 +233,6 @@ const makeStyles = (Palette: PaletteType) =>
       paddingTop: Spacing.md,
       paddingBottom: Spacing.md,
       gap: Spacing.md,
-    },
-    backChevron: {
-      fontSize: 28,
-      lineHeight: 28,
-      fontWeight: '500',
-      color: Palette.textPrimary,
     },
     title: {
       flex: 1,
@@ -266,6 +298,17 @@ const makeStyles = (Palette: PaletteType) =>
     sourceLabel: {
       fontSize: 16,
       color: Palette.textPrimary,
+    },
+    signInPill: {
+      backgroundColor: Palette.accent,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+    },
+    signInPillText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#FFFFFF',
     },
     separator: {
       height: StyleSheet.hairlineWidth,

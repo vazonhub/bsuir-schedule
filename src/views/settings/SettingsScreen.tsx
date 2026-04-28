@@ -90,6 +90,7 @@ export const SettingsScreen = () => {
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   useEffect(() => {
+    if (Platform.OS !== 'ios') return;
     let cancelled = false;
     const init = async () => {
       try {
@@ -270,6 +271,7 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.tipSection}>
+        {Platform.OS === 'ios' && (
         <View style={styles.tipCard}>
           <Pressable
             style={({ pressed }) => [styles.tipRow, pressed && styles.tipRowPressed]}
@@ -279,6 +281,7 @@ export const SettingsScreen = () => {
             <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>{t('settings.tipJar')}</Text>
           </Pressable>
         </View>
+        )}
       </View>
       </ScrollView>
 

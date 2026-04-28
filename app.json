@@ -47,30 +47,30 @@
       [
         "expo-alternate-app-icons",
         [
-          "./assets/icons/icon-bg-dark.png",
-          "./assets/icons/icon-bg-red.png",
-          "./assets/icons/icon-bg-orange.png",
-          "./assets/icons/icon-bg-green.png",
-          "./assets/icons/icon-bg-purple.png",
-          "./assets/icons/icon-bg-blue.png",
-          "./assets/icons/icon-bg-pink.png",
-          "./assets/icons/icon-bg-teal.png",
-          "./assets/icons/icon-light-classic-blue.png",
-          "./assets/icons/icon-light-black.png",
-          "./assets/icons/icon-light-blue.png",
-          "./assets/icons/icon-light-purple.png",
-          "./assets/icons/icon-light-red.png",
-          "./assets/icons/icon-light-green.png",
-          "./assets/icons/icon-dark-blue.png",
-          "./assets/icons/icon-dark-green.png",
-          "./assets/icons/icon-dark-red.png",
-          "./assets/icons/icon-dark-orange.png",
-          "./assets/icons/icon-dark-purple.png",
-          "./assets/icons/icon-grad-blue-purple.png",
-          "./assets/icons/icon-grad-red-orange.png",
-          "./assets/icons/icon-grad-green-teal.png",
-          "./assets/icons/icon-grad-pink-purple.png",
-          "./assets/icons/icon-grad-midnight.png"
+          "./assets/icons/IconBgDark.png",
+          "./assets/icons/IconBgRed.png",
+          "./assets/icons/IconBgOrange.png",
+          "./assets/icons/IconBgGreen.png",
+          "./assets/icons/IconBgPurple.png",
+          "./assets/icons/IconBgBlue.png",
+          "./assets/icons/IconBgPink.png",
+          "./assets/icons/IconBgTeal.png",
+          "./assets/icons/IconLightClassicBlue.png",
+          "./assets/icons/IconLightBlack.png",
+          "./assets/icons/IconLightBlue.png",
+          "./assets/icons/IconLightPurple.png",
+          "./assets/icons/IconLightRed.png",
+          "./assets/icons/IconLightGreen.png",
+          "./assets/icons/IconDarkBlue.png",
+          "./assets/icons/IconDarkGreen.png",
+          "./assets/icons/IconDarkRed.png",
+          "./assets/icons/IconDarkOrange.png",
+          "./assets/icons/IconDarkPurple.png",
+          "./assets/icons/IconGradBluePurple.png",
+          "./assets/icons/IconGradRedOrange.png",
+          "./assets/icons/IconGradGreenTeal.png",
+          "./assets/icons/IconGradPinkPurple.png",
+          "./assets/icons/IconGradMidnight.png"
         ]
       ],
       "expo-font",
@@ -94,7 +94,8 @@
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "router": {},

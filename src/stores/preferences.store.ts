@@ -60,6 +60,7 @@ interface PreferencesState {
   /** Data source toggles — which backends to use for schedule data. */
   sourceBsuirApi: boolean;
   sourceICloud: boolean;
+  sourceGoogleDrive: boolean;
 
   togglePinnedGroup(name: string): void;
   togglePinnedEmployee(urlId: string): void;
@@ -71,6 +72,7 @@ interface PreferencesState {
   setHidePastLessons(value: boolean): void;
   setSourceBsuirApi(value: boolean): void;
   setSourceICloud(value: boolean): void;
+  setSourceGoogleDrive(value: boolean): void;
   /** Заблокированные пары: entityKey → массив block-ID. */
   blockedLessons: Record<string, string[]>;
   toggleBlockedLesson(entityKey: string, blockId: string): void;
@@ -105,6 +107,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       hidePastLessons: true,
       sourceBsuirApi: true,
       sourceICloud: true,
+      sourceGoogleDrive: false,
       blockedLessons: {},
       lessonColorOverrides: {},
       iconOverrides: {},
@@ -144,14 +147,19 @@ export const usePreferencesStore = create<PreferencesState>()(
       setHidePastLessons: (value) => set({ hidePastLessons: value }),
       setSourceBsuirApi: (value) => {
         // At least one source must be enabled.
-        const icloud = get().sourceICloud;
-        if (!value && !icloud) return;
+        const { sourceICloud, sourceGoogleDrive } = get();
+        if (!value && !sourceICloud && !sourceGoogleDrive) return;
         set({ sourceBsuirApi: value });
       },
       setSourceICloud: (value) => {
-        const api = get().sourceBsuirApi;
-        if (!value && !api) return;
+        const { sourceBsuirApi, sourceGoogleDrive } = get();
+        if (!value && !sourceBsuirApi && !sourceGoogleDrive) return;
         set({ sourceICloud: value });
+      },
+      setSourceGoogleDrive: (value) => {
+        const { sourceBsuirApi, sourceICloud } = get();
+        if (!value && !sourceBsuirApi && !sourceICloud) return;
+        set({ sourceGoogleDrive: value });
       },
       toggleBlockedLesson: (entityKey, blockId) =>
         set((s) => {
@@ -203,6 +211,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         hidePastLessons: state.hidePastLessons,
         sourceBsuirApi: state.sourceBsuirApi,
         sourceICloud: state.sourceICloud,
+        sourceGoogleDrive: state.sourceGoogleDrive,
         blockedLessons: state.blockedLessons,
         lessonColorOverrides: state.lessonColorOverrides,
         iconOverrides: state.iconOverrides,

@@ -24,6 +24,7 @@ import {
   usePreferencesStore,
 } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import type { Holiday } from '@models/holiday';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
 import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
 import { findHolidayName, toDateISO } from '@utils/holidays';
@@ -61,6 +62,8 @@ interface Props {
   /** Label shown in the FloatingTopBar pill when `isDefaultSchedule` (group name or "Фамилия И.О."). */
   defaultLabel?: string;
 }
+
+const EMPTY_HOLIDAYS: Holiday[] = [];
 
 export const ScheduleView = ({
   schedule,
@@ -171,7 +174,7 @@ export const ScheduleView = ({
     [now.getFullYear(), now.getMonth(), now.getDate()],
   );
 
-  const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())] ?? []);
+  const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())]) ?? EMPTY_HOLIDAYS;
   const userAdded = useHolidaysStore((s) => s.userAdded);
   const userRemoved = useHolidaysStore((s) => s.userRemoved);
   const holidays = useMemo(
@@ -535,7 +538,8 @@ export const ScheduleView = ({
       <SectionList
         ref={listRef as never}
         sections={sections}
-        keyExtractor={(item) => item.key}
+        keyExtractor={(item) => `${item.key}_${blockedSet.has(buildLessonBlockId(item)) ? 'b' : 'u'}`}
+        extraData={blockedSet}
         // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
         stickySectionHeadersEnabled={false}
         contentContainerStyle={contentStyle}

@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
  * для скроллируемых экранов внутри табов мы добавляем эту константу к
  * `insets.bottom`, чтобы последний элемент не прятался под таббар.
  */
-export const TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 49 });
+export const TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 80, default: 49 });
 
 /**
  * Spacing scale (pt). Use these tokens instead of raw numbers in styles so

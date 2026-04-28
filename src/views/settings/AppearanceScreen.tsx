@@ -279,7 +279,7 @@ export const AppearanceScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={handleBack} size={38} accessibilityLabel={t('common.back')}>
-          <Text style={styles.backChevron}>&#8249;</Text>
+          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>{t('settings.appearanceSection')}</Text>
       </View>
@@ -481,7 +481,6 @@ const makeStyles = (Palette: PaletteType) =>
       paddingBottom: Spacing.md,
       gap: Spacing.md,
     },
-    backChevron: { fontSize: 28, lineHeight: 28, fontWeight: '500', color: Palette.textPrimary },
     title: { flex: 1, fontSize: 22, fontWeight: '700', color: Palette.textPrimary },
     scroll: { paddingHorizontal: Spacing.screenPadding },
     sectionTitle: {

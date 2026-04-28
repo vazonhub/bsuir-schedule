@@ -42,6 +42,7 @@ export default function TabsLayout() {
       disableTransparentOnScrollEdge={!supportsLiquidGlass || undefined}
       labelVisibilityMode="labeled"
       tintColor={isAndroid ? palette.accent : undefined}
+      indicatorColor={isAndroid ? `${palette.accent}26` : undefined}
       labelStyle={isAndroid ? { fontSize: 12 } : undefined}
     >
       <NativeTabs.Trigger name="(amy)">

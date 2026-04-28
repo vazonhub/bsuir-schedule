@@ -53,6 +53,7 @@ export const GlassButton = ({
   const isDark = useIsDark();
   const glassTint = useGlassTint();
   const styles = useMemo(() => makeStyles(Palette, glassTint.tint), [Palette, glassTint.tint]);
+  const isCircle = !height;
   const radius = shape === 'pill' ? 999 : Radius.lg;
   const heightPx = height ?? size;
 
@@ -65,7 +66,13 @@ export const GlassButton = ({
       accessibilityState={accessibilityState}
       style={({ pressed }) => [
         styles.wrap,
-        { minWidth: size, height: heightPx, borderRadius: radius },
+        {
+          width: isCircle ? size : undefined,
+          minWidth: isCircle ? undefined : size,
+          height: heightPx,
+          borderRadius: radius,
+          paddingHorizontal: isCircle ? 0 : 12,
+        },
         styleProp,
         pressed && onPress && styles.pressed,
       ]}
@@ -96,7 +103,6 @@ const makeStyles = (Palette: PaletteType, tintBg: string) => StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
   },
   pressed: { opacity: 0.7 },
   tint: { backgroundColor: tintBg },

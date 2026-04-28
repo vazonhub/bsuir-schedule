@@ -18,13 +18,14 @@
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios",
-    "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
+    "android:build": "npm run prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.9",
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-segmented-control/segmented-control": "^2.5.7",
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/native-stack": "^7.3.16",
@@ -45,6 +46,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-store-review": "~9.0.9",
+    "expo-system-ui": "~6.0.9",
     "expo-task-manager": "~14.0.9",
     "i18next": "^26.0.5",
     "react": "19.1.0",
