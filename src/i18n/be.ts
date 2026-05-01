@@ -25,6 +25,8 @@ export const be: TranslationKeys = {
     networkHint: 'Праверце злучэнне і паспрабуйце зноў',
     generic: 'Не атрымалася загрузіць расклад',
     genericHint: 'Паспрабуйце яшчэ раз',
+    apiDisabled: 'Крыніца iis.bsuir.by адключана',
+    apiDisabledHint: 'Гэты расклад адсутнічае ў воблачным сховішчы. Уключыце iis.bsuir.by у раздзеле «Сетка і даныя», каб загрузіць яго',
   },
 
   mySchedule: {
@@ -162,7 +164,7 @@ export const be: TranslationKeys = {
     availabilityLabel: 'Даступнасць',
     sourceBsuirApi: 'iis.bsuir.by',
     sourceICloud: 'apple.com',
-    sourceGoogleDrive: 'Google Drive',
+    sourceGoogleDrive: 'google.com',
     signIn: 'Увайсці',
     availabilityHint: 'Выберыце, адкуль праграма будзе атрымліваць даныя раскладу. iis.bsuir.by — афіцыйны API БДУІР. Воблачная копія (iCloud на iOS, Google Drive на Android) сінхранізуецца паміж прыладамі і працуе як fallback, калі API недаступны.',
     dataLabel: 'Даныя',
@@ -228,6 +230,8 @@ export const be: TranslationKeys = {
     increaseContrastDesc: 'Палепшаны кантраст тэксту і элементаў',
     on: 'Укл',
     off: 'Выкл',
+    systemSection: 'Налады прылады',
+    appSection: 'Налады праграмы',
     openSettings: 'Адкрыць налады прылады',
     footnote: 'Гэтыя параметры кіруюцца ў сістэмных наладах прылады. Праграма падтрымлівае VoiceOver, кіраванне голасам, Dynamic Type, змяншэнне руху і высокакантрасны рэжым.',
     footnoteAndroid: 'Некаторыя параметры, такія як дыферэнцыяцыя без колеру і павялічэнне кантрасту, можна пераключыць тут. Іншыя параметры кіруюцца ў сістэмных наладах прылады.',

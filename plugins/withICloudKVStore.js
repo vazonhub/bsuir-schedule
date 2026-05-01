@@ -63,6 +63,7 @@ function withICloudKVStore(config) {
   config = withEntitlementsPlist(config, (mod) => {
     mod.modResults['com.apple.developer.ubiquity-kvstore-identifier'] =
       '$(TeamIdentifierPrefix)by.vazon.bsuirschedule';
+    mod.modResults['com.apple.developer.icloud-container-identifiers'] = [];
     return mod;
   });
 

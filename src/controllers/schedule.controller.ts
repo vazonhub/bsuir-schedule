@@ -1,4 +1,5 @@
 import type { AxiosError } from 'axios';
+import { InteractionManager } from 'react-native';
 
 import type { ScheduleDto } from '@models/dto';
 import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
@@ -7,6 +8,12 @@ import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
 import type { ErrorKind } from '@stores/schedule.store';
 import { useScheduleStore } from '@stores/schedule.store';
+
+/** Wait for navigation/animation to finish before running heavy work. */
+const afterInteractions = () =>
+  new Promise<void>((resolve) => {
+    InteractionManager.runAfterInteractions(() => resolve());
+  });
 
 const isNotFound = (e: unknown): boolean =>
   (e as AxiosError)?.response?.status === 404;
@@ -55,27 +62,39 @@ export const ScheduleController = {
     const store = useScheduleStore.getState();
     if (store.loadingKey === groupName) return;
 
+    const prefs = usePreferencesStore.getState();
     store.setLoadingKey(groupName);
     store.setError(null);
+
     try {
-      const data = await GroupsApi.schedule(groupName);
-      store.setSchedule(groupName, data);
-      void pushScheduleToCloud(groupName, data);
-      // Update widget if this is the default group.
-      if (groupName === usePreferencesStore.getState().defaultGroup) {
-        void updateWidgetSnapshot();
-      }
-    } catch (e) {
-      if (isNotFound(e)) {
-        store.setSchedule(groupName, EMPTY_SCHEDULE);
-      } else {
-        // Try iCloud fallback before giving up.
-        const cloudData = await pullScheduleFromCloud(groupName);
-        if (cloudData) {
-          store.setSchedule(groupName, cloudData);
-        } else {
-          store.setError(e instanceof Error ? e.message : 'Не удалось загрузить расписание группы', classifyError(e));
+      if (prefs.sourceBsuirApi) {
+        try {
+          const data = await GroupsApi.schedule(groupName);
+          await afterInteractions();
+          store.setSchedule(groupName, data);
+          void pushScheduleToCloud(groupName, data);
+          if (groupName === prefs.defaultGroup) {
+            void updateWidgetSnapshot();
+          }
+          return;
+        } catch (e) {
+          if (isNotFound(e)) {
+            store.setSchedule(groupName, EMPTY_SCHEDULE);
+            return;
+          }
+          // API failed — fall through to cloud fallback.
         }
+      }
+
+      // Try cloud fallback.
+      const cloudData = await pullScheduleFromCloud(groupName);
+      if (cloudData) {
+        await afterInteractions();
+        store.setSchedule(groupName, cloudData);
+      } else if (!prefs.sourceBsuirApi) {
+        store.setError('apiDisabled', 'apiDisabled');
+      } else {
+        store.setError('cloudFallbackFailed', 'network');
       }
     } finally {
       store.setLoadingKey(null);
@@ -86,25 +105,36 @@ export const ScheduleController = {
     const store = useScheduleStore.getState();
     if (store.loadingKey === urlId) return;
 
+    const prefs = usePreferencesStore.getState();
     store.setLoadingKey(urlId);
     store.setError(null);
+
     try {
-      const data = await EmployeesApi.schedule(urlId);
-      store.setSchedule(urlId, data);
-      void pushScheduleToCloud(urlId, data);
-    } catch (e) {
-      if (isNotFound(e)) {
-        store.setSchedule(urlId, EMPTY_SCHEDULE);
-      } else {
-        const cloudData = await pullScheduleFromCloud(urlId);
-        if (cloudData) {
-          store.setSchedule(urlId, cloudData);
-        } else {
-          store.setError(
-            e instanceof Error ? e.message : 'Не удалось загрузить расписание преподавателя',
-            classifyError(e),
-          );
+      if (prefs.sourceBsuirApi) {
+        try {
+          const data = await EmployeesApi.schedule(urlId);
+          await afterInteractions();
+          store.setSchedule(urlId, data);
+          void pushScheduleToCloud(urlId, data);
+          return;
+        } catch (e) {
+          if (isNotFound(e)) {
+            store.setSchedule(urlId, EMPTY_SCHEDULE);
+            return;
+          }
+          // API failed — fall through to cloud fallback.
         }
+      }
+
+      // Try cloud fallback.
+      const cloudData = await pullScheduleFromCloud(urlId);
+      if (cloudData) {
+        await afterInteractions();
+        store.setSchedule(urlId, cloudData);
+      } else if (!prefs.sourceBsuirApi) {
+        store.setError('apiDisabled', 'apiDisabled');
+      } else {
+        store.setError('cloudFallbackFailed', 'network');
       }
     } finally {
       store.setLoadingKey(null);

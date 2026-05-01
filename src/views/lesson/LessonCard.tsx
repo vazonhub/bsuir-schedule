@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -49,9 +49,9 @@ const buildAvatarItems = (lesson: NormalizedLesson) => {
 };
 
 const BLOCKED_BG_LIGHT = 'rgba(255, 59, 48, 0.06)';
-const BLOCKED_BG_DARK = 'rgba(255, 59, 48, 0.12)';
+const BLOCKED_BG_DARK = 'rgba(255, 59, 48, 0.07)';
 
-export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, timeStatus }: Props) => {
+export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocked = false, timeStatus }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const isDark = useIsDark();
@@ -263,7 +263,7 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
       </View>
     </Pressable>
   );
-};
+});
 
 const STRIPE_WIDTH = 5;
 

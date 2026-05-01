@@ -19,11 +19,11 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "ru", "be"]
       },
-      "usesIcloudStorage": true,
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.by.vazon.bsuirschedule"
         ],
+        "com.apple.developer.icloud-container-identifiers": [],
         "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)by.vazon.bsuirschedule"
       }
     },
@@ -31,9 +31,10 @@
       "package": "by.vazon.bsuirschedule",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/android-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "icon": "./assets/android-icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -43,6 +44,7 @@
     "plugins": [
       "expo-router",
       "./plugins/withWidget",
+      "./plugins/withWidgetKitBridge",
       "./plugins/withICloudKVStore",
       "./plugins/withStoreKit",
       [

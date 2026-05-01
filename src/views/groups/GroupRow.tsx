@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -14,7 +14,7 @@ interface Props {
   onPress(): void;
 }
 
-export const GroupRow = ({ group, onPress }: Props) => {
+export const GroupRow = React.memo(({ group, onPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -36,7 +36,7 @@ export const GroupRow = ({ group, onPress }: Props) => {
       <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">&rsaquo;</Text>
     </Pressable>
   );
-};
+});
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   card: {

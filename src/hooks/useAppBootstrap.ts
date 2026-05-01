@@ -5,6 +5,7 @@ import { AppVersionController } from '@controllers/appVersion.controller';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { HolidaysController } from '@controllers/holidays.controller';
+import { restoreGoogleSession } from '@services/cloud/googleAuth';
 import { prefetchPinned } from '@services/prefetch';
 import { trackUsageAndMaybeRequestReview } from '@services/review';
 import { updateWidgetSnapshot } from '@services/widget';
@@ -32,6 +33,7 @@ export const useAppBootstrap = () => {
     void registerWidgetBackgroundFetch();
     void trackUsageAndMaybeRequestReview();
     void AppVersionController.checkForUpdate();
+    void restoreGoogleSession();
   }, []);
 
   useEffect(() => {

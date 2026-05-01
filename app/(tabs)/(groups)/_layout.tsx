@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
 
+import { usePalette } from '@hooks/usePalette';
+
 /**
  * Stack for the Groups tab.
  * `index` = list of all student groups, `[name]` = schedule of a specific group.
@@ -8,5 +10,13 @@ import { Stack } from 'expo-router';
  * остаётся доступным через iOS swipe-back и системную Android-кнопку.
  */
 export default function GroupsStackLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const Palette = usePalette();
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: Palette.background },
+      }}
+    />
+  );
 }

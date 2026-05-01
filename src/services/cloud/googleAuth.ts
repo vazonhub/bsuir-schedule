@@ -34,11 +34,23 @@ export const configureGoogleSignIn = (): void => {
 export const signInWithGoogle = async (): Promise<boolean> => {
   if (!isAndroid) return false;
   try {
-    const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+    const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
     await GoogleSignin.hasPlayServices();
     await GoogleSignin.signIn();
     return true;
-  } catch {
+  } catch (error: unknown) {
+    const { statusCodes } = require('@react-native-google-signin/google-signin');
+    const code = (error as { code?: string })?.code;
+    // If a sign-in is already in progress, try silent sign-in instead.
+    if (code === statusCodes.IN_PROGRESS) {
+      try {
+        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+        await GoogleSignin.signInSilently();
+        return true;
+      } catch {
+        return false;
+      }
+    }
     return false;
   }
 };
@@ -54,12 +66,29 @@ export const signOutGoogle = async (): Promise<void> => {
   }
 };
 
-/** Check if user has a previous sign-in session. */
+/** Check if user has a previous sign-in session (synchronous, may be stale). */
 export const isGoogleSignedIn = (): boolean => {
   if (!isAndroid) return false;
   try {
     const { GoogleSignin } = require('@react-native-google-signin/google-signin');
     return GoogleSignin.hasPreviousSignIn();
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Restore a previous session silently. Returns `true` if the user is signed in
+ * after the attempt. Call this on app startup so that `hasPreviousSignIn()`
+ * returns a correct value for the rest of the session.
+ */
+export const restoreGoogleSession = async (): Promise<boolean> => {
+  if (!isAndroid) return false;
+  try {
+    const { GoogleSignin } = require('@react-native-google-signin/google-signin');
+    if (!GoogleSignin.hasPreviousSignIn()) return false;
+    await GoogleSignin.signInSilently();
+    return true;
   } catch {
     return false;
   }

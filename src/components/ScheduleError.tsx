@@ -21,16 +21,19 @@ export const ScheduleError = ({ kind, onRetry }: Props) => {
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const icon: keyof typeof Ionicons.glyphMap =
+    kind === 'apiDisabled' ? 'toggle-outline' :
     kind === 'server' ? 'server-outline' :
     kind === 'network' ? 'cloud-offline-outline' :
     'alert-circle-outline';
 
   const title =
+    kind === 'apiDisabled' ? t('error.apiDisabled') :
     kind === 'server' ? t('error.serverDown') :
     kind === 'network' ? t('error.networkDown') :
     t('error.generic');
 
   const hint =
+    kind === 'apiDisabled' ? t('error.apiDisabledHint') :
     kind === 'server' ? t('error.serverHint') :
     kind === 'network' ? t('error.networkHint') :
     t('error.genericHint');

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -31,7 +31,7 @@ interface Props {
  * screen background; opaque `backgroundColor` ensures it cleanly hides cards
  * scrolling behind it when the section list pins it to the top.
  */
-export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
+export const DayHeader = React.memo(({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -63,7 +63,7 @@ export const DayHeader = ({ date, week, isToday = false, isTomorrow = false, isE
       </View>
     </View>
   );
-};
+});
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   wrap: {
@@ -94,7 +94,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     opacity: 0.4,
   },
   holidayBadge: {
-    backgroundColor: Palette.accent + '1A', // 10% opacity
+    backgroundColor: Palette.accent + '26', // 15% opacity
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,

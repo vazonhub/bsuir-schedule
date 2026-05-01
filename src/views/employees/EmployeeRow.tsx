@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -30,7 +30,7 @@ const buildSubtitle = (e: EmployeeDto): string | null => {
   return null;
 };
 
-export const EmployeeRow = ({ employee, onPress, onPhotoPress }: Props) => {
+export const EmployeeRow = React.memo(({ employee, onPress, onPhotoPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -62,7 +62,7 @@ export const EmployeeRow = ({ employee, onPress, onPhotoPress }: Props) => {
       <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">&rsaquo;</Text>
     </Pressable>
   );
-};
+});
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   card: {

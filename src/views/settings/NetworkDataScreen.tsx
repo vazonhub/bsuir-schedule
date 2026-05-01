@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -79,6 +79,14 @@ export const NetworkDataScreen = () => {
 
   const [googleSignedIn, setGoogleSignedIn] = useState(() => isGoogleSignedIn());
 
+  // Re-check sign-in state when the screen gains focus (e.g. after
+  // restoreGoogleSession runs at startup or after returning from Google).
+  useFocusEffect(
+    useCallback(() => {
+      setGoogleSignedIn(isGoogleSignedIn());
+    }, []),
+  );
+
   const toggleGoogleDrive = useCallback(async () => {
     void hapticLight();
     if (!googleSignedIn) {
@@ -150,9 +158,7 @@ export const NetworkDataScreen = () => {
             onPress={toggleBsuirApi}
           >
             <Text style={styles.sourceLabel}>{t('settings.sourceBsuirApi')}</Text>
-            {sourceBsuirApi && (
-              <Ionicons name="checkmark" size={20} color="#34C759" />
-            )}
+            <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceBsuirApi ? 1 : 0 }} />
           </Pressable>
 
           {showICloud && (
@@ -163,9 +169,7 @@ export const NetworkDataScreen = () => {
                 onPress={toggleICloud}
               >
                 <Text style={styles.sourceLabel}>{t('settings.sourceICloud')}</Text>
-                {sourceICloud && (
-                  <Ionicons name="checkmark" size={20} color="#34C759" />
-                )}
+                <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceICloud ? 1 : 0 }} />
               </Pressable>
             </>
           )}
@@ -179,7 +183,7 @@ export const NetworkDataScreen = () => {
               >
                 <Text style={styles.sourceLabel}>{t('settings.sourceGoogleDrive')}</Text>
                 {googleSignedIn ? (
-                  sourceGoogleDrive && <Ionicons name="checkmark" size={20} color="#34C759" />
+                  <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceGoogleDrive ? 1 : 0 }} />
                 ) : (
                   <View style={styles.signInPill}>
                     <Text style={styles.signInPillText}>{t('settings.signIn')}</Text>

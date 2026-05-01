@@ -368,7 +368,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     borderRadius: 4,
   },
   typeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   subgroupChip: {
@@ -381,7 +381,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     gap: Spacing.sm,
   },
   subgroupText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: Palette.textSecondary,
   },

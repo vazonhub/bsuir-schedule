@@ -44,7 +44,15 @@ export const UpdateModal = ({
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const handleOpenStore = useCallback(() => {
-    void Linking.openURL(storeUrl ?? FALLBACK_STORE_URL);
+    const url = storeUrl ?? FALLBACK_STORE_URL;
+    if (Platform.OS === 'android') {
+      const id = url.match(/id=([^&]+)/)?.[1] ?? 'by.vazon.bsuirschedule';
+      void Linking.openURL(`market://details?id=${id}`).catch(() =>
+        Linking.openURL(url),
+      );
+    } else {
+      void Linking.openURL(url);
+    }
   }, [storeUrl]);
 
   return (

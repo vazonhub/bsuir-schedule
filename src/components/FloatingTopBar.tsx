@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,7 +67,7 @@ interface Props {
  * Each control uses Liquid-Glass `GlassButton` and floats over scrollable
  * content (`position: absolute`).
  */
-export const FloatingTopBar = ({
+export const FloatingTopBar = React.memo(({
   pinned,
   onTogglePin,
   subgroup,
@@ -218,7 +218,7 @@ export const FloatingTopBar = ({
       </View>
     </View>
   );
-};
+});
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: {

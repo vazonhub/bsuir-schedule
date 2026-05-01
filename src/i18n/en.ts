@@ -25,6 +25,8 @@ export const en: TranslationKeys = {
     networkHint: 'Check your connection and try again',
     generic: 'Failed to load schedule',
     genericHint: 'Please try again',
+    apiDisabled: 'iis.bsuir.by source is disabled',
+    apiDisabledHint: 'This schedule is not available in cloud storage. Enable iis.bsuir.by in "Network & Data" settings to load it',
   },
 
   mySchedule: {
@@ -162,7 +164,7 @@ export const en: TranslationKeys = {
     availabilityLabel: 'Availability',
     sourceBsuirApi: 'iis.bsuir.by',
     sourceICloud: 'apple.com',
-    sourceGoogleDrive: 'Google Drive',
+    sourceGoogleDrive: 'google.com',
     signIn: 'Sign in',
     availabilityHint: 'Choose where the app fetches schedule data from. iis.bsuir.by is the official BSUIR API. Cloud backup (iCloud on iOS, Google Drive on Android) syncs across your devices and works as a fallback when the API is unavailable.',
     dataLabel: 'Data',
@@ -228,6 +230,8 @@ export const en: TranslationKeys = {
     increaseContrastDesc: 'Enhanced contrast for text and elements',
     on: 'On',
     off: 'Off',
+    systemSection: 'Device settings',
+    appSection: 'App settings',
     openSettings: 'Open device settings',
     footnote: 'These options are managed in your device\'s system settings. The app supports VoiceOver, Voice Control, Dynamic Type, Reduce Motion, and high contrast mode.',
     footnoteAndroid: 'Some options like Differentiate Without Color and Increase Contrast can be toggled directly here. Other options are managed in your device\'s system settings.',

@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 
-export type ErrorKind = 'server' | 'network' | 'generic';
+export type ErrorKind = 'server' | 'network' | 'generic' | 'apiDisabled';
 
 interface ScheduleState {
   /** Cached schedules keyed by their identifier (group name or employee urlId). */
