@@ -16,6 +16,7 @@ export const be: TranslationKeys = {
     nothingFound: 'Няма вынікаў пошуку',
     done: 'Гатова',
     cancel: 'Адмена',
+    delete: 'Выдаліць',
   },
 
   error: {
@@ -174,6 +175,7 @@ export const be: TranslationKeys = {
     refreshWidget: 'Абнавіць віджэт',
     refreshWidgetDone: 'Віджэт абноўлены',
     tipJar: 'Падтрымаць аўтара',
+    tipJarHint: 'Праграма цалкам бясплатная — нам важная любая вашая падтрымка',
     tipJarTitle: 'Падтрымаць аўтара',
     tipJarSubtitle: 'Калі вам падабаецца праграма, вы можаце падтрымаць распрацоўку. Дзякуй!',
     tipSmallName: 'Маленькі данат',
@@ -197,6 +199,7 @@ export const be: TranslationKeys = {
     holidaysAddDate: 'Дата',
     holidaysAddSave: 'Захаваць',
     holidaysAddCancel: 'Адмена',
+    holidaysDeleteTitle: 'Выдаліць свята?',
     holidaysReset: 'Скінуць змены',
     holidaysResetConfirm: 'Вярнуць спіс святаў да зыходнага?',
     aboutSection: 'Пра праграму',

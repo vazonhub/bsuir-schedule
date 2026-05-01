@@ -288,6 +288,7 @@ export const SettingsScreen = () => {
             <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>{t('settings.tipJar')}</Text>
           </Pressable>
         </View>
+        <Text style={styles.tipHint}>{t('settings.tipJarHint')}</Text>
       </View>
       </ScrollView>
 
@@ -428,6 +429,13 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 16,
       fontWeight: '600',
       color: PINK,
+    },
+    tipHint: {
+      fontSize: 13,
+      color: Palette.textTertiary,
+      lineHeight: 18,
+      paddingHorizontal: Spacing.xs,
+      textAlign: 'center',
     },
     // ── Bottom Sheet ──
     sheetBackground: {

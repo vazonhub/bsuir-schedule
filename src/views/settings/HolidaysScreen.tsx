@@ -38,31 +38,35 @@ const formatHolidayDate = (dateISO: string): string => {
   return `${day} ${MONTHS_RU[month] ?? m}`;
 };
 
-/**
- * Build a flat list of all holidays (API + user-added), sorted by date.
- * Each entry carries an `isHidden` / `isUserAdded` flag for rendering.
- */
 interface DisplayHoliday extends Holiday {
   isHidden: boolean;
   isUserAdded: boolean;
 }
 
+const userKey = (date: string, name: string) => `${date}|${name}`;
+
 const buildDisplayList = (
   apiHolidays: Holiday[],
-  userAdded: Record<string, string>,
+  userAdded: Record<string, string[]>,
   userRemoved: Record<string, boolean>,
+  userAddedHidden: Record<string, boolean>,
 ): DisplayHoliday[] => {
   const fromApi: DisplayHoliday[] = apiHolidays.map((h) => ({
     ...h,
     isHidden: !!userRemoved[h.date],
     isUserAdded: false,
   }));
-  const fromUser: DisplayHoliday[] = Object.entries(userAdded).map(([date, name]) => ({
-    date,
-    name,
-    isHidden: false,
-    isUserAdded: true,
-  }));
+  const fromUser: DisplayHoliday[] = [];
+  for (const [date, names] of Object.entries(userAdded)) {
+    for (const name of names) {
+      fromUser.push({
+        date,
+        name,
+        isHidden: !!userAddedHidden[userKey(date, name)],
+        isUserAdded: true,
+      });
+    }
+  }
   return [...fromApi, ...fromUser].sort((a, b) => a.date.localeCompare(b.date));
 };
 
@@ -77,17 +81,18 @@ export const HolidaysScreen = () => {
   const apiHolidays = useHolidaysStore((s) => s.byYear[String(year)] ?? []);
   const userAdded = useHolidaysStore((s) => s.userAdded);
   const userRemoved = useHolidaysStore((s) => s.userRemoved);
+  const userAddedHidden = useHolidaysStore((s) => s.userAddedHidden);
   const addUserHoliday = useHolidaysStore((s) => s.addUserHoliday);
-  const removeUserHoliday = useHolidaysStore((s) => s.removeUserHoliday);
-  const restoreHoliday = useHolidaysStore((s) => s.restoreHoliday);
+  const deleteUserHoliday = useHolidaysStore((s) => s.deleteUserHoliday);
+  const toggleHideHoliday = useHolidaysStore((s) => s.toggleHideHoliday);
   const resetUserOverrides = useHolidaysStore((s) => s.resetUserOverrides);
 
   const holidays = useMemo(
-    () => buildDisplayList(apiHolidays, userAdded, userRemoved),
-    [apiHolidays, userAdded, userRemoved],
+    () => buildDisplayList(apiHolidays, userAdded, userRemoved, userAddedHidden),
+    [apiHolidays, userAdded, userRemoved, userAddedHidden],
   );
 
-  const hasOverrides = Object.keys(userAdded).length > 0 || Object.keys(userRemoved).length > 0;
+  const hasOverrides = Object.keys(userAdded).length > 0 || Object.keys(userRemoved).length > 0 || Object.keys(userAddedHidden).length > 0;
 
   // ── Add holiday modal ──
   const [showAddModal, setShowAddModal] = useState(false);
@@ -115,6 +120,13 @@ export const HolidaysScreen = () => {
       { text: t('settings.holidaysReset'), style: 'destructive', onPress: resetUserOverrides },
     ]);
   }, [t, resetUserOverrides]);
+
+  const handleDelete = useCallback((h: DisplayHoliday) => {
+    Alert.alert(t('settings.holidaysDeleteTitle'), h.name, [
+      { text: t('settings.holidaysAddCancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: () => deleteUserHoliday(h.date, h.name) },
+    ]);
+  }, [t, deleteUserHoliday]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -152,16 +164,23 @@ export const HolidaysScreen = () => {
           </View>
         </View>
 
-        {/* ── Holiday list (all in one, hidden shown inline) ── */}
+        {/* ── Holiday list ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             {t('settings.holidaysListTitle')} · {year}
           </Text>
           <View style={styles.card}>
             {holidays.map((h, i) => (
-              <View key={`${h.date}-${h.isUserAdded ? 'u' : 'a'}`}>
+              <View key={`${h.date}-${h.name}-${h.isUserAdded ? 'u' : 'a'}`}>
                 {i > 0 && <View style={styles.separator} />}
-                <View style={[styles.holidayRow, h.isHidden && styles.holidayRowHidden]}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.holidayRow,
+                    h.isHidden && styles.holidayRowHidden,
+                    pressed && styles.holidayRowPressed,
+                  ]}
+                  onPress={() => toggleHideHoliday(h.date, h.name, h.isUserAdded)}
+                >
                   <View style={styles.holidayInfo}>
                     <Text style={[styles.holidayName, h.isHidden && styles.hiddenText]}>
                       {h.name}
@@ -182,16 +201,25 @@ export const HolidaysScreen = () => {
                       )}
                     </View>
                   </View>
-                  {h.isHidden ? (
-                    <Pressable hitSlop={12} onPress={() => restoreHoliday(h.date)}>
-                      <Ionicons name="eye-outline" size={20} color={Palette.accent} />
-                    </Pressable>
-                  ) : (
-                    <Pressable hitSlop={12} onPress={() => removeUserHoliday(h.date)}>
-                      <Ionicons name="eye-off-outline" size={20} color={Palette.textTertiary} />
+                  {/* Delete button — only for custom holidays */}
+                  {h.isUserAdded && (
+                    <Pressable
+                      hitSlop={12}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDelete(h);
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={Palette.destructive} />
                     </Pressable>
                   )}
-                </View>
+                  {/* Visibility indicator */}
+                  <Ionicons
+                    name={h.isHidden ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={h.isHidden ? Palette.textTertiary : Palette.accent}
+                  />
+                </Pressable>
               </View>
             ))}
           </View>
@@ -365,6 +393,9 @@ const makeStyles = (Palette: PaletteType) =>
     },
     holidayRowHidden: {
       opacity: 0.45,
+    },
+    holidayRowPressed: {
+      backgroundColor: Palette.cardPressed,
     },
     holidayInfo: { flex: 1 },
     holidayName: {

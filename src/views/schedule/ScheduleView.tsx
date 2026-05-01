@@ -177,9 +177,10 @@ export const ScheduleView = ({
   const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())]) ?? EMPTY_HOLIDAYS;
   const userAdded = useHolidaysStore((s) => s.userAdded);
   const userRemoved = useHolidaysStore((s) => s.userRemoved);
+  const userAddedHidden = useHolidaysStore((s) => s.userAddedHidden);
   const holidays = useMemo(
-    () => getMergedHolidays(apiHolidays, userAdded, userRemoved),
-    [apiHolidays, userAdded, userRemoved],
+    () => getMergedHolidays(apiHolidays, userAdded, userRemoved, userAddedHidden),
+    [apiHolidays, userAdded, userRemoved, userAddedHidden],
   );
 
   const regularSections = useMemo(() => {

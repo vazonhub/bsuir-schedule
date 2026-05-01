@@ -16,6 +16,7 @@ export const en: TranslationKeys = {
     nothingFound: 'Nothing found',
     done: 'Done',
     cancel: 'Cancel',
+    delete: 'Delete',
   },
 
   error: {
@@ -174,6 +175,7 @@ export const en: TranslationKeys = {
     refreshWidget: 'Refresh widget',
     refreshWidgetDone: 'Widget refreshed',
     tipJar: 'Support the Developer',
+    tipJarHint: 'The app is completely free — any support means a lot to us',
     tipJarTitle: 'Support the Developer',
     tipJarSubtitle: 'If you enjoy the app, you can support its development. Thank you!',
     tipSmallName: 'Small Tip',
@@ -197,6 +199,7 @@ export const en: TranslationKeys = {
     holidaysAddDate: 'Date',
     holidaysAddSave: 'Save',
     holidaysAddCancel: 'Cancel',
+    holidaysDeleteTitle: 'Delete holiday?',
     holidaysReset: 'Reset changes',
     holidaysResetConfirm: 'Restore the holiday list to default?',
     aboutSection: 'About',

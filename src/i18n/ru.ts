@@ -16,6 +16,7 @@ export const ru = {
     nothingFound: 'Ничего не найдено',
     done: 'Готово',
     cancel: 'Отмена',
+    delete: 'Удалить',
   },
 
   error: {
@@ -184,6 +185,7 @@ export const ru = {
     refreshWidget: 'Обновить виджет',
     refreshWidgetDone: 'Виджет обновлён',
     tipJar: 'Поддержать автора',
+    tipJarHint: 'Приложение полностью бесплатное — нам важна любая ваша поддержка',
     tipJarTitle: 'Поддержать автора',
     tipJarSubtitle: 'Если вам нравится приложение, вы можете поддержать его разработку. Спасибо!',
     tipSmallName: 'Маленький донат',
@@ -207,6 +209,7 @@ export const ru = {
     holidaysAddDate: 'Дата',
     holidaysAddSave: 'Сохранить',
     holidaysAddCancel: 'Отмена',
+    holidaysDeleteTitle: 'Удалить праздник?',
     holidaysReset: 'Сбросить изменения',
     holidaysResetConfirm: 'Вернуть список праздников к исходному?',
     aboutSection: 'О приложении',

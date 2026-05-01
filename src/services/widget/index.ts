@@ -104,8 +104,8 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
   };
 
   const year = new Date().getFullYear();
-  const { byYear, userAdded, userRemoved } = useHolidaysStore.getState();
-  const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved);
+  const { byYear, userAdded, userRemoved, userAddedHidden } = useHolidaysStore.getState();
+  const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved, userAddedHidden);
 
   const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings, blockedIds, holidays);
   await writeSnapshot(snapshot);
@@ -143,6 +143,29 @@ usePreferencesStore.subscribe((state) => {
       blockedLessons: state.blockedLessons,
       theme: state.theme,
       language: state.language,
+    };
+    void updateWidgetSnapshot();
+  }
+});
+
+// ─── Auto-update on holiday changes ───────────────────────
+
+let _prevHolidays = {
+  userAdded: useHolidaysStore.getState().userAdded,
+  userRemoved: useHolidaysStore.getState().userRemoved,
+  userAddedHidden: useHolidaysStore.getState().userAddedHidden,
+};
+
+useHolidaysStore.subscribe((state) => {
+  if (
+    state.userAdded !== _prevHolidays.userAdded ||
+    state.userRemoved !== _prevHolidays.userRemoved ||
+    state.userAddedHidden !== _prevHolidays.userAddedHidden
+  ) {
+    _prevHolidays = {
+      userAdded: state.userAdded,
+      userRemoved: state.userRemoved,
+      userAddedHidden: state.userAddedHidden,
     };
     void updateWidgetSnapshot();
   }

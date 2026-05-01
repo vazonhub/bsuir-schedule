@@ -23,14 +23,15 @@ export const getFallbackHolidays = (year: number): Holiday[] =>
   }));
 
 /**
- * Look up a holiday by date in a list.
+ * Look up holidays by date in a list.
  * @param dateISO — ISO date string "yyyy-MM-dd"
  * @param holidays — list of holidays for the year
- * @returns holiday name or null
+ * @returns combined holiday name(s) or null
  */
 export const findHolidayName = (dateISO: string, holidays: Holiday[]): string | null => {
-  const h = holidays.find((h) => h.date === dateISO);
-  return h?.name ?? null;
+  const matches = holidays.filter((h) => h.date === dateISO);
+  if (matches.length === 0) return null;
+  return matches.map((h) => h.name).join(' · ');
 };
 
 /** Format a Date to "yyyy-MM-dd" for lookup. */
