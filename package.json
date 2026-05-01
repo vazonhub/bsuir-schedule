@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild && npx expo run:ios",
+    "android:eas": "eas build --platform android --profile production",
     "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {

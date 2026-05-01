@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { Avatar } from '@components/Avatar';
+import { AvatarGroup } from '@components/AvatarGroup';
 import { useAccessibility } from '@hooks/useAccessibility';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { useIsDark, usePalette } from '@hooks/usePalette';
@@ -41,10 +41,11 @@ const PAST_OVERLAY_DARK = 'rgba(0, 0, 0, 0.40)';
 const BREAK_OVERLAY_LIGHT = 'rgba(10, 132, 255, 0.18)';
 const BREAK_OVERLAY_DARK = 'rgba(10, 132, 255, 0.35)';
 
-const buildAvatarInitials = (lesson: NormalizedLesson): string => {
-  const first = (lesson.raw.employees ?? [])[0];
-  if (!first) return '?';
-  return `${first.lastName?.[0] ?? ''}${first.firstName?.[0] ?? ''}`;
+const buildAvatarItems = (lesson: NormalizedLesson) => {
+  return (lesson.raw.employees ?? []).map((emp) => ({
+    uri: emp.photoLink,
+    initials: `${emp.lastName?.[0] ?? ''}${emp.firstName?.[0] ?? ''}`,
+  }));
 };
 
 const BLOCKED_BG_LIGHT = 'rgba(255, 59, 48, 0.06)';
@@ -150,8 +151,9 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
   }
 
   const auditories = (lesson.raw.auditories ?? []).join(', ');
-  const teacherEmployee = (lesson.raw.employees ?? [])[0];
-  const hasAvatar = Boolean(teacherEmployee);
+  const employees = lesson.raw.employees ?? [];
+  const avatarItems = buildAvatarItems(lesson);
+  const hasAvatar = avatarItems.length > 0;
   const numSubgroup = lesson.raw.numSubgroup;
   const showSubgroup = numSubgroup === 1 || numSubgroup === 2;
   const hasRightArea = hasAvatar || showSubgroup;
@@ -162,8 +164,8 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
     timeStatus?.kind === 'future' ? t('a11y.lessonUpcoming') :
     null;
 
-  const teacherName = teacherEmployee
-    ? [teacherEmployee.lastName, teacherEmployee.firstName].filter(Boolean).join(' ')
+  const teacherName = employees.length > 0
+    ? employees.map((e) => [e.lastName, e.firstName].filter(Boolean).join(' ')).join(', ')
     : null;
 
   const fullLabel = buildLabel(
@@ -253,12 +255,8 @@ export const LessonCard = ({ lesson, onPress, compact = false, blocked = false, 
                 <Text maxFontSizeMultiplier={1}style={styles.subgroupNumber}>{numSubgroup}</Text>
               </View>
             )}
-            {hasAvatar && teacherEmployee && (
-              <Avatar
-                uri={teacherEmployee.photoLink}
-                initials={buildAvatarInitials(lesson)}
-                size={48}
-              />
+            {hasAvatar && (
+              <AvatarGroup items={avatarItems} size={48} />
             )}
           </View>
         )}

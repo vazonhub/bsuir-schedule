@@ -9,12 +9,18 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "image": "macos-sequoia-15.6-xcode-26.2"
+      },
+      "android": {
+        "buildType": "apk"
       }
     }
   },

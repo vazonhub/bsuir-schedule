@@ -183,15 +183,47 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         ) : null}
       </FlexWidget>
 
-      {/* Photo — always right-aligned */}
-      {showPhoto && lesson.teacherPhotoUrl ? (
-        <ImageWidget
-          image={img(lesson.teacherPhotoUrl)}
-          imageWidth={28}
-          imageHeight={28}
-          radius={14}
-          style={{ marginLeft: 6 }}
-        />
+      {/* Photo(s) — right-aligned, reversed: badge left, first teacher rightmost */}
+      {showPhoto && lesson.teacherPhotos.length > 0 ? (
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
+          {lesson.teacherPhotos.length > 2 ? (
+            <FlexWidget
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: '#E5E5EA',
+                borderWidth: 1,
+                borderColor: c(BG_COLOR),
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <TextWidget
+                text={`${lesson.teacherPhotos.length - 2}+`}
+                style={{ fontSize: 10, fontWeight: '700', color: TEXT_SECONDARY }}
+              />
+            </FlexWidget>
+          ) : null}
+          {[...lesson.teacherPhotos.slice(0, 2)].reverse().map((url, i) => (
+            <FlexWidget
+              key={`ph${i}`}
+              style={{
+                marginLeft: (i === 0 && lesson.teacherPhotos.length <= 2) ? 0 : -10,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: c(BG_COLOR),
+              }}
+            >
+              <ImageWidget
+                image={img(url)}
+                imageWidth={28}
+                imageHeight={28}
+                radius={14}
+              />
+            </FlexWidget>
+          ))}
+        </FlexWidget>
       ) : null}
     </FlexWidget>
   );

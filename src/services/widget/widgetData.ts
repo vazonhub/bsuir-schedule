@@ -15,6 +15,8 @@ export interface WidgetLesson {
   auditories: string[];
   teacher: string | null;
   teacherPhotoUrl: string | null;
+  /** Photo URLs for all teachers (for multi-avatar display). */
+  teacherPhotos: string[];
   /** 0 = общая, 1 | 2 = конкретная подгруппа. */
   numSubgroup: number;
   /** True if this lesson belongs to the user's selected subgroup (or is shared). */
@@ -61,15 +63,18 @@ export interface WidgetSnapshot {
   strings: WidgetStrings;
 }
 
-const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
-  const first = employees[0];
-  if (!first) return null;
-  if (first.fio) return first.fio;
-  const initials = [first.firstName?.[0], first.middleName?.[0]]
+const buildEmployeeShort = (emp: EmployeeDto): string => {
+  if (emp.fio) return emp.fio;
+  const initials = [emp.firstName?.[0], emp.middleName?.[0]]
     .filter(Boolean)
     .map((c) => `${c}.`)
     .join(' ');
-  return `${first.lastName ?? ''} ${initials}`.trim() || null;
+  return `${emp.lastName ?? ''} ${initials}`.trim() || '?';
+};
+
+const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
+  if (employees.length === 0) return null;
+  return employees.map(buildEmployeeShort).join(', ');
 };
 
 const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): WidgetLesson => {
@@ -86,6 +91,7 @@ const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): Wid
     auditories: lesson.raw.auditories ?? [],
     teacher: buildTeacherShort(lesson.raw.employees ?? []),
     teacherPhotoUrl: lesson.raw.employees?.[0]?.photoLink ?? null,
+    teacherPhotos: (lesson.raw.employees ?? []).map((e) => e.photoLink).filter(Boolean),
     numSubgroup: numSub,
     isMine,
     note: lesson.raw.note ?? null,

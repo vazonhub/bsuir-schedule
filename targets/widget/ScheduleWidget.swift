@@ -13,6 +13,8 @@ struct WidgetLesson: Codable {
     let auditories: [String]
     let teacher: String?
     let teacherPhotoUrl: String?
+    /// Photo URLs for all teachers (for multi-avatar display).
+    let teacherPhotos: [String]?
     let numSubgroup: Int
     let isMine: Bool
     let note: String?
@@ -106,7 +108,8 @@ func nowMinutes() -> Int {
 
 func downloadPhotos(for lessons: [WidgetLesson], completion: @escaping ([String: Data]) -> Void) {
     let mine = lessons.filter { $0.isMine }
-    let uniqueUrls = Set(mine.compactMap { $0.teacherPhotoUrl })
+    let allUrls = mine.flatMap { $0.teacherPhotos ?? [$0.teacherPhotoUrl].compactMap { $0 } }
+    let uniqueUrls = Set(allUrls)
     guard !uniqueUrls.isEmpty else { completion([:]); return }
 
     let lock = NSLock()
@@ -263,6 +266,8 @@ struct ScheduleTimelineProvider: TimelineProvider {
 struct LessonRow: View {
     let lesson: WidgetLesson
     let photo: Data?
+    /// All downloaded photo data keyed by URL.
+    var allPhotos: [String: Data] = [:]
     var compact: Bool = false
     var showNote: Bool = false
 
@@ -317,12 +322,40 @@ struct LessonRow: View {
 
             Spacer(minLength: 0)
 
-            if !compact, let data = photo, let img = UIImage(data: data) {
-                Image(uiImage: img)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 28, height: 28)
-                    .clipShape(Circle())
+            if !compact {
+                let urls = lesson.teacherPhotos ?? [lesson.teacherPhotoUrl].compactMap { $0 }
+                let photoDataList = urls.prefix(2).compactMap { url -> Data? in allPhotos[url] ?? (url == lesson.teacherPhotoUrl ? photo : nil) }
+                let extraCount = max(0, urls.count - 2)
+                // Reversed: badge on the left, first teacher on the right
+                let reversedPhotos = Array(photoDataList.reversed())
+
+                if !reversedPhotos.isEmpty || extraCount > 0 {
+                    HStack(spacing: -10) {
+                        if extraCount > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text("\(extraCount)+")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(Double(reversedPhotos.count + 1))
+                        }
+                        ForEach(Array(reversedPhotos.enumerated()), id: \.offset) { index, data in
+                            if let img = UIImage(data: data) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 28, height: 28)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                    .zIndex(index == reversedPhotos.count - 1 ? Double(reversedPhotos.count + 1) : Double(index))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -477,7 +510,7 @@ struct MediumWidgetView: View {
                     )
 
                     ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
-                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""])
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos)
                     }
 
                     Spacer(minLength: 0)
@@ -510,7 +543,7 @@ struct LargeWidgetView: View {
                     )
 
                     ForEach(Array(visible.enumerated()), id: \.offset) { index, lesson in
-                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], showNote: true)
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
                         if index < visible.count - 1 {
                             Divider()
                         }
