@@ -19,6 +19,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "ru", "be"]
       },
+      "usesIcloudStorage": true,
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.by.vazon.bsuirschedule"
