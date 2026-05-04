@@ -279,9 +279,9 @@ export const SettingsScreen = () => {
       </View>
 
       <View style={styles.tipSection}>
-        <View style={styles.tipCard}>
+        <View style={[styles.tipCard, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
           <Pressable
-            style={({ pressed }) => [styles.tipRow, pressed && styles.tipRowPressed]}
+            style={({ pressed }) => [styles.tipRow, pressed && { backgroundColor: PINK + (isDark ? '40' : '24') }]}
             onPress={handleTipPress}
           >
             <Ionicons name="heart" size={20} color={PINK} />
@@ -320,7 +320,7 @@ export const SettingsScreen = () => {
                   onPress={() => void handlePurchase(id)}
                   disabled={isPurchasing}
                 >
-                  <View style={styles.sheetTipIcon}>
+                  <View style={[styles.sheetTipIcon, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
                     <Ionicons name={meta.icon as never} size={22} color={PINK} />
                   </View>
                   <View style={styles.sheetTipInfo}>
@@ -410,7 +410,6 @@ const makeStyles = (Palette: PaletteType) =>
       marginTop: Spacing.xl,
     },
     tipCard: {
-      backgroundColor: PINK + '14',
       borderRadius: Radius.lg,
       overflow: 'hidden',
     },
@@ -422,9 +421,7 @@ const makeStyles = (Palette: PaletteType) =>
       paddingVertical: Spacing.cardPaddingY,
       paddingHorizontal: Spacing.cardPaddingX,
     },
-    tipRowPressed: {
-      backgroundColor: PINK + '24',
-    },
+    tipRowPressed: {},
     tipLabel: {
       fontSize: 16,
       fontWeight: '600',
@@ -489,7 +486,6 @@ const makeStyles = (Palette: PaletteType) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: PINK + '14',
       alignItems: 'center',
       justifyContent: 'center',
     },
