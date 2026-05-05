@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -101,11 +102,23 @@ export const FloatingTopBar = React.memo(({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const gradientColors = [
+    Palette.background,
+    Palette.background,
+    Palette.background + '00',
+  ] as const;
+
   return (
     <View
       pointerEvents="box-none"
       style={[styles.container, { paddingTop: insets.top + Spacing.sm }]}
     >
+      <LinearGradient
+        colors={gradientColors}
+        locations={[0.1, 0.1, 1]}
+        style={styles.gradient}
+        pointerEvents="none"
+      />
       <View style={styles.left}>
         {isDefaultSchedule ? (
           defaultGroupName ? (
@@ -230,7 +243,12 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
     zIndex: 10,
+  },
+  gradient: {
+    ...StyleSheet.absoluteFillObject,
+    bottom: -Spacing.xl,
   },
   left: {
     flex: 1,

@@ -115,7 +115,7 @@ export const AppIconScreen = () => {
                     <View style={[styles.iconBorder, isSelected && { borderColor: Palette.accent }]}>
                       <Image
                         source={icon.preview}
-                        style={{ width: iconSize, height: iconSize, borderRadius: Radius.md - 2 }}
+                        style={{ width: iconSize, height: iconSize, borderRadius: Radius.lg - 3 }}
                         contentFit="cover"
                       />
                     </View>
@@ -172,7 +172,7 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     iconBorder: {
-      borderRadius: Radius.md,
+      borderRadius: Radius.lg,
       borderWidth: 3,
       borderColor: 'transparent',
       overflow: 'hidden',

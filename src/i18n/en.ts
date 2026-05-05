@@ -208,6 +208,7 @@ export const en: TranslationKeys = {
     aboutDocuments: 'Documents',
     aboutPrivacyPolicy: 'Privacy Policy',
     interfaceSection: 'Interface',
+    additionalSection: 'Schedule',
     otherSection: 'Other',
   },
 

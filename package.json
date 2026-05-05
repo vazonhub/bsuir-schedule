@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "main": "./index.ts",
   "private": true,
   "scripts": {
@@ -42,6 +42,7 @@
     "expo-font": "~14.0.11",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
+    "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
