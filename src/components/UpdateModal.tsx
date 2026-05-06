@@ -18,7 +18,7 @@ import { Radius, Spacing } from '@theme';
 
 const FALLBACK_STORE_URL = Platform.select({
   ios: 'https://apps.apple.com/by/app/bsuir-time/id6762343557',
-  default: 'https://play.google.com/store/apps/details?id=by.vazon.bsuirschedule',
+  default: 'https://play.google.com/store/apps/details?id=by.vazon.bsuirtime',
 });
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -46,7 +46,7 @@ export const UpdateModal = ({
   const handleOpenStore = useCallback(() => {
     const url = storeUrl ?? FALLBACK_STORE_URL;
     if (Platform.OS === 'android') {
-      const id = url.match(/id=([^&]+)/)?.[1] ?? 'by.vazon.bsuirschedule';
+      const id = url.match(/id=([^&]+)/)?.[1] ?? 'by.vazon.bsuirtime';
       void Linking.openURL(`market://details?id=${id}`).catch(() =>
         Linking.openURL(url),
       );

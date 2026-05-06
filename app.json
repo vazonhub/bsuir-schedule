@@ -28,7 +28,7 @@
       }
     },
     "android": {
-      "package": "by.vazon.bsuirschedule",
+      "package": "by.vazon.bsuirtime",
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon.png",
