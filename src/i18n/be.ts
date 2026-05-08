@@ -208,6 +208,7 @@ export const be: TranslationKeys = {
     aboutDocuments: 'Дакументы',
     aboutPrivacyPolicy: 'Палітыка канфідэнцыяльнасці',
     interfaceSection: 'Інтэрфейс',
+    additionalSection: 'Расклад',
     otherSection: 'Іншае',
   },
 

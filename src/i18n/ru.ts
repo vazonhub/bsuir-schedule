@@ -218,6 +218,7 @@ export const ru = {
     aboutDocuments: 'Документы',
     aboutPrivacyPolicy: 'Политика конфиденциальности',
     interfaceSection: 'Интерфейс',
+    additionalSection: 'Расписание',
     otherSection: 'Другое',
   },
 

@@ -206,7 +206,6 @@ export const SettingsScreen = () => {
 
       <View style={styles.navSection}>
         <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.interfaceSection')}</Text>
-        {/* TODO 2.1: Иконка приложения + реклама
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
@@ -217,8 +216,6 @@ export const SettingsScreen = () => {
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
-        */}
-        {/* TODO 2.1: Внешний вид + реклама
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
@@ -229,7 +226,10 @@ export const SettingsScreen = () => {
             <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
-        */}
+      </View>
+
+      <View style={styles.navSection}>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.additionalSection')}</Text>
         <View style={styles.card}>
           <Pressable
             style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
@@ -407,7 +407,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     tipSection: {
       paddingHorizontal: Spacing.screenPadding,
-      marginTop: Spacing.xl,
+      marginTop: Spacing.cardGap,
     },
     tipCard: {
       borderRadius: Radius.lg,
