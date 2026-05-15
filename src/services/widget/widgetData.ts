@@ -23,6 +23,8 @@ export interface WidgetLesson {
   isMine: boolean;
   /** Optional note/annotation for this lesson. */
   note: string | null;
+  /** Group names for this lesson (used in employee schedule widgets). */
+  studentGroups: string[];
 }
 
 export interface WidgetDayBlock {
@@ -95,6 +97,7 @@ const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): Wid
     numSubgroup: numSub,
     isMine,
     note: lesson.raw.note ?? null,
+    studentGroups: (lesson.raw.studentGroups ?? []).map((g) => g.name),
   };
 };
 

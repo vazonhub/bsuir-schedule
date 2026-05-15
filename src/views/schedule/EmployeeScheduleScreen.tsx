@@ -20,7 +20,7 @@ export const EmployeeScheduleScreen = () => {
 
   const schedule = useScheduleStore((s) => s.byKey[key]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
-  const loadingKey = useScheduleStore((s) => s.loadingKey);
+  const isLoading = useScheduleStore((s) => s.loadingKeys[key] === true);
   const error = useScheduleStore((s) => s.error);
   const errorKind = useScheduleStore((s) => s.errorKind);
 
@@ -33,8 +33,6 @@ export const EmployeeScheduleScreen = () => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const isLoading = loadingKey === key;
 
   if (!schedule || !currentWeek) {
     if (error && !schedule) {

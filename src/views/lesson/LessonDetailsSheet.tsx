@@ -16,7 +16,7 @@ import { getDayNames } from '@utils/date';
 import { hapticLight } from '@utils/haptics';
 import { getLessonTypeFullName } from '@utils/lesson';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
-import { FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/colors';
+import { ANNOUNCEMENT_COLOR, FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/colors';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -97,8 +97,9 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const clockIcon = useIconName('clock');
     const locationIcon = useIconName('location');
     const raw = lesson?.raw ?? null;
-    const accent = raw ? getLessonColor(raw.lessonTypeAbbrev) : FALLBACK;
-    const typeFull = raw ? getLessonTypeFullName(raw.lessonTypeAbbrev) : '';
+    const isAnnouncement = raw?.announcement === true;
+    const accent = isAnnouncement ? ANNOUNCEMENT_COLOR : raw ? getLessonColor(raw.lessonTypeAbbrev) : FALLBACK;
+    const typeFull = isAnnouncement ? t('lesson.announcement') : raw ? getLessonTypeFullName(raw.lessonTypeAbbrev) : '';
     const days = getDayNames();
     const months = t('date.months', { returnObjects: true }) as string[];
     const dayName = lesson ? days[lesson.date.getDay()] : '';
@@ -126,7 +127,11 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
           <View style={styles.chipRow}>
             <View style={styles.chipGroup}>
               <View style={[styles.typeChip, { backgroundColor: accent + '1A' }]}>
-                <View style={[styles.typeDot, { backgroundColor: accent }]} importantForAccessibility="no" />
+                {isAnnouncement ? (
+                  <Ionicons name="megaphone" size={12} color={accent} />
+                ) : (
+                  <View style={[styles.typeDot, { backgroundColor: accent }]} importantForAccessibility="no" />
+                )}
                 <Text {...textProps('subhead')} style={[styles.typeText, { color: accent }]}>{typeFull}</Text>
               </View>
               {showSubgroup && (

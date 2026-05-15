@@ -20,7 +20,7 @@ export const GroupScheduleScreen = () => {
 
   const schedule = useScheduleStore((s) => s.byKey[groupName]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
-  const loadingKey = useScheduleStore((s) => s.loadingKey);
+  const isLoading = useScheduleStore((s) => s.loadingKeys[groupName] === true);
   const error = useScheduleStore((s) => s.error);
   const errorKind = useScheduleStore((s) => s.errorKind);
 
@@ -33,8 +33,6 @@ export const GroupScheduleScreen = () => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const isLoading = loadingKey === groupName;
 
   if (!schedule || !currentWeek) {
     if (error && !schedule) {

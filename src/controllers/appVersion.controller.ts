@@ -1,11 +1,21 @@
 import Constants from 'expo-constants';
 
 import { fetchStoreVersion } from '@services/api/appVersion';
+
+let nativeVersion: string | null = null;
+try {
+  // expo-application requires a native rebuild; fall back to Constants if unavailable.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const Application = require('expo-application') as { nativeApplicationVersion: string | null };
+  nativeVersion = Application.nativeApplicationVersion;
+} catch {
+  // Native module not available (e.g. dev client not rebuilt yet).
+}
 import { cache, TTL } from '@services/cache/cache';
 import { useAppVersionStore } from '@stores/appVersion.store';
-import { usePreferencesStore } from '@stores/preferences.store';
+import { usePreferencesStore, waitForHydration } from '@stores/preferences.store';
 
-const CACHE_KEY = 'app-version-check';
+const cacheKey = (locale: string) => `app-version-check-${locale}`;
 
 /** Compare two semver-like version strings (e.g. "2.0.0" < "2.1.0"). */
 const isVersionNewer = (current: string, remote: string): boolean => {
@@ -26,15 +36,19 @@ export const AppVersionController = {
    * Skipped if the cache is still fresh (TTL = 1 hour).
    */
   async checkForUpdate(): Promise<void> {
-    // Only skip if cache is fresh AND in-memory store already has data.
-    const hasData = useAppVersionStore.getState().latestVersion !== null;
-    if (hasData) {
-      const cached = await cache.get(CACHE_KEY, TTL.currentWeek);
-      if (cached) return;
-    }
+    // Wait for preferences to load from storage so we read the real language.
+    await waitForHydration();
 
     const lang = usePreferencesStore.getState().language;
     const locale = lang === 'en' ? 'en' : 'ru';
+    const key = cacheKey(locale);
+
+    // Only skip if cache is fresh AND in-memory store already has data.
+    const hasData = useAppVersionStore.getState().latestVersion !== null;
+    if (hasData) {
+      const cached = await cache.get(key, TTL.currentWeek);
+      if (cached) return;
+    }
 
     const info = await fetchStoreVersion(locale);
     if (!info) return;
@@ -45,7 +59,7 @@ export const AppVersionController = {
       info.storeUrl,
     );
 
-    await cache.set(CACHE_KEY, true);
+    await cache.set(key, true);
   },
 
   /** Mark the given version's release notes as seen by the user. */
@@ -53,9 +67,9 @@ export const AppVersionController = {
     usePreferencesStore.getState().setLastSeenVersion(version);
   },
 
-  /** Current app version from app.json. */
+  /** Current app version from the native build (versionName on Android, CFBundleShortVersionString on iOS). */
   get currentVersion(): string {
-    return Constants.expoConfig?.version ?? '0.0.0';
+    return nativeVersion ?? Constants.expoConfig?.version ?? '0.0.0';
   },
 
   /** Whether the store version is newer than the installed version. */
@@ -73,3 +87,12 @@ export const AppVersionController = {
     return lastSeen !== latest;
   },
 };
+
+// Re-fetch release notes when the user switches language.
+let _prevLang = usePreferencesStore.getState().language;
+usePreferencesStore.subscribe((state) => {
+  if (state.language !== _prevLang) {
+    _prevLang = state.language;
+    void AppVersionController.checkForUpdate();
+  }
+});

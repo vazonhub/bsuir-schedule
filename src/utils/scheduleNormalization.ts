@@ -57,15 +57,26 @@ const getStartOfMondayWeek = (date: Date): Date => {
 /**
  * Compute the 4-week-cycle index for an arbitrary date, given that `today`
  * is in `currentWeek`. Works for past and future dates.
+ *
+ * Uses day-count arithmetic instead of millisecond division to avoid
+ * DST transitions (±1 h) producing off-by-one week errors.
  */
 export const computeWeekForDate = (
   date: Date,
   today: Date,
   currentWeek: WeekNumber,
 ): WeekNumber => {
-  const todayMon = getStartOfMondayWeek(today).getTime();
-  const dateMon = getStartOfMondayWeek(date).getTime();
-  const weeksDiff = Math.round((dateMon - todayMon) / (7 * 24 * 3600 * 1000));
+  const todayMon = getStartOfMondayWeek(today);
+  const dateMon = getStartOfMondayWeek(date);
+  // Count whole days between the two Mondays, then convert to weeks.
+  // Using UTC noon avoids any residual DST ambiguity in the division.
+  const daysDiff =
+    Math.round(
+      (Date.UTC(dateMon.getFullYear(), dateMon.getMonth(), dateMon.getDate()) -
+        Date.UTC(todayMon.getFullYear(), todayMon.getMonth(), todayMon.getDate())) /
+        86_400_000,
+    );
+  const weeksDiff = daysDiff / 7;
   // ((currentWeek - 1) + weeksDiff) mod 4 → 0..3, then +1 → 1..4
   const idx = (((currentWeek - 1 + weeksDiff) % 4) + 4) % 4;
   return (idx + 1) as WeekNumber;

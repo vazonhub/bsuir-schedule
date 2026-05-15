@@ -82,6 +82,7 @@ export const be: TranslationKeys = {
     blocked: 'Заблакіравана',
     block: 'Заблакіраваць',
     unblock: 'Разблакіраваць',
+    announcement: 'Абвестка',
   },
 
   lessonType: {

@@ -99,6 +99,8 @@ export const ScheduleView = ({
   // ignored by BottomSheetModal.  We force-dismiss first, then re-present
   // once the animation finishes (onDismiss fires).
   const pendingLessonRef = useRef<NormalizedLesson | null>(null);
+  const sheetOpenRef = useRef(false);
+  const scrollToLessonFnRef = useRef<(lesson: NormalizedLesson) => void>(() => {});
 
   const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
     void hapticLight();
@@ -106,29 +108,41 @@ export const ScheduleView = ({
     forceRender();
 
     const sheet = sheetRef.current;
-    if (sheet) {
-      // Ставим pending — если шит в процессе dismiss-анимации,
-      // present() будет проигнорирован, и handleSheetDismiss подхватит.
+    if (!sheet) return;
+
+    if (sheetOpenRef.current) {
+      // Шит уже открыт — обновляем данные (через ref + forceRender) и
+      // сбрасываем на начальный snap-point без dismiss/present цикла.
+      sheet.snapToIndex(0);
+    } else {
       pendingLessonRef.current = lesson;
-      sheet.dismiss();
       sheet.present();
     }
+
+    scrollToLessonFnRef.current(lesson);
   }, []);
 
-  // Когда шит реально открылся (index >= 0) — очищаем pending,
-  // чтобы обычный свайп-закрытие не переоткрывал шит.
   const handleSheetChange = useCallback((index: number) => {
+    sheetOpenRef.current = index >= 0;
     if (index >= 0) {
       pendingLessonRef.current = null;
     }
   }, []);
 
   const handleSheetDismiss = useCallback(() => {
+    sheetOpenRef.current = false;
     const pending = pendingLessonRef.current;
     if (pending) {
-      // Новая пара запрошена пока шит закрывался — переоткрываем.
       pendingLessonRef.current = null;
       sheetRef.current?.present();
+    }
+  }, []);
+
+  // Закрываем модалку при начале скролла списка.
+  const handleScrollBeginDrag = useCallback(() => {
+    if (sheetOpenRef.current) {
+      pendingLessonRef.current = null;
+      sheetRef.current?.dismiss();
     }
   }, []);
 
@@ -434,6 +448,28 @@ export const ScheduleView = ({
     sectionsRef.current = sections;
   }, [sections]);
 
+  // Обновляем функцию скролла к выбранной паре (использует актуальные sections).
+  scrollToLessonFnRef.current = (lesson: NormalizedLesson) => {
+    for (let si = 0; si < sections.length; si++) {
+      const section = sections[si];
+      if (!section) continue;
+      const ii = section.data.findIndex((l) => l.key === lesson.key);
+      if (ii >= 0) {
+        setTimeout(() => {
+          try {
+            listRef.current?.scrollToLocation({
+              sectionIndex: si,
+              itemIndex: ii,
+              viewPosition: 0.4,
+              animated: true,
+            });
+          } catch { /* unmounted */ }
+        }, 50);
+        return;
+      }
+    }
+  };
+
   // y-координаты заголовков секций в контенте скролла. Нужны, чтобы
   // переключать лейбл дня в FloatingTopBar ровно в момент, когда заголовок
   // дня прячется под панелью. `onViewableItemsChanged` не подходит: он
@@ -535,12 +571,22 @@ export const ScheduleView = ({
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onStartShouldSetResponderCapture={() => {
+        if (sheetOpenRef.current) {
+          sheetOpenRef.current = false;
+          pendingLessonRef.current = null;
+          sheetRef.current?.dismiss();
+        }
+        return false;
+      }}
+    >
       <SectionList
         ref={listRef as never}
         sections={sections}
         keyExtractor={(item) => `${item.key}_${blockedSet.has(buildLessonBlockId(item)) ? 'b' : 'u'}`}
-        extraData={blockedSet}
+        extraData={`${subgroup}:${blockedList.length}`}
         // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
         stickySectionHeadersEnabled={false}
         contentContainerStyle={contentStyle}
@@ -553,6 +599,7 @@ export const ScheduleView = ({
         scrollIndicatorInsets={isIOS ? { top: topInset } : undefined}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        onScrollBeginDrag={handleScrollBeginDrag}
         renderSectionHeader={({ section }) => {
           const s = section as ScheduleSection;
           const isFirstExam = hasExams && s === examSections[0];
@@ -576,6 +623,7 @@ export const ScheduleView = ({
             lesson={item}
             compact={!isMineSubgroup(item.raw.numSubgroup)}
             blocked={isLessonBlocked(item)}
+            entityType={entityType}
             timeStatus={
               isSameDay(item.date, today)
                 ? getLessonTimeStatus(item, now)

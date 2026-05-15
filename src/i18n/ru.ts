@@ -88,6 +88,7 @@ export const ru = {
     blocked: 'Заблокировано',
     block: 'Заблокировать',
     unblock: 'Разблокировать',
+    announcement: 'Объявление',
   },
 
   // Lesson types

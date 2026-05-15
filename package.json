@@ -17,9 +17,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npx expo prebuild && npx expo run:ios",
+    "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:eas": "eas build --platform android --profile production",
-    "android:build": "npm run prebuild && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
+    "android:build": "npm run prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -34,6 +34,7 @@
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-alternate-app-icons": "^8.0.0",
+    "expo-application": "~7.0.8",
     "expo-background-fetch": "~14.0.9",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",

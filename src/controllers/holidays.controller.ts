@@ -1,12 +1,18 @@
 import { HolidaysApi } from '@services/api/holidays.api';
 import { cache, TTL } from '@services/cache/cache';
 import { useHolidaysStore } from '@stores/holidays.store';
+import { usePreferencesStore } from '@stores/preferences.store';
 import { getFallbackHolidays } from '@utils/holidays';
 
 const CACHE_KEY_PREFIX = 'holidays-';
 
 /** 30 days TTL — holidays don't change often. */
 const HOLIDAYS_TTL = 30 * TTL.lists; // 30 * 24h
+
+const getLocale = () => {
+  const lang = usePreferencesStore.getState().language;
+  return lang === 'en' ? 'en' : 'be';
+};
 
 export const HolidaysController = {
   /**
@@ -16,7 +22,8 @@ export const HolidaysController = {
    */
   async sync(year: number): Promise<void> {
     const store = useHolidaysStore.getState();
-    const cacheKey = CACHE_KEY_PREFIX + year;
+    const locale = getLocale();
+    const cacheKey = `${CACHE_KEY_PREFIX}${year}-${locale}`;
 
     // If store has data and cache is fresh — skip.
     const existing = store.byYear[String(year)];
@@ -26,7 +33,7 @@ export const HolidaysController = {
     }
 
     try {
-      const holidays = await HolidaysApi.fetchByYear(year);
+      const holidays = await HolidaysApi.fetchByYear(year, locale === 'en');
       store.setHolidays(year, holidays);
       await cache.set(cacheKey, true);
     } catch {
@@ -37,3 +44,12 @@ export const HolidaysController = {
     }
   },
 };
+
+// Re-fetch holidays when the user switches language.
+let _prevLang = usePreferencesStore.getState().language;
+usePreferencesStore.subscribe((state) => {
+  if (state.language !== _prevLang) {
+    _prevLang = state.language;
+    void HolidaysController.sync(new Date().getFullYear());
+  }
+});

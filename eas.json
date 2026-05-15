@@ -20,7 +20,7 @@
         "image": "macos-sequoia-15.6-xcode-26.2"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },

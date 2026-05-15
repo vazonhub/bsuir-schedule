@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { Appearance } from 'react-native';
 
+import { getSystemLanguage } from '@i18n';
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
 import { getSystemScheme } from '@utils/systemScheme';
 import type { KnownLessonType } from '@theme/colors';
@@ -113,7 +114,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       subgroupByKey: {},
       theme: 'auto' as ThemeChoice,
       resolvedScheme: resolveScheme('auto'),
-      language: 'ru' as LanguageChoice,
+      language: getSystemLanguage(),
       hidePastLessons: true,
       sourceBsuirApi: true,
       sourceICloud: true,
@@ -257,6 +258,21 @@ export const usePreferencesStore = create<PreferencesState>()(
     },
   ),
 );
+
+/**
+ * Returns a promise that resolves once preferences have been rehydrated
+ * from AsyncStorage. Safe to call multiple times — resolves immediately
+ * if hydration has already completed.
+ */
+export const waitForHydration = (): Promise<void> => {
+  if (usePreferencesStore.persist.hasHydrated()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsub = usePreferencesStore.persist.onFinishHydration(() => {
+      unsub();
+      resolve();
+    });
+  });
+};
 
 /** Selector helper: is `name` pinned in `pinnedGroups`? */
 export const selectIsGroupPinned = (name: string) => (s: PreferencesState) =>

@@ -9,12 +9,14 @@ export type ErrorKind = 'server' | 'network' | 'generic' | 'apiDisabled';
 interface ScheduleState {
   /** Cached schedules keyed by their identifier (group name or employee urlId). */
   byKey: Record<string, ScheduleDto | undefined>;
-  loadingKey: string | null;
+  /** Keys of schedules currently being loaded (supports parallel loads). */
+  loadingKeys: Record<string, true | undefined>;
   error: string | null;
   errorKind: ErrorKind | null;
   currentWeek: CurrentWeekNumber | null;
   setSchedule(key: string, schedule: ScheduleDto): void;
-  setLoadingKey(key: string | null): void;
+  addLoadingKey(key: string): void;
+  removeLoadingKey(key: string): void;
   setError(message: string | null, kind?: ErrorKind): void;
   setCurrentWeek(week: CurrentWeekNumber | null): void;
 }
@@ -23,13 +25,19 @@ export const useScheduleStore = create<ScheduleState>()(
   persist(
     (set) => ({
       byKey: {},
-      loadingKey: null,
+      loadingKeys: {},
       error: null,
       errorKind: null,
       currentWeek: null,
       setSchedule: (key, schedule) =>
         set((s) => ({ byKey: { ...s.byKey, [key]: schedule } })),
-      setLoadingKey: (loadingKey) => set({ loadingKey }),
+      addLoadingKey: (key) =>
+        set((s) => ({ loadingKeys: { ...s.loadingKeys, [key]: true } })),
+      removeLoadingKey: (key) =>
+        set((s) => {
+          const { [key]: _, ...rest } = s.loadingKeys;
+          return { loadingKeys: rest };
+        }),
       setError: (error, kind) => set({ error, errorKind: error ? (kind ?? 'generic') : null }),
       setCurrentWeek: (currentWeek) => set({ currentWeek }),
     }),
@@ -41,7 +49,8 @@ export const useScheduleStore = create<ScheduleState>()(
       // расписание, а контроллер тем временем обновляет его в фоне.
       partialize: (state) => ({
         byKey: state.byKey,
-        currentWeek: state.currentWeek,
+        // currentWeek intentionally NOT persisted — always fetched fresh
+        // from the API on startup to avoid stale week after days offline.
       }),
     },
   ),

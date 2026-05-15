@@ -11,7 +11,7 @@ import { UpdateBadge } from '@components/UpdateBadge';
 import { UpdateModal } from '@components/UpdateModal';
 import { AppVersionController } from '@controllers/appVersion.controller';
 import { useAppBootstrap } from '@hooks/useAppBootstrap';
-import { useIsDark } from '@hooks/usePalette';
+import { useIsDark, usePalette } from '@hooks/usePalette';
 import '@i18n';
 import { configureGoogleSignIn } from '@services/cloud/googleAuth';
 import { useAppVersionStore } from '@stores/appVersion.store';
@@ -27,6 +27,7 @@ configureGoogleSignIn();
 export default function RootLayout() {
   useAppBootstrap();
   const isDark = useIsDark();
+  const Palette = usePalette();
   const language = usePreferencesStore((s) => s.language);
   const { i18n } = useTranslation();
   const router = useRouter();
@@ -54,7 +55,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (i18n.language !== language) {
-      void i18n.changeLanguage(language);
+      const id = setTimeout(() => {
+        void i18n.changeLanguage(language);
+      }, 200);
+      return () => clearTimeout(id);
     }
   }, [language, i18n]);
 
@@ -72,10 +76,13 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Palette.background }}>
       <SafeAreaProvider>
         <BottomSheetModalProvider>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: Palette.background },
+          }}>
             <Stack.Screen name="(tabs)" />
           </Stack>
           <UpdateBadge onPress={openUpdateModal} />

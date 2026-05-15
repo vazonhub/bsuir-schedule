@@ -77,7 +77,7 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
   const router = useRouter();
   const schedule = useScheduleStore((s) => s.byKey[groupName]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
-  const loadingKey = useScheduleStore((s) => s.loadingKey);
+  const isLoading = useScheduleStore((s) => s.loadingKeys[groupName] === true);
   const error = useScheduleStore((s) => s.error);
   const errorKind = useScheduleStore((s) => s.errorKind);
   const pinned = usePreferencesStore(selectIsGroupPinned(groupName));
@@ -93,8 +93,6 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const isLoading = loadingKey === groupName;
 
   if (!schedule || !currentWeek) {
     if (error && !schedule) {
@@ -142,7 +140,7 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
   const router = useRouter();
   const schedule = useScheduleStore((s) => s.byKey[employee.urlId]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
-  const loadingKey = useScheduleStore((s) => s.loadingKey);
+  const isLoading = useScheduleStore((s) => s.loadingKeys[employee.urlId] === true);
   const error = useScheduleStore((s) => s.error);
   const errorKind = useScheduleStore((s) => s.errorKind);
   const pinned = usePreferencesStore(selectIsEmployeePinned(employee.urlId));
@@ -156,8 +154,6 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
   useEffect(() => {
     load();
   }, [load]);
-
-  const isLoading = loadingKey === employee.urlId;
 
   if (!schedule || !currentWeek) {
     if (error && !schedule) {

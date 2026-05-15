@@ -23,6 +23,9 @@ export type KnownLessonType = keyof typeof LESSON_TYPE_COLORS;
 
 export const FALLBACK_LESSON_COLOR = '#9A9A9E';
 
+/** Цвет акцента для карточек-объявлений. */
+export const ANNOUNCEMENT_COLOR = '#32ADE6'; // голубой
+
 /**
  * Light theme palette. Mirrors iOS system grouped style.
  *

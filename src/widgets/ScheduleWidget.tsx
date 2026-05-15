@@ -183,7 +183,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         ) : null}
       </FlexWidget>
 
-      {/* Photo(s) — right-aligned, reversed: badge left, first teacher rightmost */}
+      {/* Photo(s) or group circles — right-aligned */}
       {showPhoto && lesson.teacherPhotos.length > 0 ? (
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
           {lesson.teacherPhotos.length > 2 ? (
@@ -220,6 +220,49 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
                 imageWidth={28}
                 imageHeight={28}
                 radius={14}
+              />
+            </FlexWidget>
+          ))}
+        </FlexWidget>
+      ) : showPhoto && lesson.studentGroups.length > 0 ? (
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
+          {lesson.studentGroups.length > 2 ? (
+            <FlexWidget
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: '#E5E5EA',
+                borderWidth: 1,
+                borderColor: c(BG_COLOR),
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <TextWidget
+                text={`${lesson.studentGroups.length - 2}+`}
+                style={{ fontSize: 10, fontWeight: '700', color: TEXT_SECONDARY }}
+              />
+            </FlexWidget>
+          ) : null}
+          {[...lesson.studentGroups.slice(0, 2)].reverse().map((name, i) => (
+            <FlexWidget
+              key={`gr${i}`}
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: '#E5E5EA',
+                borderWidth: 1,
+                borderColor: c(BG_COLOR),
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginLeft: (i === 0 && lesson.studentGroups.length <= 2) ? 0 : -10,
+              }}
+            >
+              <TextWidget
+                text={name}
+                style={{ fontSize: 7, fontWeight: '700', color: TEXT_SECONDARY }}
               />
             </FlexWidget>
           ))}

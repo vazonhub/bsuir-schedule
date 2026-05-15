@@ -40,7 +40,7 @@ export default function TabsLayout() {
       blurEffect={supportsLiquidGlass ? 'systemChromeMaterial' : undefined}
       backgroundColor={supportsLiquidGlass ? undefined : palette.card}
       disableTransparentOnScrollEdge={!supportsLiquidGlass || undefined}
-      labelVisibilityMode="labeled"
+      labelVisibilityMode={isAndroid ? 'unlabeled' : 'labeled'}
       tintColor={isAndroid ? palette.accent : undefined}
       indicatorColor={isAndroid ? `${palette.accent}26` : undefined}
       labelStyle={isAndroid ? { fontSize: 12 } : undefined}

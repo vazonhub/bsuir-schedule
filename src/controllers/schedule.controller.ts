@@ -51,8 +51,13 @@ export const ScheduleController = {
   async loadCurrentWeek(): Promise<void> {
     const store = useScheduleStore.getState();
     try {
-      const week = await ScheduleApi.currentWeek();
-      store.setCurrentWeek(week);
+      const raw = await ScheduleApi.currentWeek();
+      const week = Number(raw);
+      if (week < 1 || week > 4 || !Number.isInteger(week)) {
+        store.setError('Некорректный номер недели от сервера', 'generic');
+        return;
+      }
+      store.setCurrentWeek(week as 1 | 2 | 3 | 4);
     } catch (e) {
       store.setError(e instanceof Error ? e.message : 'Не удалось получить текущую неделю', classifyError(e));
     }
@@ -60,10 +65,10 @@ export const ScheduleController = {
 
   async loadGroupSchedule(groupName: string): Promise<void> {
     const store = useScheduleStore.getState();
-    if (store.loadingKey === groupName) return;
+    if (store.loadingKeys[groupName]) return;
 
     const prefs = usePreferencesStore.getState();
-    store.setLoadingKey(groupName);
+    store.addLoadingKey(groupName);
     store.setError(null);
 
     try {
@@ -97,16 +102,16 @@ export const ScheduleController = {
         store.setError('cloudFallbackFailed', 'network');
       }
     } finally {
-      store.setLoadingKey(null);
+      store.removeLoadingKey(groupName);
     }
   },
 
   async loadEmployeeSchedule(urlId: string): Promise<void> {
     const store = useScheduleStore.getState();
-    if (store.loadingKey === urlId) return;
+    if (store.loadingKeys[urlId]) return;
 
     const prefs = usePreferencesStore.getState();
-    store.setLoadingKey(urlId);
+    store.addLoadingKey(urlId);
     store.setError(null);
 
     try {
@@ -137,7 +142,7 @@ export const ScheduleController = {
         store.setError('cloudFallbackFailed', 'network');
       }
     } finally {
-      store.setLoadingKey(null);
+      store.removeLoadingKey(urlId);
     }
   },
 };

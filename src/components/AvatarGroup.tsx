@@ -20,9 +20,11 @@ interface Props {
   overlap?: number;
   /** Max avatars to show before collapsing into "+N". Default 2. */
   max?: number;
+  /** Max characters for initials in each avatar. Default 2. */
+  maxChars?: number;
 }
 
-export const AvatarGroup = ({ items, size = 48, overlap, max = 2 }: Props) => {
+export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Props) => {
   const Palette = usePalette();
   const actualOverlap = overlap ?? Math.round(size * 0.3);
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -30,7 +32,7 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2 }: Props) => {
   if (items.length === 0) return null;
   if (items.length === 1) {
     const item = items[0]!;
-    return <Avatar uri={item.uri} initials={item.initials} size={size} />;
+    return <Avatar uri={item.uri} initials={item.initials} size={size} maxChars={maxChars} />;
   }
 
   const visible = items.slice(0, max);
@@ -72,7 +74,7 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2 }: Props) => {
             },
           ]}
         >
-          <Avatar uri={item.uri} initials={item.initials} size={size} />
+          <Avatar uri={item.uri} initials={item.initials} size={size} maxChars={maxChars} />
         </View>
       ))}
     </View>

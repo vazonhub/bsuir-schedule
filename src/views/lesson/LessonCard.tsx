@@ -9,6 +9,7 @@ import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { Radius, Spacing } from '@theme';
+import { ANNOUNCEMENT_COLOR } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import { getLessonBreakRange, getLessonTypeFullName } from '@utils/lesson';
 import type { LessonTimeStatus } from '@utils/lesson';
@@ -31,6 +32,8 @@ interface Props {
    * (тогда никакой подсветки не накладываем).
    */
   timeStatus?: LessonTimeStatus | null;
+  /** Тип расписания — для преподавателя показываем группы вместо аватара. */
+  entityType?: 'group' | 'employee';
 }
 
 // Полупрозрачная серая «вуаль» для прошедших / уже прошедшей части идущей пары.
@@ -48,10 +51,17 @@ const buildAvatarItems = (lesson: NormalizedLesson) => {
   }));
 };
 
+const buildGroupAvatarItems = (lesson: NormalizedLesson) => {
+  return (lesson.raw.studentGroups ?? []).map((g) => ({
+    uri: null as string | null,
+    initials: g.name,
+  }));
+};
+
 const BLOCKED_BG_LIGHT = 'rgba(255, 59, 48, 0.06)';
 const BLOCKED_BG_DARK = 'rgba(255, 59, 48, 0.07)';
 
-export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocked = false, timeStatus }: Props) => {
+export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocked = false, timeStatus, entityType = 'group' }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const isDark = useIsDark();
@@ -62,7 +72,8 @@ export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocke
   const getLessonColor = useGetLessonAccentColor();
   const subgroupIcon = useIconName('subgroup');
   const blockIcon = useIconName('block');
-  const accent = getLessonColor(lesson.raw.lessonTypeAbbrev);
+  const isAnnouncement = lesson.raw.announcement === true;
+  const accent = isAnnouncement ? ANNOUNCEMENT_COLOR : getLessonColor(lesson.raw.lessonTypeAbbrev);
   const typeAbbrev = lesson.raw.lessonTypeAbbrev;
 
   // Ширина «прошедшей» серой заливки. 0 = ничего не закрашено,
@@ -152,7 +163,7 @@ export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocke
 
   const auditories = (lesson.raw.auditories ?? []).join(', ');
   const employees = lesson.raw.employees ?? [];
-  const avatarItems = buildAvatarItems(lesson);
+  const avatarItems = entityType === 'group' ? buildAvatarItems(lesson) : buildGroupAvatarItems(lesson);
   const hasAvatar = avatarItems.length > 0;
   const numSubgroup = lesson.raw.numSubgroup;
   const showSubgroup = numSubgroup === 1 || numSubgroup === 2;
@@ -169,7 +180,7 @@ export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocke
     : null;
 
   const fullLabel = buildLabel(
-    getLessonTypeFullName(lesson.raw.lessonTypeAbbrev),
+    isAnnouncement ? t('lesson.announcement') : getLessonTypeFullName(lesson.raw.lessonTypeAbbrev),
     lesson.raw.subject,
     `${lesson.startTime}–${lesson.endTime}`,
     auditories || null,
@@ -223,6 +234,12 @@ export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocke
             <Text {...textProps('footnote')} style={styles.time}>
               {lesson.startTime}–{lesson.endTime}
             </Text>
+            {isAnnouncement && (
+              <View style={[styles.announcementBadge, { backgroundColor: ANNOUNCEMENT_COLOR + '1A' }]}>
+                <Ionicons name="megaphone" size={10} color={ANNOUNCEMENT_COLOR} />
+                <Text {...textProps('tiny')} style={[styles.announcementBadgeText, { color: ANNOUNCEMENT_COLOR }]}>{t('lesson.announcement')}</Text>
+              </View>
+            )}
             {isDifferentiateWithoutColorEnabled && typeAbbrev && (
               <View style={[styles.typeBadge, { backgroundColor: accent + '1A' }]}>
                 <Text {...textProps('tiny')} style={[styles.typeBadgeText, { color: accent }]}>{typeAbbrev}</Text>
@@ -256,7 +273,11 @@ export const LessonCard = React.memo(({ lesson, onPress, compact = false, blocke
               </View>
             )}
             {hasAvatar && (
-              <AvatarGroup items={avatarItems} size={48} />
+              <AvatarGroup
+                items={avatarItems}
+                size={48}
+                maxChars={entityType === 'employee' ? 6 : undefined}
+              />
             )}
           </View>
         )}
@@ -353,6 +374,19 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     borderRadius: 4,
   },
   typeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  announcementBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  announcementBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.2,

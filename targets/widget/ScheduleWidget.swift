@@ -18,6 +18,7 @@ struct WidgetLesson: Codable {
     let numSubgroup: Int
     let isMine: Bool
     let note: String?
+    let studentGroups: [String]?
 }
 
 struct WidgetDayBlock: Codable {
@@ -329,6 +330,8 @@ struct LessonRow: View {
                 // Reversed: badge on the left, first teacher on the right
                 let reversedPhotos = Array(photoDataList.reversed())
 
+                let groups = lesson.studentGroups ?? []
+
                 if !reversedPhotos.isEmpty || extraCount > 0 {
                     HStack(spacing: -10) {
                         if extraCount > 0 {
@@ -353,6 +356,35 @@ struct LessonRow: View {
                                     .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
                                     .zIndex(index == reversedPhotos.count - 1 ? Double(reversedPhotos.count + 1) : Double(index))
                             }
+                        }
+                    }
+                } else if !groups.isEmpty {
+                    let visibleGroups = Array(groups.prefix(2).reversed())
+                    let groupExtra = max(0, groups.count - 2)
+                    HStack(spacing: -10) {
+                        if groupExtra > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text("\(groupExtra)+")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(Double(visibleGroups.count + 1))
+                        }
+                        ForEach(Array(visibleGroups.enumerated()), id: \.offset) { index, name in
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 30, height: 30)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text(name)
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(index == visibleGroups.count - 1 ? Double(visibleGroups.count + 1) : Double(index))
                         }
                     }
                 }

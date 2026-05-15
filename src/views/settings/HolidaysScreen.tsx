@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -256,59 +257,64 @@ export const HolidaysScreen = () => {
 
       {/* ── Add Holiday Modal ── */}
       <Modal visible={showAddModal} transparent animationType="fade">
-        <Pressable style={styles.modalOverlay} onPress={() => setShowAddModal(false)}>
-          <Pressable style={styles.modalContent} onPress={() => {}}>
-            <Text style={styles.modalTitle}>{t('settings.holidaysAdd')}</Text>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoiding}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowAddModal(false)}>
+            <Pressable style={styles.modalContent} onPress={() => {}}>
+              <Text style={styles.modalTitle}>{t('settings.holidaysAdd')}</Text>
 
-            <Text style={styles.inputLabel}>{t('settings.holidaysAddName')}</Text>
-            <TextInput
-              style={styles.input}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder={t('settings.holidaysAddNamePlaceholder')}
-              placeholderTextColor={Palette.textTertiary}
-              autoFocus
-            />
-
-            <Text style={styles.inputLabel}>{t('settings.holidaysAddDate')}</Text>
-            {Platform.OS === 'android' && (
-              <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                <Text style={styles.dateButtonText}>{formatHolidayDate(toDateISO(newDate))}</Text>
-              </Pressable>
-            )}
-            {showDatePicker && (
-              <DateTimePicker
-                value={newDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                onChange={(_, date) => {
-                  if (Platform.OS === 'android') setShowDatePicker(false);
-                  if (date) setNewDate(date);
-                }}
-                style={styles.datePicker}
+              <Text style={styles.inputLabel}>{t('settings.holidaysAddName')}</Text>
+              <TextInput
+                style={styles.input}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder={t('settings.holidaysAddNamePlaceholder')}
+                placeholderTextColor={Palette.textTertiary}
+                autoFocus
               />
-            )}
 
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={() => setShowAddModal(false)}
-              >
-                <Text style={styles.modalButtonCancelText}>
-                  {t('settings.holidaysAddCancel')}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalButton, styles.modalButtonSave]}
-                onPress={handleSaveNew}
-              >
-                <Text style={styles.modalButtonSaveText}>
-                  {t('settings.holidaysAddSave')}
-                </Text>
-              </Pressable>
-            </View>
+              <Text style={styles.inputLabel}>{t('settings.holidaysAddDate')}</Text>
+              {Platform.OS === 'android' && (
+                <Pressable style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+                  <Text style={styles.dateButtonText}>{formatHolidayDate(toDateISO(newDate))}</Text>
+                </Pressable>
+              )}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={newDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  onChange={(_, date) => {
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (date) setNewDate(date);
+                  }}
+                  style={styles.datePicker}
+                />
+              )}
+
+              <View style={styles.modalButtons}>
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setShowAddModal(false)}
+                >
+                  <Text style={styles.modalButtonCancelText}>
+                    {t('settings.holidaysAddCancel')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonSave]}
+                  onPress={handleSaveNew}
+                >
+                  <Text style={styles.modalButtonSaveText}>
+                    {t('settings.holidaysAddSave')}
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -454,6 +460,9 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '500',
     },
     // ── Modal ──
+    keyboardAvoiding: {
+      flex: 1,
+    },
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.4)',

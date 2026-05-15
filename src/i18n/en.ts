@@ -82,6 +82,7 @@ export const en: TranslationKeys = {
     blocked: 'Blocked',
     block: 'Block',
     unblock: 'Unblock',
+    announcement: 'Announcement',
   },
 
   lessonType: {
