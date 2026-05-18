@@ -1,4 +1,5 @@
 import UIKit
+import React
 import UnityAds
 
 /// React Native ViewManager that wraps a Unity Ads BannerView.
