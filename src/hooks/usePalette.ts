@@ -1,4 +1,6 @@
-import { useIncreasedContrast } from '@hooks/useAccessibility';
+import { useMemo } from 'react';
+
+import { useAccessibility, useIncreasedContrast } from '@hooks/useAccessibility';
 import { usePreferencesStore } from '@stores/preferences.store';
 import {
   Palette as PaletteLight,
@@ -15,12 +17,25 @@ import {
  *
  * When the system "Increase Contrast" (iOS Darken Colors) setting is
  * enabled, returns high-contrast palette variants instead.
+ *
+ * Also depends on `fontScale` and `isBoldTextEnabled` from accessibility
+ * settings. When these change (user switches Dynamic Type or Bold Text in
+ * system settings), a new object reference is returned, forcing all
+ * `useMemo(() => makeStyles(Palette), [Palette])` to recalculate styles
+ * and re-render text with correct metrics.
  */
 export const usePalette = () => {
   const resolved = usePreferencesStore((s) => s.resolvedScheme);
   const highContrast = useIncreasedContrast();
-  if (resolved === 'dark') return highContrast ? PaletteDarkHighContrast : PaletteDark;
-  return highContrast ? PaletteHighContrast : PaletteLight;
+  const { fontScale, isBoldTextEnabled } = useAccessibility();
+
+  return useMemo(() => {
+    const base = resolved === 'dark'
+      ? (highContrast ? PaletteDarkHighContrast : PaletteDark)
+      : (highContrast ? PaletteHighContrast : PaletteLight);
+    // Spread creates a new object reference so downstream useMemo deps fire.
+    return { ...base };
+  }, [resolved, highContrast, fontScale, isBoldTextEnabled]);
 };
 
 /** Returns `true` if the current resolved theme is dark. */

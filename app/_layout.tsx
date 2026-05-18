@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { Text, TextInput } from 'react-native';
+
 import { UpdateBadge } from '@components/UpdateBadge';
 import { UpdateModal } from '@components/UpdateModal';
 import { AppVersionController } from '@controllers/appVersion.controller';
@@ -22,6 +24,16 @@ import { usePreferencesStore } from '@stores/preferences.store';
  * and exposes a stack so we can later push modals at the root level if needed.
  * The `(tabs)` group becomes the only top-level screen of that stack.
  */
+// Limit font scaling for accessibility to 2× by default so that text
+// doesn't overflow fixed-layout containers. Individual components can
+// override this via textProps() or an explicit maxFontSizeMultiplier prop.
+{
+  const t = Text as unknown as { defaultProps?: Record<string, unknown> };
+  const ti = TextInput as unknown as { defaultProps?: Record<string, unknown> };
+  (t.defaultProps ??= {}).maxFontSizeMultiplier = 2.0;
+  (ti.defaultProps ??= {}).maxFontSizeMultiplier = 2.0;
+}
+
 configureGoogleSignIn();
 
 export default function RootLayout() {

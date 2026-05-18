@@ -1,6 +1,7 @@
 import type { Holiday } from '@models/holiday';
 import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
+import { parseBsuirDate } from '@utils/date';
 import { findHolidayName } from '@utils/holidays';
 import { buildLessonBlockId, getLessonAccentColor } from '@utils/lesson';
 import { flattenSchedule, flattenExams } from '@utils/scheduleNormalization';
@@ -136,8 +137,11 @@ export const buildWidgetSnapshot = (
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
 
-  // Flatten regular + exams together, filtering out blocked lessons
-  const regularLessons = flattenSchedule(schedule, currentWeek, now);
+  // During exam session (today >= startExamsDate), skip regular schedule
+  // to avoid duplicates — exams already cover everything.
+  const startExams = parseBsuirDate(schedule.startExamsDate);
+  const isExamSession = !!startExams && todayStart.getTime() >= startExams.getTime();
+  const regularLessons = isExamSession ? [] : flattenSchedule(schedule, currentWeek, now);
   const examLessons = flattenExams(schedule, currentWeek, now);
   const unblocked = [...regularLessons, ...examLessons].filter(
     (l) => !blockedIds || !blockedIds.has(buildLessonBlockId(l)),

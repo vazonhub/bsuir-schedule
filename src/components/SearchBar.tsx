@@ -73,7 +73,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     minHeight: 44,
   },
   icon: {
-    fontSize: 18,
+    fontSize: 22,
     color: Palette.textTertiary,
     marginRight: Spacing.md,
   },

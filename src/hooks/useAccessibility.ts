@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, PixelRatio, Platform } from 'react-native';
+import { AccessibilityInfo, AppState, PixelRatio, Platform } from 'react-native';
 import {
   shouldDifferentiateWithoutColor,
   addDifferentiateWithoutColorListener,
@@ -85,9 +85,19 @@ export function useAccessibility(): AccessibilitySettings {
       setSettings((s) => ({ ...s, isDifferentiateWithoutColorEnabled: event.enabled }));
     });
 
+    // Re-read fontScale when app returns from background (user may have
+    // changed Dynamic Type in system settings).
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        const newScale = PixelRatio.getFontScale();
+        setSettings((s) => (s.fontScale === newScale ? s : { ...s, fontScale: newScale }));
+      }
+    });
+
     return () => {
       subs.forEach((s) => s.remove());
       dwcSub?.remove();
+      appStateSub.remove();
     };
   }, []);
 

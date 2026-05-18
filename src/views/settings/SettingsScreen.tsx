@@ -16,14 +16,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import type { LanguageChoice, ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -50,6 +50,7 @@ export const SettingsScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const isDark = useIsDark();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const theme = usePreferencesStore((s) => s.theme);
@@ -173,7 +174,7 @@ export const SettingsScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <Text {...textProps('title')} style={styles.screenTitle}>{t('settings.title')}</Text>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md }}>
       <View style={styles.section}>
         <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.themeSection')}</Text>
         <SegmentedControl

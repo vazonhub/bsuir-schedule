@@ -1,18 +1,21 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 
 /**
  * Shared axios instance. Base URL points at the public BSUIR API.
  * Note: the API does not require authentication for public schedule endpoints.
  *
- * `adapter: 'fetch'` — uses the native fetch API instead of XMLHttpRequest.
- * RN dev tools intercept XMLHttpRequest (network inspector / bridge), which
- * causes 15 s timeouts on older iOS and Android dev builds.  Native fetch
- * bypasses this entirely.
+ * Adapter selection:
+ * - iOS: `'fetch'` — bypasses RN dev tools XMLHttpRequest interception that
+ *   causes 15 s timeouts in dev builds.
+ * - Android: default (`'xhr'`) — Android's native fetch has known issues with
+ *   DNS resolution, AbortController and SSL that cause immediate failures in
+ *   production builds.  XMLHttpRequest works reliably on Android in production.
  */
 export const http = axios.create({
   baseURL: 'https://iis.bsuir.by/api/v1',
   timeout: 15_000,
-  adapter: 'fetch',
+  adapter: Platform.OS === 'android' ? 'xhr' : 'fetch',
   headers: {
     Accept: 'application/json',
   },

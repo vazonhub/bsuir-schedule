@@ -12,13 +12,13 @@ const getTextFields = (g: StudentGroupDto): string[] => [
 ];
 
 /**
- * Short digit token (1–2 chars, e.g. "3") → course number.
- * Longer digit token (3+ chars, e.g. "410") → group name substring.
+ * Single digit (e.g. "3") → course number OR group name substring.
+ * Multi-digit token (e.g. "31", "410") → group name substring.
  */
 const tokenMatchesGroup = (token: string, group: StudentGroupDto, textFields: string[]): boolean => {
   if (/^\d+$/.test(token)) {
-    if (token.length <= 2) {
-      return String(group.course) === token;
+    if (token.length === 1) {
+      return String(group.course) === token || group.name.toLowerCase().includes(token);
     }
     return group.name.toLowerCase().includes(token);
   }

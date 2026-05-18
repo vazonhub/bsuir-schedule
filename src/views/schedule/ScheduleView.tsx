@@ -26,7 +26,7 @@ import {
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import type { Holiday } from '@models/holiday';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
-import { addDays, isSameDay, startOfLocalDay } from '@utils/date';
+import { addDays, isSameDay, parseBsuirDate, startOfLocalDay } from '@utils/date';
 import { findHolidayName, toDateISO } from '@utils/holidays';
 import { buildLessonBlockId, getLessonTimeStatus } from '@utils/lesson';
 import {
@@ -197,12 +197,19 @@ export const ScheduleView = ({
     [apiHolidays, userAdded, userRemoved, userAddedHidden],
   );
 
+  // Detect exam session mode: today >= startExamsDate → show only exams, no week headers.
+  const isExamSession = useMemo(() => {
+    const start = parseBsuirDate(schedule.startExamsDate);
+    return !!start && today.getTime() >= start.getTime();
+  }, [schedule.startExamsDate, today]);
+
   const regularSections = useMemo(() => {
+    if (isExamSession) return [];
     const flat = flattenSchedule(schedule, currentWeek, today, {
       showAll: !hidePastLessons,
     });
     return groupLessonsByDay(flat);
-  }, [schedule, currentWeek, today, hidePastLessons]);
+  }, [schedule, currentWeek, today, hidePastLessons, isExamSession]);
 
   const examSections = useMemo(() => {
     const flat = flattenExams(schedule, currentWeek, today);
@@ -283,6 +290,14 @@ export const ScheduleView = ({
   }, [hidePastLessons]);
 
   const isIOS = Platform.OS === 'ios';
+
+  // Stable initial contentOffset — stored in a ref so it's never re-applied
+  // on subsequent renders. Passing contentOffset as a prop causes iOS to
+  // re-scroll to the initial position whenever the component re-renders
+  // (e.g. when switching tabs), creating a visible gap.
+  const initialContentOffset = useRef(
+    isIOS ? { x: 0, y: -topInset } : undefined,
+  ).current;
 
   const contentStyle = useMemo(
     () => ({
@@ -595,7 +610,7 @@ export const ScheduleView = ({
         // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
         // показывается ниже FloatingTopBar, а не за ним.
         contentInset={isIOS ? { top: topInset } : undefined}
-        contentOffset={isIOS ? { x: 0, y: -topInset } : undefined}
+        contentOffset={initialContentOffset}
         scrollIndicatorInsets={isIOS ? { top: topInset } : undefined}
         onScroll={handleScroll}
         scrollEventThrottle={16}
