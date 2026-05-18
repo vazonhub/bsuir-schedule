@@ -111,6 +111,7 @@
             "minHeight": "110dp",
             "targetCellWidth": 2,
             "targetCellHeight": 2,
+            "resizeMode": "horizontal|vertical",
             "description": "Расписание занятий",
             "updatePeriodMillis": 1800000
           },
@@ -121,6 +122,7 @@
             "minHeight": "110dp",
             "targetCellWidth": 4,
             "targetCellHeight": 2,
+            "resizeMode": "horizontal|vertical",
             "description": "Расписание занятий",
             "updatePeriodMillis": 1800000
           },
@@ -131,11 +133,14 @@
             "minHeight": "250dp",
             "targetCellWidth": 4,
             "targetCellHeight": 4,
+            "resizeMode": "horizontal|vertical",
             "description": "Расписание занятий",
             "updatePeriodMillis": 1800000
           }
         ]
       }],
+      "./plugins/withWidgetExtras",
+      "./plugins/withUnityBanner",
       "react-native-iap",
       "@react-native-google-signin/google-signin"
     ],

@@ -5,6 +5,7 @@ import { AppVersionController } from '@controllers/appVersion.controller';
 import { EmployeesController } from '@controllers/employees.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { HolidaysController } from '@controllers/holidays.controller';
+import { initAds } from '@services/ads';
 import { restoreGoogleSession } from '@services/cloud/googleAuth';
 import { prefetchPinned } from '@services/prefetch';
 import { trackUsageAndMaybeRequestReview } from '@services/review';
@@ -34,6 +35,7 @@ export const useAppBootstrap = () => {
     void trackUsageAndMaybeRequestReview();
     void AppVersionController.checkForUpdate();
     void restoreGoogleSession();
+    void initAds();
   }, []);
 
   useEffect(() => {

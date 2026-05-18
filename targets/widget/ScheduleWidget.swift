@@ -39,6 +39,28 @@ struct WidgetSnapshot: Codable {
     let nextDay: WidgetDayBlock?
 }
 
+// MARK: - Day relation (today / tomorrow / future)
+
+enum DayRelation {
+    case today
+    case tomorrow
+    case future
+
+    var color: Color {
+        switch self {
+        case .today: return .blue
+        case .tomorrow: return .red
+        case .future: return .orange
+        }
+    }
+}
+
+func dayRelation(dateISO: String, realTodayISO: String, realTomorrowISO: String) -> DayRelation {
+    if dateISO == realTodayISO { return .today }
+    if dateISO == realTomorrowISO { return .tomorrow }
+    return .future
+}
+
 // MARK: - Shared storage reader
 
 private let appGroup = "group.by.vazon.bsuirschedule"
@@ -141,18 +163,25 @@ struct ScheduleEntry: TimelineEntry {
     let date: Date
     let snapshot: WidgetSnapshot?
     let photos: [String: Data]
-    /// Which day block to display: today's remaining or nextDay.
-    let displayBlock: WidgetDayBlock?
-    /// True if displayBlock is NOT today (i.e. showing next day).
-    let isNextDay: Bool
-    /// Lessons to show (already filtered for remaining if today).
-    let visibleLessons: [WidgetLesson]
+    /// Today's block (may be nil if snapshot is nil).
+    let todayBlock: WidgetDayBlock?
+    /// Today's remaining lessons (filtered by time).
+    let todayLessons: [WidgetLesson]
+    /// Relation of today's block to real today.
+    let todayRelation: DayRelation
+    /// Next day block with lessons (nil if no next day available).
+    let nextDayBlock: WidgetDayBlock?
+    /// All lessons for the next day.
+    let nextDayLessons: [WidgetLesson]
+    /// Relation of next day block to real today.
+    let nextDayRelation: DayRelation
 }
 
 struct ScheduleTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> ScheduleEntry {
         ScheduleEntry(date: .now, snapshot: nil, photos: [:],
-                      displayBlock: nil, isNextDay: false, visibleLessons: [])
+                      todayBlock: nil, todayLessons: [], todayRelation: .today,
+                      nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .tomorrow)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ScheduleEntry) -> Void) {
@@ -188,8 +217,7 @@ struct ScheduleTimelineProvider: TimelineProvider {
                     }
                 }
 
-                // Entry at midnight for next day rollover — use buildEntry
-                // so stale-snapshot logic correctly treats nextDay as "today".
+                // Entry at midnight for next day rollover
                 if let tomorrow = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: Date())) {
                     entries.append(buildEntry(at: tomorrow, afterMinutes: 0, snapshot: snap, photos: photos))
                 }
@@ -204,52 +232,68 @@ struct ScheduleTimelineProvider: TimelineProvider {
     private func buildCurrentEntry(snapshot: WidgetSnapshot?, photos: [String: Data]) -> ScheduleEntry {
         guard let snap = snapshot else {
             return ScheduleEntry(date: .now, snapshot: nil, photos: photos,
-                                 displayBlock: nil, isNextDay: false, visibleLessons: [])
+                                 todayBlock: nil, todayLessons: [], todayRelation: .today,
+                                 nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .tomorrow)
         }
         return buildEntry(at: Date(), afterMinutes: nowMinutes(), snapshot: snap, photos: photos)
     }
 
     private func buildEntry(at date: Date, afterMinutes: Int, snapshot: WidgetSnapshot, photos: [String: Data]) -> ScheduleEntry {
         let cal = Calendar.current
-        let todayISO = isoString(from: cal.startOfDay(for: date))
+        let todayStart = cal.startOfDay(for: date)
+        let todayISO = isoString(from: todayStart)
+        let tomorrowISO = isoString(from: cal.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart)
 
         // If the snapshot's "today" matches the real current date, use normal logic.
         if snapshot.today.dateISO == todayISO {
             let remaining = remainingLessons(from: snapshot.today.lessons, afterMinutes: afterMinutes)
+            let tRel = dayRelation(dateISO: snapshot.today.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+            let nRel = snapshot.nextDay.map { dayRelation(dateISO: $0.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO) } ?? .tomorrow
 
             if !remaining.isEmpty {
                 return ScheduleEntry(
                     date: date, snapshot: snapshot, photos: photos,
-                    displayBlock: snapshot.today, isNextDay: false,
-                    visibleLessons: remaining
+                    todayBlock: snapshot.today, todayLessons: remaining, todayRelation: tRel,
+                    nextDayBlock: snapshot.nextDay, nextDayLessons: snapshot.nextDay?.lessons ?? [], nextDayRelation: nRel
                 )
             }
 
-            // Today is done — show next day
+            // Today is done — show next day as primary
+            if let next = snapshot.nextDay {
+                let nextRel = dayRelation(dateISO: next.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+                return ScheduleEntry(
+                    date: date, snapshot: snapshot, photos: photos,
+                    todayBlock: next, todayLessons: next.lessons, todayRelation: nextRel,
+                    nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
+                )
+            }
+
+            // No next day
             return ScheduleEntry(
                 date: date, snapshot: snapshot, photos: photos,
-                displayBlock: snapshot.nextDay, isNextDay: snapshot.nextDay != nil,
-                visibleLessons: snapshot.nextDay?.lessons ?? []
+                todayBlock: snapshot.today, todayLessons: [], todayRelation: tRel,
+                nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
             )
         }
 
-        // Snapshot is stale — "today" in the snapshot is actually yesterday (or older).
-        // Check if nextDay matches the real today.
+        // Snapshot is stale — check if nextDay matches the real today.
         if let next = snapshot.nextDay, next.dateISO == todayISO {
             let remaining = remainingLessons(from: next.lessons, afterMinutes: afterMinutes)
+            let tRel = dayRelation(dateISO: next.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
             return ScheduleEntry(
                 date: date, snapshot: snapshot, photos: photos,
-                displayBlock: next, isNextDay: false,
-                visibleLessons: remaining.isEmpty ? next.lessons : remaining
+                todayBlock: next, todayLessons: remaining.isEmpty ? next.lessons : remaining, todayRelation: tRel,
+                nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
             )
         }
 
-        // Snapshot is too old — neither today nor nextDay matches. Show whatever we have.
+        // Snapshot is too old — show whatever we have.
+        let block = snapshot.nextDay ?? snapshot.today
+        let bRel = dayRelation(dateISO: block.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
         return ScheduleEntry(
             date: date, snapshot: snapshot, photos: photos,
-            displayBlock: snapshot.nextDay ?? snapshot.today,
-            isNextDay: snapshot.nextDay != nil,
-            visibleLessons: snapshot.nextDay?.lessons ?? snapshot.today.lessons
+            todayBlock: block, todayLessons: block.lessons, todayRelation: bRel,
+            nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
         )
     }
 
@@ -458,10 +502,26 @@ struct EmptyStateView: View {
     }
 }
 
+/// Section header for a day inside multi-day widgets.
+struct DaySectionHeader: View {
+    let block: WidgetDayBlock
+    let relation: DayRelation
+
+    var body: some View {
+        HStack {
+            Text(formatDayLabel(block))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(relation.color)
+            Spacer()
+        }
+    }
+}
+
 struct WidgetHeader: View {
     let groupName: String
     let currentWeek: Int
     var dateLabel: String? = nil
+    var dateLabelColor: Color = .orange
     var showWeek: Bool = true
 
     var body: some View {
@@ -472,7 +532,7 @@ struct WidgetHeader: View {
             if let label = dateLabel {
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.orange)
+                    .foregroundColor(dateLabelColor)
             }
             Spacer()
             if showWeek {
@@ -491,19 +551,19 @@ struct SmallWidgetView: View {
 
     var body: some View {
         if let snap = entry.snapshot {
-            if let holiday = entry.displayBlock?.holidayName {
-                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
-            } else if !entry.visibleLessons.isEmpty {
-                let lessons = Array(entry.visibleLessons.prefix(2))
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
+                let lessons = Array(entry.todayLessons.prefix(2))
                 VStack(alignment: .leading, spacing: 3) {
                     HStack {
                         Text(snap.groupName)
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
-                        if entry.isNextDay, let block = entry.displayBlock {
+                        if let block = entry.todayBlock {
                             Text(formatDayLabel(block))
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.orange)
+                                .foregroundColor(entry.todayRelation.color)
                         }
                         Spacer()
                     }
@@ -527,22 +587,37 @@ struct SmallWidgetView: View {
 
 struct MediumWidgetView: View {
     let entry: ScheduleEntry
+    private let maxSlots = 3
 
     var body: some View {
         if let snap = entry.snapshot {
-            if let holiday = entry.displayBlock?.holidayName {
-                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
-            } else if !entry.visibleLessons.isEmpty {
-                let lessons = Array(entry.visibleLessons.prefix(3))
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     WidgetHeader(
                         groupName: snap.groupName,
                         currentWeek: snap.currentWeek,
-                        dateLabel: entry.isNextDay ? (entry.displayBlock.map { formatDayLabel($0) }) : nil
+                        dateLabel: entry.todayBlock.map { formatDayLabel($0) },
+                        dateLabelColor: entry.todayRelation.color
                     )
 
-                    ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
+                    let todaySlice = Array(entry.todayLessons.prefix(maxSlots))
+
+                    ForEach(Array(todaySlice.enumerated()), id: \.offset) { _, lesson in
                         LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos)
+                    }
+
+                    // Fill remaining slots with next day lessons
+                    if todaySlice.count < maxSlots, let nextBlock = entry.nextDayBlock, !entry.nextDayLessons.isEmpty {
+                        let nextCount = maxSlots - todaySlice.count - 1 // 1 slot for date header
+                        if nextCount > 0 {
+                            DaySectionHeader(block: nextBlock, relation: entry.nextDayRelation)
+                            let nextSlice = Array(entry.nextDayLessons.prefix(nextCount))
+                            ForEach(Array(nextSlice.enumerated()), id: \.offset) { _, lesson in
+                                LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos)
+                            }
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -560,24 +635,42 @@ struct MediumWidgetView: View {
 
 struct LargeWidgetView: View {
     let entry: ScheduleEntry
+    private let maxSlots = 7
 
     var body: some View {
         if let snap = entry.snapshot {
-            if let holiday = entry.displayBlock?.holidayName {
-                EmptyStateView(holidayName: holiday, displayBlock: entry.displayBlock)
-            } else if !entry.visibleLessons.isEmpty {
-                let visible = Array(entry.visibleLessons.prefix(7))
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     WidgetHeader(
                         groupName: snap.groupName,
                         currentWeek: snap.currentWeek,
-                        dateLabel: entry.isNextDay ? (entry.displayBlock.map { formatDayLabel($0) }) : nil
+                        dateLabel: entry.todayBlock.map { formatDayLabel($0) },
+                        dateLabelColor: entry.todayRelation.color
                     )
 
-                    ForEach(Array(visible.enumerated()), id: \.offset) { index, lesson in
+                    let todaySlice = Array(entry.todayLessons.prefix(maxSlots))
+
+                    ForEach(Array(todaySlice.enumerated()), id: \.offset) { index, lesson in
                         LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
-                        if index < visible.count - 1 {
+                        if index < todaySlice.count - 1 || (!entry.nextDayLessons.isEmpty && entry.nextDayBlock != nil) {
                             Divider()
+                        }
+                    }
+
+                    // Fill remaining slots with next day lessons
+                    if todaySlice.count < maxSlots, let nextBlock = entry.nextDayBlock, !entry.nextDayLessons.isEmpty {
+                        let nextCount = maxSlots - todaySlice.count - 1 // 1 slot for date header
+                        if nextCount > 0 {
+                            DaySectionHeader(block: nextBlock, relation: entry.nextDayRelation)
+                            let nextSlice = Array(entry.nextDayLessons.prefix(nextCount))
+                            ForEach(Array(nextSlice.enumerated()), id: \.offset) { index, lesson in
+                                LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
+                                if index < nextSlice.count - 1 {
+                                    Divider()
+                                }
+                            }
                         }
                     }
 

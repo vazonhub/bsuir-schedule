@@ -41,6 +41,7 @@ export const signInWithGoogle = async (): Promise<boolean> => {
   } catch (error: unknown) {
     const { statusCodes } = require('@react-native-google-signin/google-signin');
     const code = (error as { code?: string })?.code;
+    console.warn('[GoogleAuth] signIn failed', { code, error });
     // If a sign-in is already in progress, try silent sign-in instead.
     if (code === statusCodes.IN_PROGRESS) {
       try {

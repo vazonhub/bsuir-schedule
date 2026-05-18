@@ -17,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GlassButton } from '@components/GlassButton';
 import { APP_ICON_SECTIONS } from '@constants/appIcons';
 import { usePalette } from '@hooks/usePalette';
+import { showRewardedAd } from '@services/ads';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -67,7 +68,8 @@ export const AppIconScreen = () => {
           text: t('settings.appIconApplyButton'),
           isPreferred: true,
           onPress: async () => {
-            // TODO: Show reward ad before applying.
+            const rewarded = await showRewardedAd();
+            if (!rewarded) return;
             try {
               await changeIcon(key);
               setCurrentIcon(key);

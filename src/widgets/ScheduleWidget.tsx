@@ -1,7 +1,7 @@
 'use no memo';
 
 import React from 'react';
-import { FlexWidget, TextWidget, ImageWidget } from 'react-native-android-widget';
+import { FlexWidget, ListWidget, TextWidget, ImageWidget } from 'react-native-android-widget';
 import type { ColorProp } from 'react-native-android-widget/lib/typescript/widgets/utils/style.props';
 import type { ImageWidgetSource } from 'react-native-android-widget/lib/typescript/widgets/ImageWidget';
 
@@ -87,8 +87,35 @@ function resolveDisplay(snapshot: WidgetSnapshot): {
 const BG_COLOR = '#FFFFFF';
 const TEXT_PRIMARY = '#000000';
 const TEXT_SECONDARY = '#8E8E93';
+const BLUE = '#0A84FF';
+const RED = '#FF3B30';
 const ORANGE = '#FF9500';
+const SEPARATOR = '#E5E5EA';
 const FULL = 'match_parent' as const;
+
+/** Returns color for date label: today=blue, tomorrow=red, future=orange. */
+function getDayColor(dateISO: string, todayISO: string): string {
+  if (dateISO === todayISO) return BLUE;
+  const [yStr, mStr, dStr] = todayISO.split('-');
+  const y = parseInt(yStr ?? '0', 10);
+  const m = parseInt(mStr ?? '1', 10) - 1;
+  const d = parseInt(dStr ?? '1', 10);
+  const tomorrow = new Date(y, m, d + 1);
+  const tY = tomorrow.getFullYear();
+  const tM = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const tD = String(tomorrow.getDate()).padStart(2, '0');
+  const tomorrowISO = `${tY}-${tM}-${tD}`;
+  if (dateISO === tomorrowISO) return RED;
+  return ORANGE;
+}
+
+function getTodayISO(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const mo = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${d}`;
+}
 
 // ─── Lesson Row ──────────────────────────────────────────────
 
@@ -106,18 +133,18 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         style={{
           width: FULL,
           flexDirection: 'column',
-          paddingVertical: 3,
-          paddingHorizontal: 6,
+          paddingVertical: 4,
+          paddingHorizontal: 8,
           borderColor: c(lesson.typeColorHex + '80'),
           borderWidth: 1,
-          borderRadius: 6,
+          borderRadius: 8,
           borderStyle: 'dashed',
         }}
       >
         <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center' }}>
           <TextWidget
             text={lesson.subject}
-            style={{ fontSize: 11, fontWeight: '500', color: TEXT_SECONDARY }}
+            style={{ fontSize: 12, fontWeight: '500', color: TEXT_SECONDARY }}
             maxLines={1}
           />
           {(lesson.numSubgroup === 1 || lesson.numSubgroup === 2) ? (
@@ -140,19 +167,19 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
     : '';
 
   return (
-    <FlexWidget style={{ width: FULL, height: FULL, flexDirection: 'row', alignItems: 'center' }}>
-      {/* Color bar — stretches full height */}
+    <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
+      {/* Color bar */}
       <FlexWidget
         style={{
           width: 4,
           height: FULL,
           backgroundColor: c(lesson.typeColorHex),
           borderRadius: 2,
-          marginRight: 6,
+          marginRight: 8,
         }}
       />
 
-      {/* Content — takes remaining width, centered vertically */}
+      {/* Content */}
       <FlexWidget style={{ width: 0, flex: 1, flexDirection: 'column', justifyContent: 'center' }}>
         <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center' }}>
           <TextWidget
@@ -185,7 +212,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
 
       {/* Photo(s) or group circles — right-aligned */}
       {showPhoto && lesson.teacherPhotos.length > 0 ? (
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
           {lesson.teacherPhotos.length > 2 ? (
             <FlexWidget
               style={{
@@ -225,7 +252,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
           ))}
         </FlexWidget>
       ) : showPhoto && lesson.studentGroups.length > 0 ? (
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 6 }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
           {lesson.studentGroups.length > 2 ? (
             <FlexWidget
               style={{
@@ -314,70 +341,94 @@ function EmptyState({ allDone = false, holidayName, displayBlock, strings }: Emp
   );
 }
 
+// ─── Separator ──────────────────────────────────────────────
+
+function Separator() {
+  return (
+    <FlexWidget
+      style={{
+        width: FULL,
+        height: 0.5,
+        backgroundColor: c(SEPARATOR),
+        marginVertical: 2,
+      }}
+    />
+  );
+}
+
 // ─── Header ──────────────────────────────────────────────────
 
 interface HeaderProps {
   groupName: string;
   currentWeek: number;
   dateLabel?: string;
+  dateLabelColor?: string;
   showWeek?: boolean;
+  showRefresh?: boolean;
   strings: { weekLabel: string };
 }
 
-function WidgetHeader({ groupName, currentWeek, dateLabel, showWeek = true, strings }: HeaderProps) {
+function WidgetHeader({ groupName, currentWeek, dateLabel, dateLabelColor = ORANGE, showWeek = true, showRefresh = false, strings }: HeaderProps) {
   return (
-    <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-      <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+      <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1, width: 0 }}>
         <TextWidget
           text={groupName}
-          style={{ fontSize: 11, color: TEXT_SECONDARY }}
+          style={{ fontSize: 12, fontWeight: '600', color: TEXT_PRIMARY }}
         />
         {dateLabel ? (
           <TextWidget
             text={`  ${dateLabel}`}
-            style={{ fontSize: 10, fontWeight: '500', color: ORANGE }}
+            style={{ fontSize: 11, fontWeight: '500', color: c(dateLabelColor) }}
           />
         ) : null}
       </FlexWidget>
-      {showWeek ? (
-        <TextWidget
-          text={`${strings.weekLabel} ${currentWeek}`}
-          style={{ fontSize: 11, color: TEXT_SECONDARY }}
-        />
-      ) : null}
+      <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+        {showWeek ? (
+          <TextWidget
+            text={`${strings.weekLabel} ${currentWeek}`}
+            style={{ fontSize: 11, color: TEXT_SECONDARY }}
+          />
+        ) : null}
+        {showRefresh ? (
+          <FlexWidget
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginLeft: 6,
+            }}
+            clickAction="REFRESH"
+          >
+            <TextWidget
+              text="↻"
+              style={{ fontSize: 16, fontWeight: '600', color: c(BLUE) }}
+            />
+          </FlexWidget>
+        ) : null}
+      </FlexWidget>
     </FlexWidget>
   );
 }
 
-// ─── Divider ─────────────────────────────────────────────────
-
-function Divider() {
-  return (
-    <FlexWidget
-      style={{
-        width: FULL,
-        height: 0.5,
-        backgroundColor: '#C6C6C8',
-        marginVertical: 3,
-      }}
-    />
-  );
-}
-
-// ─── Widget sizes ────────────────────────────────────────────
+// ─── Widget ─────────────────────────────────────────────────
 
 export type WidgetSize = 'small' | 'medium' | 'large';
 
 interface ScheduleWidgetProps {
   snapshot: WidgetSnapshot | null;
   size: WidgetSize;
+  /** Widget height in dp, used for dynamic lesson count. */
+  widgetHeight?: number;
 }
 
-export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
+export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetProps) {
   if (!snapshot) {
     return (
       <FlexWidget
-        style={{ width: FULL, height: FULL, padding: 12, backgroundColor: BG_COLOR, borderRadius: 16 }}
+        style={{ width: FULL, height: FULL, padding: 14, backgroundColor: BG_COLOR, borderRadius: 20 }}
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'bsuirtime://' }}
       >
@@ -386,14 +437,26 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
     );
   }
 
-  const { lessons, isNextDay, displayBlock } = resolveDisplay(snapshot);
+  const { lessons, displayBlock } = resolveDisplay(snapshot);
   const strings = snapshot.strings;
   const holiday = displayBlock?.holidayName;
+  const todayISO = getTodayISO();
 
-  const maxLessons = size === 'large' ? 7 : 3;
+  // Dynamic lesson count based on widget height
+  // Each lesson row ~48dp, header ~32dp, padding ~28dp
+  const dynamicMax = widgetHeight ? Math.max(1, Math.floor((widgetHeight - 60) / 48)) : undefined;
+  const defaultMax = size === 'large' ? 7 : size === 'medium' ? 3 : 2;
+  const maxLessons = dynamicMax ?? defaultMax;
+
   const showPhoto = size !== 'small';
-  const showNote = size === 'large';
-  const compact = size === 'small';
+  const showNote = size === 'large' || (dynamicMax !== undefined && dynamicMax >= 5);
+  const compact = size === 'small' && !dynamicMax;
+  const showRefresh = size !== 'small';
+
+  const dateLabelText = displayBlock ? formatDayLabel(displayBlock) : undefined;
+  const dateLabelColor = displayBlock ? getDayColor(displayBlock.dateISO, todayISO) : ORANGE;
+
+  const visibleLessons = lessons.slice(0, maxLessons);
 
   return (
     <FlexWidget
@@ -402,24 +465,24 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
         height: FULL,
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        padding: 12,
+        padding: 14,
         backgroundColor: BG_COLOR,
-        borderRadius: 16,
+        borderRadius: 20,
       }}
       clickAction="OPEN_URI"
       clickActionData={{ uri: 'bsuirtime://' }}
     >
       {/* Header */}
-      {size === 'small' ? (
-        <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+      {size === 'small' && !dynamicMax ? (
+        <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <TextWidget
             text={snapshot.groupName}
-            style={{ fontSize: 11, color: TEXT_SECONDARY }}
+            style={{ fontSize: 12, fontWeight: '600', color: TEXT_PRIMARY }}
           />
-          {isNextDay && displayBlock ? (
+          {dateLabelText ? (
             <TextWidget
-              text={formatDayLabel(displayBlock)}
-              style={{ fontSize: 10, fontWeight: '500', color: ORANGE }}
+              text={dateLabelText}
+              style={{ fontSize: 10, fontWeight: '500', color: c(dateLabelColor) }}
             />
           ) : null}
         </FlexWidget>
@@ -427,7 +490,9 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
         <WidgetHeader
           groupName={snapshot.groupName}
           currentWeek={snapshot.currentWeek}
-          dateLabel={isNextDay && displayBlock ? formatDayLabel(displayBlock) : undefined}
+          dateLabel={dateLabelText}
+          dateLabelColor={dateLabelColor}
+          showRefresh={showRefresh}
           strings={strings}
         />
       )}
@@ -439,11 +504,11 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
           displayBlock={displayBlock}
           strings={strings}
         />
-      ) : lessons.length > 0 ? (
-        <FlexWidget style={{ width: FULL, height: 0, flex: 1, flexDirection: 'column' }}>
-          {lessons.slice(0, maxLessons).map((lesson, idx) => (
-            <FlexWidget key={`l${idx}`} style={{ width: FULL, flex: 1, flexDirection: 'column', marginTop: size !== 'large' && idx > 0 ? 4 : 0 }}>
-              {size === 'large' && idx > 0 ? <Divider /> : null}
+      ) : visibleLessons.length > 0 ? (
+        <ListWidget style={{ width: FULL, height: FULL }}>
+          {visibleLessons.map((lesson, idx) => (
+            <FlexWidget key={`l${idx}`} style={{ width: FULL, flexDirection: 'column' }}>
+              {idx > 0 ? <Separator /> : null}
               <LessonRow
                 lesson={lesson}
                 compact={compact}
@@ -452,7 +517,7 @@ export function ScheduleWidget({ snapshot, size }: ScheduleWidgetProps) {
               />
             </FlexWidget>
           ))}
-        </FlexWidget>
+        </ListWidget>
       ) : (
         <EmptyState
           allDone={snapshot.today.lessons.length > 0}

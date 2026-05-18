@@ -31,6 +31,7 @@ import {
 import { ICON_COLOR_DEFAULTS, ICON_DEFAULTS } from '@hooks/useAppearance';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
+import { showRewardedAd } from '@services/ads';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -221,8 +222,9 @@ export const AppearanceScreen = () => {
         {
           text: t('settings.appearanceApplyButton'),
           isPreferred: true,
-          onPress: () => {
-            // TODO: Show reward ad before committing.
+          onPress: async () => {
+            const rewarded = await showRewardedAd();
+            if (!rewarded) return;
             commitDraft();
           },
         },
@@ -244,8 +246,9 @@ export const AppearanceScreen = () => {
         {
           text: t('settings.unsavedSaveAd'),
           isPreferred: true,
-          onPress: () => {
-            // TODO: Show reward ad before committing.
+          onPress: async () => {
+            const rewarded = await showRewardedAd();
+            if (!rewarded) return;
             commitDraft();
             router.back();
           },

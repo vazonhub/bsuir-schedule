@@ -18,6 +18,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { SearchBar } from '@components/SearchBar';
 import { SkeletonEmployeesList } from '@components/Skeleton';
+import { UnityBanner } from '@components/UnityBanner';
 import { EmployeesController } from '@controllers/employees.controller';
 import { useEmployeeSearch } from '@hooks/useEmployeeSearch';
 import { usePalette } from '@hooks/usePalette';
@@ -171,6 +172,11 @@ export const EmployeesListScreen = () => {
                 <Text {...textProps('footnote')} style={styles.sectionTitle}>{section.title}</Text>
               </View>
             )}
+            renderSectionFooter={({ section }) =>
+              section.key === PINNED_SECTION_KEY ? (
+                <View style={styles.bannerWrap}><UnityBanner /></View>
+              ) : null
+            }
             renderItem={({ item }) => (
               <EmployeeRow
                 employee={item}
@@ -251,5 +257,9 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   photoFull: {
     width: Dimensions.get('window').width,
     height: Dimensions.get('window').width,
+  },
+  bannerWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
   },
 });

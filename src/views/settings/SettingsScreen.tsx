@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { UnityBanner } from '@components/UnityBanner';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
@@ -205,6 +206,10 @@ export const SettingsScreen = () => {
         />
       </View>
 
+      <View style={styles.bannerSection}>
+        <UnityBanner marginHorizontal={0} />
+      </View>
+
       <View style={styles.navSection}>
         <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.interfaceSection')}</Text>
         <View style={styles.card}>
@@ -372,6 +377,11 @@ const makeStyles = (Palette: PaletteType) =>
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
+    },
+    bannerSection: {
+      paddingHorizontal: Spacing.screenPadding,
+      paddingBottom: Spacing.xl,
+      alignItems: 'center',
     },
     navSection: {
       paddingHorizontal: Spacing.screenPadding,

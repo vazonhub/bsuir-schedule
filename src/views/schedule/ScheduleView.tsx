@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
+import { UnityBanner } from '@components/UnityBanner';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
@@ -262,6 +263,7 @@ export const ScheduleView = ({
       // several passes to land on the correct position.
       for (const d of [delay, delay + 150, delay + 500]) {
         ids.push(setTimeout(() => {
+          console.log(`[ScheduleView] scrollToLocation section=${target} viewOffset=${topInset} delay=${d}`);
           try { listRef.current?.scrollToLocation(opts); } catch { /* unmounted */ }
         }, d));
       }
@@ -302,12 +304,28 @@ export const ScheduleView = ({
   const contentStyle = useMemo(
     () => ({
       // На iOS используем contentInset вместо paddingTop — иначе
-      // RefreshControl-спиннер прячется за FloatingTopBar.
+      // RefreshControl-спиннер прячется за FloatingTopBar, а также
+      // после pull-to-refresh может оставаться «призрачный» отступ.
       paddingTop: isIOS ? 0 : topInset,
       paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
     }),
     [insets.bottom, topInset, isIOS],
   );
+
+  // Banner indices for employee schedules: starting at upcomingIndex, every 3 days with lessons.
+  const bannerSectionIndices = useMemo(() => {
+    if (entityType !== 'employee') return new Set<number>();
+    const start = Math.max(0, upcomingIndex);
+    const indices = new Set<number>();
+    let count = 0;
+    for (let i = start; i < sections.length; i++) {
+      const s = sections[i];
+      if (!s || s.data.length === 0) continue;
+      if (count % 3 === 0) indices.add(i);
+      count++;
+    }
+    return indices;
+  }, [entityType, upcomingIndex, sections]);
 
   const handleTogglePin = useCallback(() => {
     void hapticSuccess();
@@ -633,6 +651,15 @@ export const ScheduleView = ({
             </>
           );
         }}
+        renderSectionFooter={({ section }) => {
+          const idx = sections.indexOf(section as ScheduleSection);
+          if (!bannerSectionIndices.has(idx)) return null;
+          return (
+            <View style={styles.scheduleBannerWrap}>
+              <UnityBanner />
+            </View>
+          );
+        }}
         renderItem={({ item }) => (
           <LessonCard
             lesson={item}
@@ -843,6 +870,10 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
 
 const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   container: { flex: 1, backgroundColor: Palette.background },
+  scheduleBannerWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
   empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
   examsSeparator: {

@@ -6,6 +6,7 @@ import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
+import { UnityBanner } from '@components/UnityBanner';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { clearLocalCache } from '@services/cache/cache';
@@ -217,6 +218,10 @@ export const NetworkDataScreen = () => {
         </View>
       </View>
 
+      <View style={styles.bannerWrap}>
+        <UnityBanner />
+      </View>
+
       {/* ── Toast ── */}
       {toast && (
         <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
@@ -330,6 +335,10 @@ const makeStyles = (Palette: PaletteType) =>
     actionLabelDestructive: {
       fontSize: 16,
       color: Palette.destructive,
+    },
+    bannerWrap: {
+      alignItems: 'center',
+      paddingHorizontal: Spacing.screenPadding,
     },
     toast: {
       position: 'absolute',

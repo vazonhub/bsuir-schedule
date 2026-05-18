@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { SearchBar } from '@components/SearchBar';
 import { SkeletonGroupsList } from '@components/Skeleton';
+import { UnityBanner } from '@components/UnityBanner';
 import { GroupsController } from '@controllers/groups.controller';
 import { useGroupSearch } from '@hooks/useGroupSearch';
 import { usePalette } from '@hooks/usePalette';
@@ -141,6 +142,11 @@ export const GroupsListScreen = () => {
           renderSectionHeader={({ section }) => (
             <SectionHeader abbrev={section.facultyAbbrev} name={section.facultyName} pinned={section.key === PINNED_SECTION_KEY} />
           )}
+          renderSectionFooter={({ section }) =>
+            section.key === PINNED_SECTION_KEY ? (
+              <View style={styles.bannerWrap}><UnityBanner /></View>
+            ) : null
+          }
           renderItem={renderRow}
           refreshControl={refreshControl}
         />
@@ -167,4 +173,8 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
   },
   retryPressed: { opacity: 0.7 },
   retryLabel: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  bannerWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
 });

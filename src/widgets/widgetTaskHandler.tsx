@@ -36,12 +36,29 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     case 'WIDGET_RESIZED': {
       const snapshot = await loadSnapshot();
       const size = sizeFromName(widgetInfo.widgetName);
-      renderWidget(<ScheduleWidget snapshot={snapshot} size={size} />);
+      renderWidget(
+        <ScheduleWidget
+          snapshot={snapshot}
+          size={size}
+          widgetHeight={widgetInfo.height}
+        />,
+      );
       break;
     }
     case 'WIDGET_DELETED':
       break;
-    case 'WIDGET_CLICK':
+    case 'WIDGET_CLICK': {
+      // Handle refresh button click
+      const snapshot = await loadSnapshot();
+      const size = sizeFromName(widgetInfo.widgetName);
+      renderWidget(
+        <ScheduleWidget
+          snapshot={snapshot}
+          size={size}
+          widgetHeight={widgetInfo.height}
+        />,
+      );
       break;
+    }
   }
 }
