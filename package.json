@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "./index.ts",
   "private": true,
   "scripts": {
@@ -19,7 +19,7 @@
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:eas": "eas build --platform android --profile production",
-    "android:build": "npm run prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
+    "android:build": "npx expo prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

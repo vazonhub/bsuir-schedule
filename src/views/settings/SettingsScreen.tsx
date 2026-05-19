@@ -284,6 +284,7 @@ export const SettingsScreen = () => {
         </View>
       </View>
 
+      {Platform.OS === 'ios' && (
       <View style={styles.tipSection}>
         <View style={[styles.tipCard, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
           <Pressable
@@ -296,6 +297,7 @@ export const SettingsScreen = () => {
         </View>
         <Text style={styles.tipHint}>{t('settings.tipJarHint')}</Text>
       </View>
+      )}
       </ScrollView>
 
       <BottomSheetModal

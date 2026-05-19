@@ -98,6 +98,13 @@ export const buildLessonBlockId = (lesson: NormalizedLesson): string => {
   return `${lesson.dayName}:${raw.startLessonTime}:${raw.subject}:${raw.numSubgroup}`;
 };
 
+/** Lesson types that have no mid-lesson break (exams, consultations, credits). */
+const NO_BREAK_TYPES: ReadonlySet<string> = new Set([
+  'Консультация',
+  'Экзамен',
+  'Зачёт',
+]);
+
 export const getLessonBreakRange = (
   lesson: NormalizedLesson,
 ): {
@@ -105,6 +112,9 @@ export const getLessonBreakRange = (
   widthFraction: number;
   startsAt: string;
 } | null => {
+  if (lesson.raw.lessonTypeAbbrev && NO_BREAK_TYPES.has(lesson.raw.lessonTypeAbbrev)) {
+    return null;
+  }
   const start = buildAt(lesson.date, lesson.startTime);
   const end = buildAt(lesson.date, lesson.endTime);
   if (!start || !end) return null;

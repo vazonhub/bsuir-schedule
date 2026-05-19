@@ -93,7 +93,6 @@ export default function RootLayout() {
         <BottomSheetModalProvider>
           <Stack screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: Palette.background },
           }}>
             <Stack.Screen name="(tabs)" />
           </Stack>

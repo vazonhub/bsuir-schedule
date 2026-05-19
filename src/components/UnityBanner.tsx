@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Platform, StyleSheet, UIManager, View, requireNativeComponent } from 'react-native';
+import { Platform, StyleSheet, View, requireNativeComponent } from 'react-native';
 
 const BANNER_PLACEMENT_IOS = process.env.EXPO_PUBLIC_UNITY_BANNER_PLACEMENT_IOS ?? 'ios_banner';
 const BANNER_PLACEMENT_ANDROID = process.env.EXPO_PUBLIC_UNITY_BANNER_PLACEMENT_ANDROID ?? 'android_banner';
@@ -11,16 +11,14 @@ interface NativeBannerProps {
   style?: object;
 }
 
-// Only create the native component if the view manager is registered
-const hasNativeView = UIManager.getViewManagerConfig?.('UnityBannerView') != null;
-
+// requireNativeComponent works on both Paper and Fabric.
+// UIManager.getViewManagerConfig is Paper-only and returns null on Fabric,
+// so we just try to create the component and catch if unavailable.
 let NativeBannerView: React.ComponentType<NativeBannerProps> | null = null;
-if (hasNativeView) {
-  try {
-    NativeBannerView = requireNativeComponent<NativeBannerProps>('UnityBannerView');
-  } catch {
-    // Native module not available.
-  }
+try {
+  NativeBannerView = requireNativeComponent<NativeBannerProps>('UnityBannerView');
+} catch {
+  // Native module not available.
 }
 
 interface Props {

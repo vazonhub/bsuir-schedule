@@ -19,17 +19,21 @@ export const HolidaysController = {
    * Sync holidays for the given year.
    * Uses stale-while-revalidate: persisted store serves instantly,
    * API refreshes in background with TTL guard.
+   *
+   * @param force — bypass cache (used after language change).
    */
-  async sync(year: number): Promise<void> {
+  async sync(year: number, force = false): Promise<void> {
     const store = useHolidaysStore.getState();
     const locale = getLocale();
     const cacheKey = `${CACHE_KEY_PREFIX}${year}-${locale}`;
 
-    // If store has data and cache is fresh — skip.
-    const existing = store.byYear[String(year)];
-    if (existing && existing.length > 0) {
-      const cached = await cache.get(cacheKey, HOLIDAYS_TTL);
-      if (cached) return;
+    if (!force) {
+      // If store has data and cache is fresh — skip.
+      const existing = store.byYear[String(year)];
+      if (existing && existing.length > 0) {
+        const cached = await cache.get(cacheKey, HOLIDAYS_TTL);
+        if (cached) return;
+      }
     }
 
     try {
@@ -38,6 +42,7 @@ export const HolidaysController = {
       await cache.set(cacheKey, true);
     } catch {
       // API failed — use fallback if no cached data.
+      const existing = store.byYear[String(year)];
       if (!existing || existing.length === 0) {
         store.setHolidays(year, getFallbackHolidays(year));
       }
@@ -50,6 +55,6 @@ let _prevLang = usePreferencesStore.getState().language;
 usePreferencesStore.subscribe((state) => {
   if (state.language !== _prevLang) {
     _prevLang = state.language;
-    void HolidaysController.sync(new Date().getFullYear());
+    void HolidaysController.sync(new Date().getFullYear(), true);
   }
 });

@@ -293,24 +293,21 @@ export const ScheduleView = ({
 
   const isIOS = Platform.OS === 'ios';
 
-  // Stable initial contentOffset — stored in a ref so it's never re-applied
-  // on subsequent renders. Passing contentOffset as a prop causes iOS to
-  // re-scroll to the initial position whenever the component re-renders
-  // (e.g. when switching tabs), creating a visible gap.
-  const initialContentOffset = useRef(
-    isIOS ? { x: 0, y: -topInset } : undefined,
-  ).current;
-
+  // На iOS используем contentInset вместо paddingTop — иначе
+  // RefreshControl-спиннер прячется за FloatingTopBar.
   const contentStyle = useMemo(
     () => ({
-      // На iOS используем contentInset вместо paddingTop — иначе
-      // RefreshControl-спиннер прячется за FloatingTopBar, а также
-      // после pull-to-refresh может оставаться «призрачный» отступ.
       paddingTop: isIOS ? 0 : topInset,
       paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
     }),
     [insets.bottom, topInset, isIOS],
   );
+
+  // Stable ref — не создаём новый объект каждый рендер,
+  // иначе iOS будет скроллить к этой позиции при каждом re-render.
+  const initialContentOffset = useRef(
+    isIOS ? { x: 0, y: -topInset } : undefined,
+  ).current;
 
   // Banner indices for employee schedules: starting at upcomingIndex, every 3 days with lessons.
   const bannerSectionIndices = useMemo(() => {
@@ -627,6 +624,11 @@ export const ScheduleView = ({
         windowSize={11}
         // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
         // показывается ниже FloatingTopBar, а не за ним.
+        // contentInsetAdjustmentBehavior="never" — чтобы iOS НЕ добавлял
+        // safe area поверх нашего contentInset (иначе при переключении табов
+        // adjustedContentInset = contentInset + safeArea = двойной отступ).
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustsScrollIndicatorInsets={false}
         contentInset={isIOS ? { top: topInset } : undefined}
         contentOffset={initialContentOffset}
         scrollIndicatorInsets={isIOS ? { top: topInset } : undefined}

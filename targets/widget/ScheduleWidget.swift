@@ -635,7 +635,7 @@ struct MediumWidgetView: View {
 
 struct LargeWidgetView: View {
     let entry: ScheduleEntry
-    private let maxSlots = 7
+    private let maxSlots = 5
 
     var body: some View {
         if let snap = entry.snapshot {
@@ -650,7 +650,9 @@ struct LargeWidgetView: View {
                         dateLabelColor: entry.todayRelation.color
                     )
 
-                    let todaySlice = Array(entry.todayLessons.prefix(maxSlots))
+                    // Only show lessons relevant to the user's subgroup.
+                    let todayMine = entry.todayLessons.filter { $0.isMine }
+                    let todaySlice = Array(todayMine.prefix(maxSlots))
 
                     ForEach(Array(todaySlice.enumerated()), id: \.offset) { index, lesson in
                         LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
@@ -661,10 +663,11 @@ struct LargeWidgetView: View {
 
                     // Fill remaining slots with next day lessons
                     if todaySlice.count < maxSlots, let nextBlock = entry.nextDayBlock, !entry.nextDayLessons.isEmpty {
+                        let nextMine = entry.nextDayLessons.filter { $0.isMine }
                         let nextCount = maxSlots - todaySlice.count - 1 // 1 slot for date header
-                        if nextCount > 0 {
+                        if nextCount > 0 && !nextMine.isEmpty {
                             DaySectionHeader(block: nextBlock, relation: entry.nextDayRelation)
-                            let nextSlice = Array(entry.nextDayLessons.prefix(nextCount))
+                            let nextSlice = Array(nextMine.prefix(nextCount))
                             ForEach(Array(nextSlice.enumerated()), id: \.offset) { index, lesson in
                                 LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
                                 if index < nextSlice.count - 1 {

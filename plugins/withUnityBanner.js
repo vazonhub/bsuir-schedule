@@ -89,6 +89,28 @@ function withUnityBanner(config) {
         }
       }
 
+      // Add Unity Ads SDK dependency to build.gradle
+      const buildGradlePath = path.join(
+        c.modRequest.platformProjectRoot,
+        'app/build.gradle',
+      );
+      if (fs.existsSync(buildGradlePath)) {
+        let gradle = fs.readFileSync(buildGradlePath, 'utf8');
+        if (!gradle.includes('com.unity3d.ads:unity-ads')) {
+          gradle = gradle.replace(
+            'dependencies {',
+            '// work-runtime 2.8+ includes KTX extensions — drop the standalone ktx artifact\n' +
+            '// to avoid duplicate class errors with work-runtime-ktx 2.7.x.\n' +
+            'configurations.all {\n' +
+            "    resolutionStrategy.force 'androidx.work:work-runtime-ktx:2.8.1'\n" +
+            '}\n\n' +
+            'dependencies {\n' +
+            '    implementation "com.unity3d.ads:unity-ads:4.12.5"',
+          );
+          fs.writeFileSync(buildGradlePath, gradle);
+        }
+      }
+
       // Register the package in MainApplication.kt
       const mainAppPath = path.join(
         c.modRequest.platformProjectRoot,
