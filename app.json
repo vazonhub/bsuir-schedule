@@ -37,9 +37,10 @@
       "icon": "./assets/android-icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "blockedPermissions": [
+      "permissions": [
         "com.google.android.gms.permission.AD_ID"
-      ]
+      ],
+      "blockedPermissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
