@@ -32,6 +32,7 @@ import { DiaryStats } from './DiaryStats';
 import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
 import { HiddenSubjectStrip } from './HiddenSubjectStrip';
+import { StreakBadge } from './StreakBadge';
 import { SubjectCard } from './SubjectCard';
 
 type ListItem =
@@ -173,12 +174,15 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
-        <Text {...textProps('title')} style={styles.headerTitle}>
-          {t('tabs.diary')}
-        </Text>
-        <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
-          {groupName}
-        </Text>
+        <View style={styles.headerText}>
+          <Text {...textProps('title')} style={styles.headerTitle}>
+            {t('tabs.diary')}
+          </Text>
+          <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
+            {groupName}
+          </Text>
+        </View>
+        <StreakBadge groupName={groupName} />
       </View>
       <FlatList
         data={listData}
@@ -296,9 +300,16 @@ const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
       paddingBottom: Spacing.md,
+    },
+    headerText: {
+      flex: 1,
+      minWidth: 0,
     },
     headerTitle: {
       fontSize: 28,
