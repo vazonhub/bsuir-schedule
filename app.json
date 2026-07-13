@@ -223,7 +223,8 @@
       "./plugins/withWidgetExtras",
       "./plugins/withUnityBanner",
       "react-native-iap",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "./plugins/withModularHeaders"
     ],
     "extra": {
       "auditoryApiUrl": "https://bsuir-auditory-api.bsuirschedule-test.workers.dev",
