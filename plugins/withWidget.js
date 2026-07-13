@@ -22,14 +22,12 @@ function withWidget(config) {
     const appVersion = mod.version ?? '0.1.0';
     const buildNumber = mod.ios?.buildNumber ?? '1';
 
-    // Skip if already added
-    if (proj.pbxTargetByName(WIDGET_NAME)) return mod;
-
     const iosRoot = path.join(projectRoot, 'ios');
     const widgetDir = path.join(iosRoot, WIDGET_NAME);
     fs.mkdirSync(widgetDir, { recursive: true });
 
-    // Copy Swift file
+    // Refresh Swift source on every prebuild so edits in targets/widget/
+    // propagate to the built app even when the pbxproj target already exists.
     const src = path.join(projectRoot, 'targets', 'widget', 'ScheduleWidget.swift');
     if (fs.existsSync(src)) {
       fs.copyFileSync(src, path.join(widgetDir, 'ScheduleWidget.swift'));
@@ -78,6 +76,11 @@ function withWidget(config) {
   </array>
 </dict>
 </plist>`);
+
+    // Source files (Swift/Info.plist/entitlements) are refreshed above on every
+    // prebuild. The pbxproj graph below (target/build phases/dependencies) only
+    // needs to be built once — skip if the target is already registered.
+    if (proj.pbxTargetByName(WIDGET_NAME)) return mod;
 
     // --- Xcode project manipulation ---
     const mainTargetUuid = proj.getFirstTarget().uuid;

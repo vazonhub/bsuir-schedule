@@ -1,3 +1,4 @@
+import { reloadAllTimelines } from 'expo-widgetkit-bridge';
 import i18n from 'i18next';
 import { Platform } from 'react-native';
 
@@ -41,8 +42,7 @@ const writeSnapshot = async (snapshot: WidgetSnapshot): Promise<void> => {
 const reloadWidgetTimelines = (): void => {
   try {
     if (Platform.OS === 'ios') {
-      const { NativeModules } = require('react-native');
-      NativeModules.WidgetKitBridge?.reloadAllTimelines?.();
+      reloadAllTimelines();
     } else if (Platform.OS === 'android') {
       const { requestWidgetUpdate } = require('react-native-android-widget') as typeof import('react-native-android-widget');
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
@@ -101,6 +101,8 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
     allDone: t('widget.allDone'),
     subgroupShort: t('widget.subgroupShort'),
     description: t('widget.description'),
+    now: t('widget.now'),
+    next: t('widget.next'),
   };
 
   const year = new Date().getFullYear();

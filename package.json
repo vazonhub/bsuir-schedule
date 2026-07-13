@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "main": "./index.ts",
   "private": true,
   "scripts": {
@@ -34,6 +34,7 @@
     "axios": "^1.15.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
+    "expo-accessibility-plus": "^0.1.2",
     "expo-alternate-app-icons": "^8.0.0",
     "expo-application": "~7.0.8",
     "expo-background-fetch": "~14.0.9",
@@ -43,6 +44,7 @@
     "expo-dev-client": "~6.0.20",
     "expo-font": "~14.0.11",
     "expo-haptics": "~15.0.8",
+    "expo-icloud-kv": "^0.1.2",
     "expo-image": "~3.0.11",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
@@ -52,6 +54,7 @@
     "expo-store-review": "~9.0.9",
     "expo-system-ui": "~6.0.9",
     "expo-task-manager": "~14.0.9",
+    "expo-widgetkit-bridge": "^0.2.0",
     "i18next": "^26.0.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",

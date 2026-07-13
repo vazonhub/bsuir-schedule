@@ -30,6 +30,25 @@ struct WidgetDayBlock: Codable {
     let holidayName: String?
 }
 
+struct WidgetStrings: Codable {
+    let daysShort: [String]?
+    let months: [String]?
+    let weekLabel: String?
+    let noClasses: String?
+    let allDone: String?
+    let subgroupShort: String?
+    let description: String?
+    let now: String?
+    let next: String?
+}
+
+struct WidgetUpcoming: Codable {
+    let lesson: WidgetLesson
+    let dateISO: String
+    let isOngoing: Bool
+    let blockId: String
+}
+
 struct WidgetSnapshot: Codable {
     let groupName: String
     let generatedAt: String
@@ -37,6 +56,8 @@ struct WidgetSnapshot: Codable {
     let subgroup: Int
     let today: WidgetDayBlock
     let nextDay: WidgetDayBlock?
+    let upcoming: WidgetUpcoming?
+    let strings: WidgetStrings?
 }
 
 // MARK: - Day relation (today / tomorrow / future)
@@ -90,6 +111,22 @@ extension Color {
             green: Double((rgb >> 8) & 0xFF) / 255,
             blue: Double(rgb & 0xFF) / 255
         )
+    }
+}
+
+extension WidgetLesson {
+    /// SF Symbol name that best represents the lesson type. Used on accessory
+    /// (Lock Screen) widgets, where accent color mostly gets tinted to system
+    /// colors anyway — so a symbol carries the meaning instead.
+    var typeSymbolName: String {
+        switch typeAbbrev ?? "" {
+        case "ЛК", "УЛк":     return "book.fill"
+        case "ЛР":            return "flask.fill"
+        case "ПЗ", "УПз":     return "pencil"
+        case "Консультация":  return "person.2.fill"
+        case "Экзамен":       return "graduationcap.fill"
+        default:              return "calendar"
+        }
     }
 }
 
@@ -688,6 +725,86 @@ struct LargeWidgetView: View {
     }
 }
 
+// MARK: - Lock Screen (accessory) widgets
+
+/// One-liner above the clock. Format: "{typeAbbrev} · {subject} · {startTime}".
+/// iOS will auto-truncate with an ellipsis; we don't shorten anything in JS.
+@available(iOSApplicationExtension 16.0, *)
+struct InlineWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        if let up = entry.snapshot?.upcoming {
+            Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+        } else {
+            Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
+        }
+    }
+}
+
+/// Circular complication — icon centred, start time small below.
+/// Subject text does not fit into ~57×57 pt; icon carries the meaning.
+@available(iOSApplicationExtension 16.0, *)
+struct CircularWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            if let up = entry.snapshot?.upcoming {
+                VStack(spacing: 1) {
+                    Image(systemName: up.lesson.typeSymbolName)
+                        .font(.system(size: 18, weight: .semibold))
+                        .widgetAccentable()
+                    Text(up.lesson.startTime)
+                        .font(.system(size: 10, weight: .medium))
+                        .monospacedDigit()
+                }
+            } else {
+                Image(systemName: "calendar")
+                    .font(.system(size: 20, weight: .semibold))
+                    .widgetAccentable()
+            }
+        }
+    }
+}
+
+/// Rectangular widget (~120×47 pt). Layout: [icon] on the right, subject
+/// (top) + time (bottom) on the left. Auditory appended to time if it fits.
+@available(iOSApplicationExtension 16.0, *)
+struct RectangularWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        if let up = entry.snapshot?.upcoming {
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: up.lesson.typeSymbolName)
+                    .font(.system(size: 22, weight: .semibold))
+                    .widgetAccentable()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(up.lesson.subject)
+                        .font(.headline)
+                        .lineLimit(2)
+                    Text("\(up.lesson.startTime)–\(up.lesson.endTime)")
+                        .font(.caption2)
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 22, weight: .semibold))
+                    .widgetAccentable()
+                Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
+                    .font(.headline)
+                Spacer(minLength: 0)
+            }
+        }
+    }
+}
+
 // MARK: - Entry view router
 
 struct ScheduleWidgetEntryView: View {
@@ -703,12 +820,41 @@ struct ScheduleWidgetEntryView: View {
         case .systemLarge:
             LargeWidgetView(entry: entry)
         default:
-            MediumWidgetView(entry: entry)
+            if #available(iOSApplicationExtension 16.0, *) {
+                switch family {
+                case .accessoryInline:      InlineWidgetView(entry: entry)
+                case .accessoryCircular:    CircularWidgetView(entry: entry)
+                case .accessoryRectangular: RectangularWidgetView(entry: entry)
+                default: MediumWidgetView(entry: entry)
+                }
+            } else {
+                MediumWidgetView(entry: entry)
+            }
         }
     }
 }
 
 // MARK: - Widget declaration
+
+/// Build a deep-link URL for the given entry. Points to the "upcoming" lesson
+/// via `bsuirtime://lesson?id=<encoded blockId>` if available, else the root
+/// `bsuirtime://`. The blockId contains ":", spaces and Cyrillic characters,
+/// so it is percent-encoded as a query value.
+private func widgetDeepLink(for entry: ScheduleEntry) -> URL? {
+    let root = URL(string: "bsuirtime://")
+    guard let blockId = entry.snapshot?.upcoming?.blockId else { return root }
+    let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=?#+/"))
+    let encoded = blockId.addingPercentEncoding(withAllowedCharacters: allowed) ?? blockId
+    return URL(string: "bsuirtime://lesson?id=\(encoded)") ?? root
+}
+
+private func supportedFamilies() -> [WidgetFamily] {
+    var families: [WidgetFamily] = [.systemSmall, .systemMedium, .systemLarge]
+    if #available(iOSApplicationExtension 16.0, *) {
+        families.append(contentsOf: [.accessoryCircular, .accessoryRectangular, .accessoryInline])
+    }
+    return families
+}
 
 struct ScheduleWidget: Widget {
     let kind = "ScheduleWidget"
@@ -718,17 +864,17 @@ struct ScheduleWidget: Widget {
             if #available(iOS 17, *) {
                 ScheduleWidgetEntryView(entry: entry)
                     .containerBackground(.fill.tertiary, for: .widget)
-                    .widgetURL(URL(string: "bsuirtime://"))
+                    .widgetURL(widgetDeepLink(for: entry))
             } else {
                 ScheduleWidgetEntryView(entry: entry)
                     .padding(12)
                     .background()
-                    .widgetURL(URL(string: "bsuirtime://"))
+                    .widgetURL(widgetDeepLink(for: entry))
             }
         }
         .configurationDisplayName("Bsuir Time")
         .description("Расписание занятий")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies(supportedFamilies())
     }
 }
 

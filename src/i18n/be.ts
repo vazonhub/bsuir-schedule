@@ -113,6 +113,8 @@ export const be: TranslationKeys = {
     allDone: 'На сёння заняткаў больш няма',
     subgroupShort: 'п/г',
     description: 'Расклад заняткаў',
+    now: 'Зараз',
+    next: 'Далей',
   },
 
   settings: {

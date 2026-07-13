@@ -26,6 +26,7 @@ import {
 } from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import type { Holiday } from '@models/holiday';
+import { useDeepLinkStore } from '@stores/deepLink.store';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
 import { addDays, isSameDay, parseBsuirDate, startOfLocalDay } from '@utils/date';
 import { findHolidayName, toDateISO } from '@utils/holidays';
@@ -222,6 +223,28 @@ export const ScheduleView = ({
     () => [...regularSections, ...examSections],
     [regularSections, examSections],
   );
+
+  // Lock Screen widget deep link. When the app is opened from
+  // `bsuirtime://lesson?id=<blockId>`, the id is stashed in `deepLinkStore`
+  // by `app/_layout.tsx`. Only the default schedule handles it — the blockId
+  // is generated against the default group's snapshot.
+  const pendingLessonBlockId = useDeepLinkStore((s) => s.pendingLessonBlockId);
+  const setPendingLessonBlockId = useDeepLinkStore((s) => s.setPendingLessonBlockId);
+  useEffect(() => {
+    if (!isDefaultSchedule || !pendingLessonBlockId || sections.length === 0) return;
+    for (const section of sections) {
+      for (const lesson of (section as ScheduleSection).data) {
+        if (buildLessonBlockId(lesson) === pendingLessonBlockId) {
+          handleLessonPress(lesson);
+          setPendingLessonBlockId(null);
+          return;
+        }
+      }
+    }
+    // Lesson not found in the currently loaded schedule (stale widget,
+    // schedule rebuilt after weeks rolled). Clear anyway to avoid re-firing.
+    setPendingLessonBlockId(null);
+  }, [isDefaultSchedule, pendingLessonBlockId, sections, handleLessonPress, setPendingLessonBlockId]);
 
   const hasExams = examSections.length > 0;
 

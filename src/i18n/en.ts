@@ -113,6 +113,8 @@ export const en: TranslationKeys = {
     allDone: 'No more classes for today',
     subgroupShort: 'sub',
     description: 'Class schedule',
+    now: 'Now',
+    next: 'Next',
   },
 
   settings: {

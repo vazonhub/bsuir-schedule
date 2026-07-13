@@ -98,7 +98,7 @@ export const SettingsScreen = () => {
         const RNIap = require('react-native-iap');
         await RNIap.initConnection();
         iapReady.current = true;
-        const items = await RNIap.fetchProducts({ skus: TIP_PRODUCT_IDS });
+        const items = await RNIap.fetchProducts({ skus: TIP_PRODUCT_IDS, type: 'in-app' });
         if (!cancelled && items.length > 0) {
           // Sort by price to keep small→medium→large order
           const sorted = [...items].sort(

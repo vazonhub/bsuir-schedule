@@ -122,6 +122,8 @@ export const ru = {
     allDone: 'На сегодня пар больше нет',
     subgroupShort: 'п/г',
     description: 'Расписание занятий',
+    now: 'Сейчас',
+    next: 'Далее',
   },
 
   // Settings

@@ -17,6 +17,7 @@ import { useIsDark, usePalette } from '@hooks/usePalette';
 import '@i18n';
 import { configureGoogleSignIn } from '@services/cloud/googleAuth';
 import { useAppVersionStore } from '@stores/appVersion.store';
+import { useDeepLinkStore } from '@stores/deepLink.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 /**
@@ -74,16 +75,28 @@ export default function RootLayout() {
     }
   }, [language, i18n]);
 
-  // Widget tap: navigate to "My" tab.
-  // Cold-start URLs are handled automatically by expo-router's linking config,
-  // so we only need addEventListener for warm-resume (app was backgrounded,
-  // widget tap foregrounded it).
+  // Widget tap. Home Screen widget emits `bsuirtime://` (root). Lock Screen
+  // accessory widgets emit `bsuirtime://lesson?id=<encoded blockId>` — we
+  // stash the id in deepLinkStore so `ScheduleView` (default group) can
+  // auto-open the sheet once its schedule is mounted.
   useEffect(() => {
-    const subscription = Linking.addEventListener('url', (event) => {
-      if (!event.url.startsWith('bsuirtime://')) return;
+    const handle = (url: string | null) => {
+      if (!url || !url.startsWith('bsuirtime://')) return;
+      try {
+        const parsed = Linking.parse(url);
+        if (parsed.hostname === 'lesson') {
+          const raw = parsed.queryParams?.id;
+          const id = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : null;
+          if (id) useDeepLinkStore.getState().setPendingLessonBlockId(id);
+        }
+      } catch {
+        // Malformed URL — fall through to the default-tab navigation below.
+      }
       router.navigate('/(tabs)/(amy)');
-    });
+    };
 
+    void Linking.getInitialURL().then(handle);
+    const subscription = Linking.addEventListener('url', (event) => handle(event.url));
     return () => subscription.remove();
   }, [router]);
 

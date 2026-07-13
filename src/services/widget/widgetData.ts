@@ -3,7 +3,7 @@ import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dt
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { parseBsuirDate } from '@utils/date';
 import { findHolidayName } from '@utils/holidays';
-import { buildLessonBlockId, getLessonAccentColor } from '@utils/lesson';
+import { buildLessonBlockId, getLessonAccentColor, getLessonTimeStatus } from '@utils/lesson';
 import { flattenSchedule, flattenExams } from '@utils/scheduleNormalization';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
@@ -50,6 +50,21 @@ export interface WidgetStrings {
   allDone: string;
   subgroupShort: string;
   description: string;
+  /** Prefix for the ongoing lesson on accessory widgets. Ru: "Сейчас". */
+  now: string;
+  /** Prefix for the next lesson on accessory widgets. Ru: "Далее". */
+  next: string;
+}
+
+export interface WidgetUpcoming {
+  /** The lesson to feature on Lock Screen / accessory widgets. */
+  lesson: WidgetLesson;
+  /** ISO date of the lesson (may be today or a future day). */
+  dateISO: string;
+  /** true if the lesson is currently in progress (start ≤ now < end). */
+  isOngoing: boolean;
+  /** Stable id for deep-linking (matches buildLessonBlockId output). */
+  blockId: string;
 }
 
 export interface WidgetSnapshot {
@@ -62,6 +77,8 @@ export interface WidgetSnapshot {
   today: WidgetDayBlock;
   /** Next day with lessons (null if today has remaining lessons or no future lessons). */
   nextDay: WidgetDayBlock | null;
+  /** Nearest unfinished lesson — the one shown on Lock Screen / accessory widgets. */
+  upcoming: WidgetUpcoming | null;
   /** Localized strings for the widget UI. */
   strings: WidgetStrings;
 }
@@ -162,6 +179,23 @@ export const buildWidgetSnapshot = (
     nextDayBlock = toDayBlock(nextDate, nextDayLessons, subgroup, holidays);
   }
 
+  // Nearest unfinished lesson — either the ongoing one, else the next one (today or later).
+  // Used by accessory (Lock Screen) widgets.
+  const upcomingSource = all.find((l) => {
+    const status = getLessonTimeStatus(l, now);
+    return status !== null && status.kind !== 'past';
+  });
+  let upcoming: WidgetUpcoming | null = null;
+  if (upcomingSource) {
+    const status = getLessonTimeStatus(upcomingSource, now);
+    upcoming = {
+      lesson: toWidgetLesson(upcomingSource, subgroup),
+      dateISO: toDateISO(upcomingSource.date),
+      isOngoing: status?.kind === 'ongoing',
+      blockId: buildLessonBlockId(upcomingSource),
+    };
+  }
+
   return {
     groupName,
     generatedAt: now.toISOString(),
@@ -169,6 +203,7 @@ export const buildWidgetSnapshot = (
     subgroup,
     today: toDayBlock(todayStart, todayLessons, subgroup, holidays),
     nextDay: nextDayBlock,
+    upcoming,
     strings,
   };
 };

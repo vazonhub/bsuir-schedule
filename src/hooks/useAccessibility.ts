@@ -1,9 +1,7 @@
+import * as A11y from 'expo-accessibility-plus';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, AppState, PixelRatio, Platform } from 'react-native';
-import {
-  shouldDifferentiateWithoutColor,
-  addDifferentiateWithoutColorListener,
-} from '../../modules/accessibility-info';
+
 import { usePreferencesStore } from '@stores/preferences.store';
 
 interface AccessibilitySettings {
@@ -27,9 +25,11 @@ const defaults: AccessibilitySettings = {
 };
 
 /**
- * Subscribes to all relevant AccessibilityInfo events and returns their
- * current values.  Listeners are shared across all hook consumers via a
- * module-level singleton so the native bridge is only polled once.
+ * Subscribes to all relevant accessibility events and returns their current
+ * values.  Cross-platform flags (`screenReader`, `reduceMotion`) come from
+ * React Native's `AccessibilityInfo`; iOS-only flags (`boldText`,
+ * `darkerSystemColors`, `differentiateWithoutColor`) come from
+ * `expo-accessibility-plus`.
  */
 export function useAccessibility(): AccessibilitySettings {
   const [settings, setSettings] = useState<AccessibilitySettings>({
@@ -38,55 +38,54 @@ export function useAccessibility(): AccessibilitySettings {
   });
 
   useEffect(() => {
-    // Query initial values
+    // ── Cross-platform: screenReader + reduceMotion via RN AccessibilityInfo ──
     AccessibilityInfo.isScreenReaderEnabled().then((v) =>
       setSettings((s) => ({ ...s, isScreenReaderEnabled: v })),
     );
     AccessibilityInfo.isReduceMotionEnabled().then((v) =>
       setSettings((s) => ({ ...s, isReduceMotionEnabled: v })),
     );
-    if (Platform.OS === 'ios') {
-      AccessibilityInfo.isBoldTextEnabled().then((v) =>
-        setSettings((s) => ({ ...s, isBoldTextEnabled: v })),
-      );
-      AccessibilityInfo.isDarkerSystemColorsEnabled().then((v) =>
-        setSettings((s) => ({ ...s, isDarkerSystemColorsEnabled: v })),
-      );
-      try {
-        const dwc = shouldDifferentiateWithoutColor();
-        setSettings((s) => ({ ...s, isDifferentiateWithoutColorEnabled: dwc }));
-      } catch {
-        // Module not available (e.g. Expo Go or Android)
-      }
-    }
 
-    // Subscribe to changes
-    const subs = [
+    const rnSubs = [
       AccessibilityInfo.addEventListener('screenReaderChanged', (v) =>
         setSettings((s) => ({ ...s, isScreenReaderEnabled: v })),
       ),
       AccessibilityInfo.addEventListener('reduceMotionChanged', (v) =>
         setSettings((s) => ({ ...s, isReduceMotionEnabled: v })),
       ),
-      ...(Platform.OS === 'ios'
-        ? [
-            AccessibilityInfo.addEventListener('boldTextChanged', (v) =>
-              setSettings((s) => ({ ...s, isBoldTextEnabled: v })),
-            ),
-            AccessibilityInfo.addEventListener('darkerSystemColorsChanged', (v) =>
-              setSettings((s) => ({ ...s, isDarkerSystemColorsEnabled: v })),
-            ),
-          ]
-        : []),
     ];
 
-    // Native module listener for differentiateWithoutColor (iOS only)
-    const dwcSub = addDifferentiateWithoutColorListener((event) => {
-      setSettings((s) => ({ ...s, isDifferentiateWithoutColorEnabled: event.enabled }));
+    // ── iOS-only: boldText + darkerSystemColors + differentiateWithoutColor ──
+    // Batch read via snapshot() — one native round-trip vs three getters.
+    if (A11y.isAvailable) {
+      const snap = A11y.snapshot();
+      setSettings((s) => ({
+        ...s,
+        isBoldTextEnabled: snap.boldText,
+        isDarkerSystemColorsEnabled: snap.darkerSystemColors,
+        isDifferentiateWithoutColorEnabled: snap.shouldDifferentiateWithoutColor,
+      }));
+    }
+
+    const a11ySub = A11y.addChangeListener(({ flag, value }) => {
+      if (typeof value !== 'boolean') return;
+      switch (flag) {
+        case 'boldText':
+          setSettings((s) => ({ ...s, isBoldTextEnabled: value }));
+          break;
+        case 'darkerSystemColors':
+          setSettings((s) => ({ ...s, isDarkerSystemColorsEnabled: value }));
+          break;
+        case 'shouldDifferentiateWithoutColor':
+          setSettings((s) => ({ ...s, isDifferentiateWithoutColorEnabled: value }));
+          break;
+        default:
+          break;
+      }
     });
 
-    // Re-read fontScale when app returns from background (user may have
-    // changed Dynamic Type in system settings).
+    // Re-read fontScale when the app returns from background (the user may
+    // have changed Dynamic Type in system settings while backgrounded).
     const appStateSub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         const newScale = PixelRatio.getFontScale();
@@ -95,8 +94,8 @@ export function useAccessibility(): AccessibilitySettings {
     });
 
     return () => {
-      subs.forEach((s) => s.remove());
-      dwcSub?.remove();
+      rnSubs.forEach((s) => s.remove());
+      a11ySub.remove();
       appStateSub.remove();
     };
   }, []);
