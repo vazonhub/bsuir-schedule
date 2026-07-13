@@ -4,7 +4,7 @@ import * as StoreReview from 'expo-store-review';
 const DAYS_KEY = 'review:unique_days';
 const ASKED_KEY = 'review:asked';
 
-const UNIQUE_DAYS_THRESHOLD = 5;
+const UNIQUE_DAYS_THRESHOLD = 2;
 
 /** ISO date string without time, e.g. "2026-04-23". */
 const todayISO = (): string => new Date().toISOString().slice(0, 10);
