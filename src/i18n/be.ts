@@ -6,6 +6,7 @@ export const be: TranslationKeys = {
     groups: 'Групы',
     employees: 'Выкладчыкі',
     schedule: 'Расклад',
+    diary: 'Дзённік',
     settings: 'Налады',
   },
 
@@ -18,6 +19,26 @@ export const be: TranslationKeys = {
     done: 'Гатова',
     cancel: 'Адмена',
     delete: 'Выдаліць',
+    save: 'Захаваць',
+  },
+
+  diary: {
+    emptyPickTitle: 'Дзённік пусты',
+    emptyPickSubtitle: 'Замацуйце сваю групу, каб бачыць прадметы і адзначаць заданні',
+    employeeUnsupportedTitle: 'Дзённік працуе толькі для групы',
+    employeeUnsupportedSubtitle: 'Зараз на «Маё» замацаваны выкладчык. Абярыце сваю групу, каб карыстацца дзённікам',
+    emptySubjectsTitle: 'Няма прадметаў',
+    emptySubjectsSubtitle: 'У раскладзе гэтай групы не знойдзена лекцый, ПЗ або ЛР',
+    enterTaskCount: 'Увесці колькасць заданняў',
+    enterTaskCountTitle: 'Колькі заданняў?',
+    enterTaskCountHint: 'Ад {{min}} да {{max}}',
+    actionsTitle: 'Дзеянні',
+    actionEnter: 'Увесці колькасць заданняў',
+    actionEdit: 'Змяніць колькасць',
+    actionReset: 'Скінуць прагрэс',
+    actionHide: 'Схаваць прадмет',
+    actionShow: 'Паказаць зноў',
+    hiddenSectionTitle: 'Схаваныя',
   },
 
   error: {
@@ -218,6 +239,11 @@ export const be: TranslationKeys = {
     interfaceSection: 'Інтэрфейс',
     additionalSection: 'Расклад',
     otherSection: 'Іншае',
+    debugSection: 'Адладка',
+    debugSeedDemo: 'Загрузіць дэма-дадзеныя',
+    debugClearDemo: 'Ачысціць дэма-дадзеныя',
+    debugSeedDone: 'Дэма-дадзеныя загружаны',
+    debugClearDone: 'Дэма-дадзеныя ачышчаны',
   },
 
   accessibility: {

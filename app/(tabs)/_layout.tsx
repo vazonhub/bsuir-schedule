@@ -49,6 +49,10 @@ export default function TabsLayout() {
         <Icon sf="calendar" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="calendar" />} />
         <Label>{t('tabs.my')}</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="(diary)">
+        <Icon sf="book.closed.fill" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="book" />} />
+        <Label>{t('tabs.diary')}</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(schedule)">
         <Icon sf="list.bullet.rectangle.fill" androidSrc={<VectorIcon family={MaterialIcons} name="view-list" />} />
         <Label>{t('tabs.schedule')}</Label>

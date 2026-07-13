@@ -5,6 +5,7 @@ export const ru = {
     groups: 'Группы',
     employees: 'Преподаватели',
     schedule: 'Расписание',
+    diary: 'Дневник',
     settings: 'Настройки',
   },
 
@@ -18,6 +19,27 @@ export const ru = {
     done: 'Готово',
     cancel: 'Отмена',
     delete: 'Удалить',
+    save: 'Сохранить',
+  },
+
+  // Diary
+  diary: {
+    emptyPickTitle: 'Дневник пуст',
+    emptyPickSubtitle: 'Закрепите свою группу, чтобы видеть предметы и отмечать задания',
+    employeeUnsupportedTitle: 'Дневник доступен только для группы',
+    employeeUnsupportedSubtitle: 'Сейчас на «Моё» закреплён преподаватель. Выберите свою группу, чтобы пользоваться дневником',
+    emptySubjectsTitle: 'Нет предметов',
+    emptySubjectsSubtitle: 'В расписании этой группы не нашлось лекций, ПЗ или ЛР',
+    enterTaskCount: 'Ввести количество заданий',
+    enterTaskCountTitle: 'Сколько заданий?',
+    enterTaskCountHint: 'От {{min}} до {{max}}',
+    actionsTitle: 'Действия',
+    actionEnter: 'Ввести количество заданий',
+    actionEdit: 'Изменить количество',
+    actionReset: 'Сбросить прогресс',
+    actionHide: 'Скрыть предмет',
+    actionShow: 'Показать снова',
+    hiddenSectionTitle: 'Скрытые',
   },
 
   error: {
@@ -228,6 +250,11 @@ export const ru = {
     interfaceSection: 'Интерфейс',
     additionalSection: 'Расписание',
     otherSection: 'Другое',
+    debugSection: 'Отладка',
+    debugSeedDemo: 'Загрузить демо-данные',
+    debugClearDemo: 'Очистить демо-данные',
+    debugSeedDone: 'Демо-данные загружены',
+    debugClearDone: 'Демо-данные очищены',
   },
 
   // Accessibility screen

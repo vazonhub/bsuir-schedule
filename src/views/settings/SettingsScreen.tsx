@@ -19,6 +19,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { UnityBanner } from '@components/UnityBanner';
+import { ScheduleController } from '@controllers/schedule.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
@@ -283,6 +284,44 @@ export const SettingsScreen = () => {
           </Pressable>
         </View>
       </View>
+
+      {__DEV__ && (
+        <View style={styles.navSection}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.debugSection')}
+          </Text>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                void hapticSuccess();
+                ScheduleController.seedDemoSchedule();
+                showToast(t('settings.debugSeedDone'));
+              }}
+            >
+              <Ionicons name="flask-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.debugSeedDemo')}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                void hapticLight();
+                ScheduleController.clearDemoSchedule();
+                showToast(t('settings.debugClearDone'));
+              }}
+            >
+              <Ionicons name="trash-outline" size={20} color={Palette.destructive} />
+              <Text {...textProps('body')} style={[styles.navLabel, { color: Palette.destructive }]}>
+                {t('settings.debugClearDemo')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {Platform.OS === 'ios' && (
       <View style={styles.tipSection}>

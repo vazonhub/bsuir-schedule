@@ -1,6 +1,7 @@
 import type { AxiosError } from 'axios';
 import { InteractionManager } from 'react-native';
 
+import { buildDemoSchedule, DEMO_SCHEDULE_GROUP_NAME } from '@fixtures/demoSchedule';
 import type { ScheduleDto } from '@models/dto';
 import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
 import { pullScheduleFromCloud, pushScheduleToCloud } from '@services/cloud/syncService';
@@ -71,6 +72,8 @@ export const ScheduleController = {
     store.addLoadingKey(groupName);
     store.setError(null);
 
+    let primaryError: unknown = null;
+
     try {
       if (prefs.sourceBsuirApi) {
         try {
@@ -87,7 +90,8 @@ export const ScheduleController = {
             store.setSchedule(groupName, EMPTY_SCHEDULE);
             return;
           }
-          // API failed — fall through to cloud fallback.
+          // API failed — remember why, then fall through to cloud fallback.
+          primaryError = e;
         }
       }
 
@@ -99,7 +103,10 @@ export const ScheduleController = {
       } else if (!prefs.sourceBsuirApi) {
         store.setError('apiDisabled', 'apiDisabled');
       } else {
-        store.setError('cloudFallbackFailed', 'network');
+        // Cloud had nothing — surface the original API failure kind
+        // (5xx → 'server', timeout/no-response → 'network', etc.),
+        // not a blanket 'network' error.
+        store.setError('cloudFallbackFailed', classifyError(primaryError));
       }
     } finally {
       store.removeLoadingKey(groupName);
@@ -114,6 +121,8 @@ export const ScheduleController = {
     store.addLoadingKey(urlId);
     store.setError(null);
 
+    let primaryError: unknown = null;
+
     try {
       if (prefs.sourceBsuirApi) {
         try {
@@ -127,7 +136,8 @@ export const ScheduleController = {
             store.setSchedule(urlId, EMPTY_SCHEDULE);
             return;
           }
-          // API failed — fall through to cloud fallback.
+          // API failed — remember why, then fall through to cloud fallback.
+          primaryError = e;
         }
       }
 
@@ -139,10 +149,39 @@ export const ScheduleController = {
       } else if (!prefs.sourceBsuirApi) {
         store.setError('apiDisabled', 'apiDisabled');
       } else {
-        store.setError('cloudFallbackFailed', 'network');
+        store.setError('cloudFallbackFailed', classifyError(primaryError));
       }
     } finally {
       store.removeLoadingKey(urlId);
+    }
+  },
+
+  /**
+   * Dev helper — seed a hand-crafted demo schedule into the store so the
+   * Diary tab can be tested when the live BSUIR API is unavailable. Sets
+   * `defaultGroup` to the demo group name and forces `currentWeek` to 1.
+   */
+  seedDemoSchedule(): void {
+    const scheduleStore = useScheduleStore.getState();
+    const prefs = usePreferencesStore.getState();
+    const demo = buildDemoSchedule(new Date());
+    scheduleStore.setSchedule(DEMO_SCHEDULE_GROUP_NAME, demo);
+    if (scheduleStore.currentWeek == null) scheduleStore.setCurrentWeek(1);
+    scheduleStore.setError(null);
+    prefs.setDefaultGroup(DEMO_SCHEDULE_GROUP_NAME);
+  },
+
+  /**
+   * Remove the demo schedule from the store. If the default group was set
+   * to the demo group, clear it as well.
+   */
+  clearDemoSchedule(): void {
+    const scheduleStore = useScheduleStore.getState();
+    const prefs = usePreferencesStore.getState();
+    const { [DEMO_SCHEDULE_GROUP_NAME]: _removed, ...rest } = scheduleStore.byKey;
+    useScheduleStore.setState({ byKey: rest });
+    if (prefs.defaultGroup === DEMO_SCHEDULE_GROUP_NAME) {
+      prefs.setDefaultGroup(null);
     }
   },
 };

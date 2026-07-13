@@ -48,6 +48,9 @@
       "@constants/*": [
         "src/constants/*"
       ],
+      "@fixtures/*": [
+        "src/fixtures/*"
+      ],
       "@i18n": [
         "src/i18n/index.ts"
       ]
