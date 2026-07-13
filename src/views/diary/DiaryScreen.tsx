@@ -28,6 +28,7 @@ import { textProps } from '@theme/typography';
 import { extractDiarySubjects } from '@utils/diary';
 import type { DiarySubject } from '@utils/diary';
 
+import { DiaryStats } from './DiaryStats';
 import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
 import { HiddenSubjectStrip } from './HiddenSubjectStrip';
@@ -181,6 +182,16 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
       </View>
       <FlatList
         data={listData}
+        ListHeaderComponent={
+          <DiaryStats
+            groupName={groupName}
+            schedule={schedule}
+            currentWeek={currentWeek}
+            subgroup={subgroup}
+            blocked={blocked}
+            subjects={visible}
+          />
+        }
         keyExtractor={(item) => {
           if (item.kind === 'hiddenHeader') return '__hidden-header';
           return `${item.kind}:${item.subject.subject}`;

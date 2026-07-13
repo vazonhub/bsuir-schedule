@@ -10,26 +10,52 @@ export interface SubjectProgress {
   completed: number[];
 }
 
+export interface PlannerItem {
+  /** Stable id survives reordering. */
+  id: string;
+  subject: string;
+  /** 1-based task index within `progress[group][subject].taskCount`. */
+  taskIndex: number;
+}
+
 interface DiaryState {
   /** Progress keyed by group name → subject code → per-subject state. */
   progress: Record<string, Record<string, SubjectProgress>>;
   /** Subject codes the user has hidden, per group. */
   hidden: Record<string, string[]>;
+  /** Ordered planner items per group (top = highest priority). */
+  planner: Record<string, PlannerItem[]>;
 
   setTaskCount(groupName: string, subject: string, count: number): void;
   toggleTask(groupName: string, subject: string, index: number): void;
   resetSubject(groupName: string, subject: string): void;
   toggleHidden(groupName: string, subject: string): void;
+
+  addPlannerItem(groupName: string, subject: string, taskIndex: number): void;
+  removePlannerItem(groupName: string, id: string): void;
+  reorderPlanner(groupName: string, newOrder: PlannerItem[]): void;
+  /** Rewrite an existing planner slot's subject/taskIndex, preserving order. */
+  replacePlannerItem(groupName: string, id: string, subject: string, taskIndex: number): void;
 }
 
 const getEntry = (state: DiaryState, group: string, subject: string): SubjectProgress =>
   state.progress[group]?.[subject] ?? { taskCount: null, completed: [] };
 
+const genId = (): string =>
+  `p_${Math.random().toString(36).slice(2, 9)}_${Math.random().toString(36).slice(2, 6)}`;
+
+/** Prune planner items so they never point at a non-existent task index. */
+const prunePlanner = (
+  planner: PlannerItem[],
+  predicate: (item: PlannerItem) => boolean,
+): PlannerItem[] => planner.filter(predicate);
+
 export const useDiaryStore = create<DiaryState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       progress: {},
       hidden: {},
+      planner: {},
 
       toggleHidden: (groupName, subject) => {
         set((s) => {
@@ -46,6 +72,11 @@ export const useDiaryStore = create<DiaryState>()(
         set((s) => {
           const prev = getEntry(s, groupName, subject);
           const nextCompleted = prev.completed.filter((i) => i >= 1 && i <= clamped);
+          const groupPlanner = s.planner[groupName] ?? [];
+          const nextPlanner = prunePlanner(
+            groupPlanner,
+            (it) => it.subject !== subject || it.taskIndex <= clamped,
+          );
           return {
             progress: {
               ...s.progress,
@@ -54,6 +85,9 @@ export const useDiaryStore = create<DiaryState>()(
                 [subject]: { taskCount: clamped, completed: nextCompleted },
               },
             },
+            planner: nextPlanner === groupPlanner
+              ? s.planner
+              : { ...s.planner, [groupName]: nextPlanner },
           };
         });
       },
@@ -66,6 +100,22 @@ export const useDiaryStore = create<DiaryState>()(
           const nextCompleted = has
             ? prev.completed.filter((i) => i !== index)
             : [...prev.completed, index];
+
+          // If we just marked (subject, index) as done, drop any planner
+          // entry pointing to it. Do NOT re-add on un-check — the planner
+          // is a manual backlog, not a mirror of the grid.
+          let nextPlanner = s.planner;
+          if (!has) {
+            const groupPlanner = s.planner[groupName] ?? [];
+            const filtered = prunePlanner(
+              groupPlanner,
+              (it) => !(it.subject === subject && it.taskIndex === index),
+            );
+            if (filtered.length !== groupPlanner.length) {
+              nextPlanner = { ...s.planner, [groupName]: filtered };
+            }
+          }
+
           return {
             progress: {
               ...s.progress,
@@ -74,6 +124,7 @@ export const useDiaryStore = create<DiaryState>()(
                 [subject]: { ...prev, completed: nextCompleted },
               },
             },
+            planner: nextPlanner,
           };
         });
       },
@@ -81,23 +132,80 @@ export const useDiaryStore = create<DiaryState>()(
       resetSubject: (groupName, subject) => {
         set((s) => {
           const group = s.progress[groupName];
-          if (!group || !(subject in group)) return s;
-          const { [subject]: _removed, ...rest } = group;
+          const groupPlanner = s.planner[groupName] ?? [];
+          const filteredPlanner = prunePlanner(groupPlanner, (it) => it.subject !== subject);
+
+          const patch: Partial<DiaryState> = {};
+          if (group && subject in group) {
+            const { [subject]: _removed, ...rest } = group;
+            patch.progress = { ...s.progress, [groupName]: rest };
+          }
+          if (filteredPlanner.length !== groupPlanner.length) {
+            patch.planner = { ...s.planner, [groupName]: filteredPlanner };
+          }
+          return patch;
+        });
+      },
+
+      addPlannerItem: (groupName, subject, taskIndex) => {
+        set((s) => {
+          const groupPlanner = s.planner[groupName] ?? [];
+          // Ignore duplicates (same subject + index).
+          if (groupPlanner.some((it) => it.subject === subject && it.taskIndex === taskIndex)) {
+            return s;
+          }
+          const next: PlannerItem = { id: genId(), subject, taskIndex };
           return {
-            progress: {
-              ...s.progress,
-              [groupName]: rest,
-            },
+            planner: { ...s.planner, [groupName]: [...groupPlanner, next] },
           };
         });
-        // Trigger `get` so ESLint doesn't complain about unused set-only signature.
-        void get;
+      },
+
+      removePlannerItem: (groupName, id) => {
+        set((s) => {
+          const groupPlanner = s.planner[groupName] ?? [];
+          const filtered = groupPlanner.filter((it) => it.id !== id);
+          if (filtered.length === groupPlanner.length) return s;
+          return { planner: { ...s.planner, [groupName]: filtered } };
+        });
+      },
+
+      reorderPlanner: (groupName, newOrder) => {
+        set((s) => ({ planner: { ...s.planner, [groupName]: newOrder } }));
+      },
+
+      replacePlannerItem: (groupName, id, subject, taskIndex) => {
+        set((s) => {
+          const groupPlanner = s.planner[groupName] ?? [];
+          const idx = groupPlanner.findIndex((it) => it.id === id);
+          if (idx < 0) return s;
+          // If the new (subject, taskIndex) matches a DIFFERENT existing slot,
+          // drop this one to avoid duplicates.
+          const collision = groupPlanner.findIndex(
+            (it) => it.id !== id && it.subject === subject && it.taskIndex === taskIndex,
+          );
+          if (collision >= 0) {
+            return {
+              planner: {
+                ...s.planner,
+                [groupName]: groupPlanner.filter((it) => it.id !== id),
+              },
+            };
+          }
+          const next = [...groupPlanner];
+          next[idx] = { id, subject, taskIndex };
+          return { planner: { ...s.planner, [groupName]: next } };
+        });
       },
     }),
     {
       name: 'diary-v1',
       storage: createJSONStorage(() => asyncStorageAdapter),
-      partialize: (state) => ({ progress: state.progress, hidden: state.hidden }),
+      partialize: (state) => ({
+        progress: state.progress,
+        hidden: state.hidden,
+        planner: state.planner,
+      }),
     },
   ),
 );
@@ -117,3 +225,11 @@ export const selectHidden =
   (groupName: string) =>
   (s: DiaryState): string[] =>
     s.hidden[groupName] ?? EMPTY_HIDDEN;
+
+const EMPTY_PLANNER: PlannerItem[] = [];
+
+/** Selector helper: ordered planner list for a group. */
+export const selectPlanner =
+  (groupName: string) =>
+  (s: DiaryState): PlannerItem[] =>
+    s.planner[groupName] ?? EMPTY_PLANNER;

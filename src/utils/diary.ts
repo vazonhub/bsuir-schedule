@@ -1,7 +1,10 @@
+import i18n from '@i18n';
 import type { ScheduleDto } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
+import { addDays, DAY_NAMES_RU, isSameDay, startOfLocalDay } from '@utils/date';
 import { buildLessonBlockId } from '@utils/lesson';
 import { flattenSchedule } from '@utils/scheduleNormalization';
+import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import type { CurrentWeekNumber } from '@models/dto/schedule.dto';
 
 /** Lesson types tracked by the diary. Other API values (Консультация, Экзамен) are ignored. */
@@ -82,4 +85,63 @@ export const extractDiarySubjects = (
   const list = Array.from(bySubject.values());
   list.sort((a, b) => a.subject.localeCompare(b.subject, 'ru', { sensitivity: 'base' }));
   return list;
+};
+
+// ─── Upcoming submissions (right column of DiaryStats) ────────
+
+/** Lesson types shown as "submission" pairs. Lectures are excluded. */
+const SUBMISSION_TYPES: ReadonlySet<string> = new Set(['ЛР', 'ПЗ']);
+
+interface UpcomingOptions {
+  subgroup: SubgroupChoice;
+  blockedIds: ReadonlySet<string>;
+  limit?: number;
+}
+
+/**
+ * Nearest future ЛР/ПЗ occurrences for the diary's "upcoming submissions"
+ * panel. Applies the same subgroup / blocked filters as the diary counts.
+ */
+export const extractUpcomingSubmissions = (
+  schedule: ScheduleDto,
+  currentWeek: CurrentWeekNumber,
+  today: Date,
+  { subgroup, blockedIds, limit = 5 }: UpcomingOptions,
+): NormalizedLesson[] => {
+  const all = flattenSchedule(schedule, currentWeek, today, { showAll: true });
+  const out: NormalizedLesson[] = [];
+  for (const lesson of all) {
+    if (lesson.isPast) continue;
+    const type = lesson.raw.lessonTypeAbbrev;
+    if (!type || !SUBMISSION_TYPES.has(type)) continue;
+    if (subgroup !== 0 && lesson.raw.numSubgroup !== 0 && lesson.raw.numSubgroup !== subgroup) {
+      continue;
+    }
+    if (blockedIds.has(buildLessonBlockId(lesson))) continue;
+    out.push(lesson);
+    if (out.length >= limit) break;
+  }
+  return out;
+};
+
+// ─── "When" formatter ─────────────────────────────────────────
+
+/**
+ * Compact date label for upcoming lessons.
+ *   today       → "Сегодня 12:25"
+ *   tomorrow    → "Завтра 12:25"
+ *   further out → "Пн 15.07 12:25"
+ * Localized day names come from i18n so ru/be/en are handled uniformly.
+ */
+export const formatDiaryWhen = (date: Date, startTime: string, now: Date): string => {
+  const t = i18n.t.bind(i18n);
+  const todayStart = startOfLocalDay(now);
+  const tomorrow = addDays(todayStart, 1);
+  if (isSameDay(date, todayStart)) return `${t('diary.whenToday')} ${startTime}`;
+  if (isSameDay(date, tomorrow)) return `${t('diary.whenTomorrow')} ${startTime}`;
+  const shortDays = t('diary.shortDayNames', { returnObjects: true }) as string[];
+  const dayLabel = shortDays[date.getDay()] ?? DAY_NAMES_RU[date.getDay()] ?? '';
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  return `${dayLabel} ${dd}.${mm} ${startTime}`;
 };

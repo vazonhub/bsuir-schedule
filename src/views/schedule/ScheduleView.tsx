@@ -63,6 +63,12 @@ interface Props {
   isDefaultSchedule?: boolean;
   /** Label shown in the FloatingTopBar pill when `isDefaultSchedule` (group name or "Фамилия И.О."). */
   defaultLabel?: string;
+  /**
+   * If provided, scroll to the section containing this date on mount (once).
+   * Overrides the default "scroll to nearest upcoming lesson" behaviour.
+   * BSUIR-format string: `dd.MM.yyyy`.
+   */
+  initialScrollDate?: string;
 }
 
 const EMPTY_HOLIDAYS: Holiday[] = [];
@@ -78,6 +84,7 @@ export const ScheduleView = ({
   avatarUri,
   isDefaultSchedule = false,
   defaultLabel,
+  initialScrollDate,
 }: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
@@ -424,6 +431,19 @@ export const ScheduleView = ({
     },
     [sections, scrollToSection],
   );
+
+  // Deep-link: caller passed a specific date via `?scrollDate=dd.MM.yyyy`.
+  // Fires once per param value — runs after the default "jump to upcoming"
+  // effect so it overrides it. We keep firing when the string changes so a
+  // second navigation to the same tab with a new date still scrolls.
+  useEffect(() => {
+    if (!initialScrollDate || sections.length === 0) return;
+    const target = parseBsuirDate(initialScrollDate);
+    if (!target) return;
+    // Small delay so the scroll happens after the initial "upcoming" jump.
+    const id = setTimeout(() => scrollToDate(target), 250);
+    return () => clearTimeout(id);
+  }, [initialScrollDate, sections.length, scrollToDate]);
 
   const handleDatePickerChange = useCallback(
     (_event: DateTimePickerEvent, selected?: Date) => {
