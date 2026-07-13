@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -29,11 +29,12 @@ type PaletteType = ReturnType<typeof usePalette>;
  */
 export const MyScheduleScreen = () => {
   const router = useRouter();
+  const { scrollDate } = useLocalSearchParams<{ scrollDate?: string }>();
   const defaultGroup = usePreferencesStore((s) => s.defaultGroup);
   const defaultEmployee = usePreferencesStore((s) => s.defaultEmployee);
 
   if (defaultGroup) {
-    return <DefaultGroupSchedule groupName={defaultGroup} />;
+    return <DefaultGroupSchedule groupName={defaultGroup} initialScrollDate={scrollDate} />;
   }
 
   if (defaultEmployee) {
@@ -71,7 +72,13 @@ const EmptyState = ({ onSelect }: { onSelect(): void }) => {
 
 // ────────────────────────────────────────────────────────────────
 
-const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
+const DefaultGroupSchedule = ({
+  groupName,
+  initialScrollDate,
+}: {
+  groupName: string;
+  initialScrollDate?: string;
+}) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const router = useRouter();
@@ -128,6 +135,7 @@ const DefaultGroupSchedule = ({ groupName }: { groupName: string }) => {
       refreshing={isLoading}
       isDefaultSchedule
       defaultLabel={groupName}
+      initialScrollDate={initialScrollDate}
     />
   );
 };

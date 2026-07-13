@@ -173,6 +173,49 @@ export const SkeletonEmployeesList = () => (
   </View>
 );
 
+// ─── Diary subject card skeleton ─────────────────────────────
+
+const SkeletonSubjectCard = () => {
+  const Palette = usePalette();
+  return (
+    <View style={[styles.diaryCard, { backgroundColor: Palette.card }]}>
+      <View style={styles.diaryTopRow}>
+        <View style={styles.diarySubjectBlock}>
+          <Bone width={90} height={20} />
+          <Bone width={160} height={12} />
+        </View>
+        <View style={styles.diaryPillsBlock}>
+          <Bone width={54} height={20} borderRadius={999} />
+          <Bone width={54} height={20} borderRadius={999} />
+          <Bone width={54} height={20} borderRadius={999} />
+        </View>
+      </View>
+      <View style={[styles.diarySeparator, { backgroundColor: Palette.separator }]} />
+      <Bone width="100%" height={40} borderRadius={Radius.md} />
+    </View>
+  );
+};
+
+export const SkeletonDiary = () => {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={styles.diaryContainer} importantForAccessibility="no-hide-descendants">
+      {/* Header placeholder — same slot as the real screen title */}
+      <View style={[styles.diaryHeader, { paddingTop: insets.top + Spacing.md }]}>
+        <Bone width={140} height={26} />
+        <Bone width={90} height={14} />
+      </View>
+      <View style={styles.diaryList}>
+        <SkeletonSubjectCard />
+        <SkeletonSubjectCard />
+        <SkeletonSubjectCard />
+        <SkeletonSubjectCard />
+        <SkeletonSubjectCard />
+      </View>
+    </View>
+  );
+};
+
 export const SkeletonSchedule = () => {
   const insets = useSafeAreaInsets();
   const topInset = insets.top + TOP_BAR_BUTTON_SIZE + Spacing.lg;
@@ -292,5 +335,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8,
     paddingTop: Spacing.sectionTop,
     paddingBottom: Spacing.sectionBottom,
+  },
+  // Diary
+  diaryContainer: {
+    flex: 1,
+  },
+  diaryHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
+    gap: 4,
+  },
+  diaryList: {
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,
+  },
+  diaryCard: {
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.cardPaddingX,
+    paddingVertical: Spacing.cardPaddingY,
+    gap: Spacing.lg,
+  },
+  diaryTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  diarySubjectBlock: {
+    flex: 1,
+    gap: 6,
+  },
+  diaryPillsBlock: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  diarySeparator: {
+    height: StyleSheet.hairlineWidth,
   },
 });
