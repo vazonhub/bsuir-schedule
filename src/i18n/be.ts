@@ -5,6 +5,7 @@ export const be: TranslationKeys = {
     my: 'Маё',
     groups: 'Групы',
     employees: 'Выкладчыкі',
+    schedule: 'Расклад',
     settings: 'Налады',
   },
 
