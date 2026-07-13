@@ -5,6 +5,7 @@ export const en: TranslationKeys = {
     my: 'My',
     groups: 'Groups',
     employees: 'Teachers',
+    schedule: 'Schedule',
     settings: 'Settings',
   },
 

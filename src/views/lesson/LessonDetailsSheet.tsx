@@ -41,7 +41,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const { t } = useTranslation();
     const router = useRouter();
     const segments = useSegments() as string[];
-    const currentTab = (segments[1] ?? '(groups)') as '(amy)' | '(groups)' | '(employees)';
+    const currentTab = (segments[1] ?? '(schedule)') as '(amy)' | '(schedule)';
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
@@ -61,11 +61,8 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
           fio: employee.fio ?? `${employee.lastName} ${employee.firstName?.[0] ?? ''}.${employee.middleName?.[0] ? employee.middleName[0] + '.' : ''}`,
         };
         switch (currentTab) {
-          case '(employees)':
-            router.push({ pathname: '/(tabs)/(employees)/[urlId]', params });
-            break;
-          case '(groups)':
-            router.push({ pathname: '/(tabs)/(groups)/employee/[urlId]' as never, params });
+          case '(schedule)':
+            router.push({ pathname: '/(tabs)/(schedule)/employee/[urlId]', params });
             break;
           case '(amy)':
             router.push({ pathname: '/(tabs)/(amy)/employee/[urlId]' as never, params });
@@ -81,11 +78,8 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         (ref as React.RefObject<BottomSheetModal | null>).current?.dismiss();
         const params = { name: group.name };
         switch (currentTab) {
-          case '(groups)':
-            router.push({ pathname: '/(tabs)/(groups)/[name]', params });
-            break;
-          case '(employees)':
-            router.push({ pathname: '/(tabs)/(employees)/group/[name]' as never, params });
+          case '(schedule)':
+            router.push({ pathname: '/(tabs)/(schedule)/group/[name]', params });
             break;
           case '(amy)':
             router.push({ pathname: '/(tabs)/(amy)/group/[name]' as never, params });

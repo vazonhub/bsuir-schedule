@@ -49,13 +49,9 @@ export default function TabsLayout() {
         <Icon sf="calendar" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="calendar" />} />
         <Label>{t('tabs.my')}</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(groups)">
-        <Icon sf="person.3.fill" androidSrc={<VectorIcon family={MaterialIcons} name="groups" />} />
-        <Label>{t('tabs.groups')}</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(employees)">
-        <Icon sf="person.text.rectangle.fill" androidSrc={<VectorIcon family={MaterialIcons} name="person-search" />} />
-        <Label>{t('tabs.employees')}</Label>
+      <NativeTabs.Trigger name="(schedule)">
+        <Icon sf="list.bullet.rectangle.fill" androidSrc={<VectorIcon family={MaterialIcons} name="view-list" />} />
+        <Label>{t('tabs.schedule')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(settings)">
         <Icon sf="gearshape.fill" androidSrc={<VectorIcon family={MaterialIcons} name="settings" />} />

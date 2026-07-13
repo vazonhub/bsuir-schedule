@@ -4,6 +4,7 @@ export const ru = {
     my: 'Моё',
     groups: 'Группы',
     employees: 'Преподаватели',
+    schedule: 'Расписание',
     settings: 'Настройки',
   },
 
