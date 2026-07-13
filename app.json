@@ -226,6 +226,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "extra": {
+      "auditoryApiUrl": "https://bsuir-auditory-api.bsuirschedule-test.workers.dev",
       "router": {},
       "eas": {
         "projectId": "fcba8170-b003-44b7-9203-ece1a99b2162",

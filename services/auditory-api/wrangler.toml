@@ -1,0 +1,12 @@
+name = "bsuir-auditory-api"
+main = "src/worker.ts"
+compatibility_date = "2025-10-01"
+
+# KV binding — created via `wrangler kv namespace create AUDITORY_KV`
+# Replace `id` with the value printed by that command.
+[[kv_namespaces]]
+binding = "AUDITORY_KV"
+id = "1c85b05097f0454a8dd213d4cbe4e5d2"
+
+# CRAWL_TOKEN is provided as a secret via `wrangler secret put CRAWL_TOKEN`.
+# See README.md for setup.

@@ -89,6 +89,10 @@ export const ru = {
     block: 'Заблокировать',
     unblock: 'Разблокировать',
     announcement: 'Объявление',
+    auditoryFreeUntil: 'Свободна до {{time}}',
+    auditoryFreeAllDay: 'Свободна сегодня',
+    auditoryBusyUntil: 'Занята до {{time}}',
+    auditoryBusyAllDay: 'Занята до конца дня',
   },
 
   // Lesson types

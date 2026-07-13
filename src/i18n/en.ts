@@ -83,6 +83,10 @@ export const en: TranslationKeys = {
     block: 'Block',
     unblock: 'Unblock',
     announcement: 'Announcement',
+    auditoryFreeUntil: 'Free until {{time}}',
+    auditoryFreeAllDay: 'Free for the rest of the day',
+    auditoryBusyUntil: 'Busy until {{time}}',
+    auditoryBusyAllDay: 'Busy for the rest of the day',
   },
 
   lessonType: {

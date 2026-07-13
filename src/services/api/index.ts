@@ -1,3 +1,4 @@
+export * from './auditory.api';
 export * from './employees.api';
 export * from './groups.api';
 export * from './holidays.api';

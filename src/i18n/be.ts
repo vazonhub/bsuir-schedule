@@ -83,6 +83,10 @@ export const be: TranslationKeys = {
     block: 'Заблакіраваць',
     unblock: 'Разблакіраваць',
     announcement: 'Абвестка',
+    auditoryFreeUntil: 'Вольная да {{time}}',
+    auditoryFreeAllDay: 'Вольная сёння',
+    auditoryBusyUntil: 'Занятая да {{time}}',
+    auditoryBusyAllDay: 'Занятая да канца дня',
   },
 
   lessonType: {

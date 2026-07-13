@@ -7,6 +7,7 @@ import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
+import { useAuditoryStatus } from '@hooks/useAuditoryStatus';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto, LessonStudentGroupDto, WeekNumber } from '@models/dto';
@@ -17,6 +18,9 @@ import { hapticLight } from '@utils/haptics';
 import { getLessonTypeFullName } from '@utils/lesson';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 import { ANNOUNCEMENT_COLOR, FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/colors';
+
+const AUDITORY_STATUS_FREE_COLOR = '#34C759';
+const AUDITORY_STATUS_BUSY_COLOR = '#FF9500';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -107,10 +111,31 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const month = lesson ? months[lesson.date.getMonth()] : '';
     const dateStr = `${dayName}, ${dom} ${month}`;
     const auditories = (raw?.auditories ?? []).join(', ');
+    const auditoryList = raw?.auditories ?? null;
+    const auditoryStatus = useAuditoryStatus(
+      auditoryList,
+      lesson !== null && !isAnnouncement && (auditoryList?.length ?? 0) > 0,
+    );
     const employees = raw?.employees ?? [];
     const groups = raw?.studentGroups ?? [];
     const weekNumbers = raw?.weekNumber ?? [];
     const showSubgroup = raw?.numSubgroup === 1 || raw?.numSubgroup === 2;
+
+    const statusColor =
+      auditoryStatus?.kind === 'free'
+        ? AUDITORY_STATUS_FREE_COLOR
+        : auditoryStatus?.kind === 'busy'
+          ? AUDITORY_STATUS_BUSY_COLOR
+          : null;
+    const statusLabel = auditoryStatus
+      ? auditoryStatus.kind === 'free'
+        ? auditoryStatus.freeUntil
+          ? t('lesson.auditoryFreeUntil', { time: auditoryStatus.freeUntil })
+          : t('lesson.auditoryFreeAllDay')
+        : auditoryStatus.busyUntil
+          ? t('lesson.auditoryBusyUntil', { time: auditoryStatus.busyUntil })
+          : t('lesson.auditoryBusyAllDay')
+      : null;
 
     return (
       <BottomSheetModal
@@ -179,9 +204,29 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
 
           {/* Auditory */}
           {auditories.length > 0 && (
-            <View style={styles.infoRow}>
-              <Ionicons name={locationIcon as never} size={18} color={Palette.textSecondary} />
-              <Text {...textProps('callout')} style={styles.infoText}>{auditories}</Text>
+            <View style={styles.auditoryBlock}>
+              <View style={styles.infoRow}>
+                <Ionicons name={locationIcon as never} size={18} color={Palette.textSecondary} />
+                <Text {...textProps('callout')} style={styles.infoText}>{auditories}</Text>
+              </View>
+              {statusColor && statusLabel && (
+                <View
+                  style={[
+                    styles.statusChip,
+                    { backgroundColor: statusColor + '1A' },
+                  ]}
+                  accessibilityRole="text"
+                  accessibilityLabel={statusLabel}
+                >
+                  <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                  <Text
+                    {...textProps('footnote')}
+                    style={[styles.statusText, { color: statusColor }]}
+                  >
+                    {statusLabel}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -408,6 +453,28 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+  },
+  auditoryBlock: {
+    gap: Spacing.sm,
+  },
+  statusChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.pill,
+    gap: Spacing.sm,
+    marginLeft: 18 + Spacing.md,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   infoText: {
     flex: 1,

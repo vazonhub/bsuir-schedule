@@ -1,3 +1,4 @@
+export * from './auditory.dto';
 export * from './common.dto';
 export * from './employee.dto';
 export * from './lesson.dto';
