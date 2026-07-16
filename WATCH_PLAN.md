@@ -162,6 +162,15 @@ App Group общий у iPhone-приложения и его расширени
   - **Проверено:** `npm run typecheck` — чисто; lint изменённого файла — новых замечаний нет; `expo prebuild` — все 4 swift-файла попадают в Sources watch-таргета, граф цел.
   - **Осталось проверить руками:** реальная сквозная синхронизация phone → watch (нужны устройства/симуляторы с одним iCloud-аккаунтом и входом в iCloud).
 
+- ✅ **Фаза 2 — watch UI (сделано).**
+  - `LessonSupport.swift` — чистая логика: локальный расчёт времени (`nowMinutes`/`parseMinutes`), `phase()` (past/ongoing/upcoming), `heroSelection()` (сейчас → следующая сегодня → первая на nextDay), `myLessons()` (фильтр `isMine`), `dayLabel()`, `Color(hex:)`.
+  - `NowNextCard.swift` — hero «Сейчас/Далее»: тип-бейдж с цветом, подгруппа, аудитории, преподаватель; ярлык `strings.now`/`next` + дата если завтра.
+  - `LessonRow.swift` — строка пары (цветовой rail, время, бейдж подгруппы, аудитории), прошедшие приглушены.
+  - `DayView.swift` — полный список дня + `NextDayRow` (дата · кол-во · первая пара) с переходом.
+  - `ContentView.swift` — `HomeView`: hero + неделя (footer) + сегодня (заголовок = дата, past dimmed) + ссылка на следующий день; empty-state до первой синхронизации.
+  - **«Сейчас/Далее» считается локально по текущему времени** (снапшот может быть построен часами ранее). Полноценный stale-date fallback (если `today.dateISO` ≠ реальной дате) — Фаза 4.
+  - **Проверено:** `swiftc -parse` — без синтаксических ошибок; **полный `swiftc -typecheck` против watchOS SDK (`arm64-apple-watchos9.0-simulator`) — 0 ошибок, 0 предупреждений**; `expo prebuild` — все 8 swift-файлов в Sources watch-таргета, граф цел.
+
 ## 5. Фазы реализации
 
 | Фаза | Содержание | DoD |
