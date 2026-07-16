@@ -70,6 +70,8 @@ export const en: TranslationKeys = {
       "Open the app on school days to grow the streak (+1). Missing a school day costs 1, but freezes (2 per week) cover you. Weekends and days with no classes don't count.",
     empty: 'Nothing yet. Drop by on a school day to light the flame.',
     a11y: 'Streak, {{n}} days',
+    newRecord: 'New record!',
+    milestoneReached: '{{n}} days in a row!',
   },
 
   error: {

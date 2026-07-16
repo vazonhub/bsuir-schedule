@@ -52,7 +52,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         {/* ── Крупное пламя + число ── */}
         <View style={styles.hero}>
-          <FlameIcon current={core.current} size={52} />
+          <FlameIcon current={core.current} size={52} animated />
           <Text {...textProps('title')} style={[styles.heroNumber, { color: accentColor }]}>
             {core.current}
           </Text>
