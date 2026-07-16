@@ -124,6 +124,7 @@
     "plugins": [
       "expo-router",
       "./plugins/withWidget",
+      "./plugins/withWatch",
       [
         "expo-icloud-kv",
         {
@@ -242,6 +243,16 @@
                     "com.apple.security.application-groups": [
                       "group.by.vazon.bsuirschedule"
                     ]
+                  }
+                },
+                {
+                  "targetName": "BsuirWatch",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchkitapp",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.by.vazon.bsuirschedule"
+                    ],
+                    "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)by.vazon.bsuirschedule"
                   }
                 }
               ]
