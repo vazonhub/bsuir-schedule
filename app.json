@@ -254,6 +254,15 @@
                     ],
                     "com.apple.developer.ubiquity-kvstore-identifier": "$(TeamIdentifierPrefix)by.vazon.bsuirschedule"
                   }
+                },
+                {
+                  "targetName": "BsuirWatchWidget",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchkitapp.widget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.by.vazon.bsuirschedule"
+                    ]
+                  }
                 }
               ]
             }

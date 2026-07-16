@@ -2,23 +2,199 @@ const { withEntitlementsPlist, withXcodeProject } = require('expo/config-plugins
 const fs = require('fs');
 const path = require('path');
 
-// watchOS companion app target. Modeled on ./plugins/withWidget.js.
-//
-// Phase 0 scope: the watch APP target only (a single-target watchOS app,
-// product-type application, WKApplication=YES). The watch WIDGET extension
-// that hosts complications is added later (Phase 3), embedded into this app.
+// watchOS companion: a single-target watch app (BsuirWatch) plus a WidgetKit
+// extension (BsuirWatchWidget) embedded INSIDE that watch app for complications.
+// Modeled on ./plugins/withWidget.js.
 //
 // The project is managed/CNG (ios/ is generated), so the whole target graph is
-// (re)built here on prebuild. Swift sources live in targets/watch/ and are
-// copied into ios/BsuirWatch/ on every prebuild so edits propagate.
+// (re)built here on prebuild. Swift sources live in targets/watch/ (app) and
+// targets/watch-widget/ (extension) and are copied into ios/ on every prebuild.
+// SnapshotModel.swift + LessonSupport.swift are shared: compiled into BOTH the
+// app and the extension (one file reference, two build files).
 
 const WATCH_NAME = 'BsuirWatch';
+const WATCH_WIDGET_NAME = 'BsuirWatchWidget';
 const APP_GROUP = 'group.by.vazon.bsuirschedule';
 const WATCH_DEPLOYMENT_TARGET = '9.0';
+// Files shared between the watch app and its widget extension.
+const SHARED_SWIFT = ['SnapshotModel.swift', 'LessonSupport.swift'];
+
+function getNativeTargetUuid(proj, name) {
+  const section = proj.pbxNativeTargetSection();
+  for (const key in section) {
+    if (key.endsWith('_comment')) continue;
+    const t = section[key];
+    if (typeof t === 'object' && (t.name === name || t.name === `"${name}"`)) return key;
+  }
+  return null;
+}
+
+function findFileRef(proj, filename) {
+  const section = proj.pbxFileReferenceSection();
+  for (const key in section) {
+    if (key.endsWith('_comment')) continue;
+    const ref = section[key];
+    if (typeof ref !== 'object') continue;
+    const name = (ref.name || '').replace(/"/g, '');
+    const p = (ref.path || '').replace(/"/g, '');
+    if (name === filename || p === filename || p.endsWith('/' + filename)) return key;
+  }
+  return null;
+}
+
+function copySwiftSources(projectRoot, subdir, destDir) {
+  fs.mkdirSync(destDir, { recursive: true });
+  const srcDir = path.join(projectRoot, 'targets', subdir);
+  const files = fs.existsSync(srcDir)
+    ? fs.readdirSync(srcDir).filter((f) => f.endsWith('.swift'))
+    : [];
+  for (const f of files) {
+    fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));
+  }
+  return files;
+}
+
+function optSettings(debug) {
+  return debug
+    ? {
+        DEBUG_INFORMATION_FORMAT: 'dwarf',
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: '"$(inherited) DEBUG"',
+        SWIFT_OPTIMIZATION_LEVEL: '"-Onone"',
+      }
+    : {
+        SWIFT_OPTIMIZATION_LEVEL: '"-Owholemodule"',
+        DEBUG_INFORMATION_FORMAT: '"dwarf-with-dsym"',
+      };
+}
+
+function makeConfigList(proj, targetName, mkSettings) {
+  const debugUuid = proj.generateUuid();
+  const releaseUuid = proj.generateUuid();
+  const listUuid = proj.generateUuid();
+
+  const cfgSection = proj.pbxXCBuildConfigurationSection();
+  cfgSection[debugUuid] = { isa: 'XCBuildConfiguration', buildSettings: mkSettings(true), name: 'Debug' };
+  cfgSection[debugUuid + '_comment'] = 'Debug';
+  cfgSection[releaseUuid] = { isa: 'XCBuildConfiguration', buildSettings: mkSettings(false), name: 'Release' };
+  cfgSection[releaseUuid + '_comment'] = 'Release';
+
+  const listSection = proj.pbxXCConfigurationList();
+  listSection[listUuid] = {
+    isa: 'XCConfigurationList',
+    buildConfigurations: [
+      { value: debugUuid, comment: 'Debug' },
+      { value: releaseUuid, comment: 'Release' },
+    ],
+    defaultConfigurationIsVisible: 0,
+    defaultConfigurationName: 'Release',
+  };
+  listSection[listUuid + '_comment'] = `Build configuration list for PBXNativeTarget "${targetName}"`;
+  return listUuid;
+}
+
+/** Create a Sources build phase from a list of {name, ref} file references. */
+function makeSourcesPhase(proj, fileRefs) {
+  const buildFileSection = proj.pbxBuildFileSection();
+  const files = [];
+  for (const { name, ref } of fileRefs) {
+    const bf = proj.generateUuid();
+    buildFileSection[bf] = { isa: 'PBXBuildFile', fileRef: ref, fileRef_comment: name };
+    buildFileSection[bf + '_comment'] = `${name} in Sources`;
+    files.push({ value: bf, comment: `${name} in Sources` });
+  }
+  const phaseUuid = proj.generateUuid();
+  const section = proj.hash.project.objects['PBXSourcesBuildPhase'] || {};
+  proj.hash.project.objects['PBXSourcesBuildPhase'] = section;
+  section[phaseUuid] = {
+    isa: 'PBXSourcesBuildPhase',
+    buildActionMask: 2147483647,
+    files,
+    runOnlyForDeploymentPostprocessing: 0,
+  };
+  section[phaseUuid + '_comment'] = 'Sources';
+  return phaseUuid;
+}
+
+function makeEmptyPhase(proj, isa, comment) {
+  const uuid = proj.generateUuid();
+  const section = proj.hash.project.objects[isa] || {};
+  proj.hash.project.objects[isa] = section;
+  section[uuid] = { isa, buildActionMask: 2147483647, files: [], runOnlyForDeploymentPostprocessing: 0 };
+  section[uuid + '_comment'] = comment;
+  return uuid;
+}
+
+/**
+ * Embed `productFileUuid` (an .app or .appex) into `hostTargetUuid`.
+ * dstSubfolderSpec 16 = watch content ($(CONTENTS_FOLDER_PATH)/Watch),
+ * dstSubfolderSpec 13 = PlugIns (app extensions).
+ */
+function embedProduct(proj, hostTargetUuid, productFileUuid, productName, phaseName, dstSubfolderSpec, dstPath) {
+  const buildFileSection = proj.pbxBuildFileSection();
+  const embedFile = proj.generateUuid();
+  buildFileSection[embedFile] = {
+    isa: 'PBXBuildFile',
+    fileRef: productFileUuid,
+    fileRef_comment: productName,
+    settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
+  };
+  buildFileSection[embedFile + '_comment'] = `${productName} in ${phaseName}`;
+
+  const phaseUuid = proj.generateUuid();
+  const copySection = proj.hash.project.objects['PBXCopyFilesBuildPhase'] || {};
+  proj.hash.project.objects['PBXCopyFilesBuildPhase'] = copySection;
+  copySection[phaseUuid] = {
+    isa: 'PBXCopyFilesBuildPhase',
+    buildActionMask: 2147483647,
+    dstPath: dstPath,
+    dstSubfolderSpec,
+    files: [{ value: embedFile, comment: `${productName} in ${phaseName}` }],
+    name: `"${phaseName}"`,
+    runOnlyForDeploymentPostprocessing: 0,
+  };
+  copySection[phaseUuid + '_comment'] = phaseName;
+
+  const host = proj.pbxNativeTargetSection()[hostTargetUuid];
+  if (host && host.buildPhases) host.buildPhases.push({ value: phaseUuid, comment: phaseName });
+}
+
+/** Add a target dependency: `hostTargetUuid` depends on `depTargetUuid`. */
+function addDependency(proj, hostTargetUuid, depTargetUuid, depName) {
+  const proxy = proj.generateUuid();
+  const dep = proj.generateUuid();
+  const depSection = proj.hash.project.objects['PBXTargetDependency'] || {};
+  proj.hash.project.objects['PBXTargetDependency'] = depSection;
+  const proxySection = proj.hash.project.objects['PBXContainerItemProxy'] || {};
+  proj.hash.project.objects['PBXContainerItemProxy'] = proxySection;
+
+  proxySection[proxy] = {
+    isa: 'PBXContainerItemProxy',
+    containerPortal: proj.getFirstProject().uuid,
+    containerPortal_comment: 'Project object',
+    proxyType: 1,
+    remoteGlobalIDString: depTargetUuid,
+    remoteInfo: `"${depName}"`,
+  };
+  depSection[dep] = { isa: 'PBXTargetDependency', target: depTargetUuid, target_comment: depName, targetProxy: proxy };
+  depSection[dep + '_comment'] = 'PBXTargetDependency';
+
+  const host = proj.pbxNativeTargetSection()[hostTargetUuid];
+  if (host && host.dependencies) host.dependencies.push({ value: dep, comment: 'PBXTargetDependency' });
+}
+
+function writePlist(file, body) {
+  fs.writeFileSync(file, `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+${body}
+</dict>
+</plist>`);
+}
 
 function withWatch(config) {
-  // 1. Ensure the main app is in the App Group (withWidget also sets this;
-  //    kept here so withWatch is self-sufficient / order-independent).
+  // Main app must be in the App Group (withWidget also sets this; kept here so
+  // withWatch is self-sufficient / order-independent).
   config = withEntitlementsPlist(config, (mod) => {
     const key = 'com.apple.security.application-groups';
     const groups = new Set(mod.modResults[key] || []);
@@ -27,38 +203,28 @@ function withWatch(config) {
     return mod;
   });
 
-  // 2. Watch app target in the Xcode project.
   config = withXcodeProject(config, (mod) => {
     const proj = mod.modResults;
     const projectRoot = mod.modRequest.projectRoot;
     const appBundleId = mod.ios?.bundleIdentifier ?? 'by.vazon.bsuirschedule';
     const watchBundleId = appBundleId + '.watchkitapp';
+    const watchWidgetBundleId = watchBundleId + '.widget';
     const kvIdentifier = '$(TeamIdentifierPrefix)' + appBundleId;
     const appVersion = mod.version ?? '0.1.0';
     const buildNumber = mod.ios?.buildNumber ?? '1';
 
     const iosRoot = path.join(projectRoot, 'ios');
     const watchDir = path.join(iosRoot, WATCH_NAME);
-    fs.mkdirSync(watchDir, { recursive: true });
+    const widgetDir = path.join(iosRoot, WATCH_WIDGET_NAME);
+    const watchEntFile = `${WATCH_NAME}.entitlements`;
+    const widgetEntFile = `${WATCH_WIDGET_NAME}.entitlements`;
 
-    // Refresh Swift sources on every prebuild so edits in targets/watch/
-    // propagate even when the pbxproj target already exists.
-    const srcDir = path.join(projectRoot, 'targets', 'watch');
-    const swiftFiles = fs.existsSync(srcDir)
-      ? fs.readdirSync(srcDir).filter((f) => f.endsWith('.swift'))
-      : [];
-    for (const f of swiftFiles) {
-      fs.copyFileSync(path.join(srcDir, f), path.join(watchDir, f));
-    }
+    // ── Refresh sources & generated files on every prebuild ──
+    const watchSwiftFiles = copySwiftSources(projectRoot, 'watch', watchDir);
+    const widgetSwiftFiles = copySwiftSources(projectRoot, 'watch-widget', widgetDir);
 
-    const entFile = `${WATCH_NAME}.entitlements`;
-
-    // Info.plist — single-target watchOS app (watchOS 7+): WKApplication=YES.
-    fs.writeFileSync(path.join(watchDir, 'Info.plist'), `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>CFBundleDevelopmentRegion</key>
+    // Watch app Info.plist (single-target watchOS app: WKApplication=YES).
+    writePlist(path.join(watchDir, 'Info.plist'), `  <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
   <key>CFBundleDisplayName</key>
   <string>Bsuir Time</string>
@@ -79,270 +245,206 @@ function withWatch(config) {
   <key>WKApplication</key>
   <true/>
   <key>WKCompanionAppBundleIdentifier</key>
-  <string>${appBundleId}</string>
-</dict>
-</plist>`);
+  <string>${appBundleId}</string>`);
 
-    // Entitlements — App Group (shared with widget/main) + iCloud KV store
-    // (the transport for phone → watch snapshot delivery, see WATCH_PLAN.md §3).
-    fs.writeFileSync(path.join(watchDir, entFile), `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>com.apple.security.application-groups</key>
+    // Watch app entitlements: App Group + iCloud KV (transport, WATCH_PLAN §3).
+    writePlist(path.join(watchDir, watchEntFile), `  <key>com.apple.security.application-groups</key>
   <array>
     <string>${APP_GROUP}</string>
   </array>
   <key>com.apple.developer.ubiquity-kvstore-identifier</key>
-  <string>${kvIdentifier}</string>
-</dict>
-</plist>`);
+  <string>${kvIdentifier}</string>`);
 
-    // Source files are refreshed above on every prebuild. The pbxproj graph
-    // below only needs to be built once — skip if the target already exists.
-    if (proj.pbxTargetByName(WATCH_NAME)) return mod;
+    // Watch widget extension Info.plist (WidgetKit extension point).
+    writePlist(path.join(widgetDir, 'Info.plist'), `  <key>CFBundleDevelopmentRegion</key>
+  <string>$(DEVELOPMENT_LANGUAGE)</string>
+  <key>CFBundleDisplayName</key>
+  <string>Schedule</string>
+  <key>CFBundleExecutable</key>
+  <string>$(EXECUTABLE_NAME)</string>
+  <key>CFBundleIdentifier</key>
+  <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>$(PRODUCT_NAME)</string>
+  <key>CFBundlePackageType</key>
+  <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$(MARKETING_VERSION)</string>
+  <key>CFBundleVersion</key>
+  <string>$(CURRENT_PROJECT_VERSION)</string>
+  <key>NSExtension</key>
+  <dict>
+    <key>NSExtensionPointIdentifier</key>
+    <string>com.apple.widgetkit-extension</string>
+  </dict>`);
 
-    // --- Xcode project manipulation ---
-    const mainTargetUuid = proj.getFirstTarget().uuid;
+    // Watch widget entitlements: App Group only (reads the cached snapshot).
+    writePlist(path.join(widgetDir, widgetEntFile), `  <key>com.apple.security.application-groups</key>
+  <array>
+    <string>${APP_GROUP}</string>
+  </array>`);
 
-    // Add PBX group for watch files (swift sources + Info.plist + entitlements)
-    const grp = proj.addPbxGroup(
-      [...swiftFiles, 'Info.plist', entFile],
-      WATCH_NAME,
-      WATCH_NAME,
-    );
     const mainGroupId = proj.getFirstProject().firstProject.mainGroup;
-    proj.addToPbxGroup(grp.uuid, mainGroupId);
-
-    // Resolve the created file references for each swift source.
-    const fileRefSection = proj.pbxFileReferenceSection();
-    const swiftFileRefs = [];
-    for (const name of swiftFiles) {
-      for (const key in fileRefSection) {
-        const ref = fileRefSection[key];
-        if (typeof ref !== 'object') continue;
-        const refName = (ref.name || '').replace(/"/g, '');
-        const refPath = (ref.path || '').replace(/"/g, '');
-        if (refName === name || refPath === name || refPath.endsWith('/' + name)) {
-          swiftFileRefs.push({ name, ref: key });
-          break;
-        }
-      }
-    }
-
-    // Build settings for the watchOS app target.
-    const mkSettings = (debug) => ({
-      ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor',
-      CLANG_ANALYZER_NONNULL: 'YES',
-      CLANG_ENABLE_MODULES: 'YES',
-      CODE_SIGN_ENTITLEMENTS: `${WATCH_NAME}/${entFile}`,
-      CODE_SIGN_STYLE: 'Automatic',
-      CURRENT_PROJECT_VERSION: buildNumber,
-      GENERATE_INFOPLIST_FILE: 'NO',
-      INFOPLIST_FILE: `${WATCH_NAME}/Info.plist`,
-      INFOPLIST_KEY_CFBundleDisplayName: '"Bsuir Time"',
-      INFOPLIST_KEY_NSHumanReadableCopyright: '""',
-      LD_RUNPATH_SEARCH_PATHS: '"$(inherited) @executable_path/Frameworks"',
-      MARKETING_VERSION: appVersion,
-      PRODUCT_BUNDLE_IDENTIFIER: `"${watchBundleId}"`,
-      PRODUCT_NAME: '"$(TARGET_NAME)"',
-      SDKROOT: 'watchos',
-      SKIP_INSTALL: 'NO',
-      SUPPORTED_PLATFORMS: '"watchos watchsimulator"',
-      SWIFT_EMIT_LOC_STRINGS: 'YES',
-      SWIFT_VERSION: '5.0',
-      TARGETED_DEVICE_FAMILY: '4',
-      WATCHOS_DEPLOYMENT_TARGET: WATCH_DEPLOYMENT_TARGET,
-      ...(debug ? {
-        DEBUG_INFORMATION_FORMAT: 'dwarf',
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: '"$(inherited) DEBUG"',
-        SWIFT_OPTIMIZATION_LEVEL: '"-Onone"',
-      } : {
-        SWIFT_OPTIMIZATION_LEVEL: '"-Owholemodule"',
-        DEBUG_INFORMATION_FORMAT: '"dwarf-with-dsym"',
-      }),
-    });
-
-    // Create build configurations + list.
-    const debugConfigUuid = proj.generateUuid();
-    const releaseConfigUuid = proj.generateUuid();
-    const configListUuid = proj.generateUuid();
-
-    const buildConfigSection = proj.pbxXCBuildConfigurationSection();
-    buildConfigSection[debugConfigUuid] = {
-      isa: 'XCBuildConfiguration',
-      buildSettings: mkSettings(true),
-      name: 'Debug',
-    };
-    buildConfigSection[debugConfigUuid + '_comment'] = 'Debug';
-    buildConfigSection[releaseConfigUuid] = {
-      isa: 'XCBuildConfiguration',
-      buildSettings: mkSettings(false),
-      name: 'Release',
-    };
-    buildConfigSection[releaseConfigUuid + '_comment'] = 'Release';
-
-    const configListSection = proj.pbxXCConfigurationList();
-    configListSection[configListUuid] = {
-      isa: 'XCConfigurationList',
-      buildConfigurations: [
-        { value: debugConfigUuid, comment: 'Debug' },
-        { value: releaseConfigUuid, comment: 'Release' },
-      ],
-      defaultConfigurationIsVisible: 0,
-      defaultConfigurationName: 'Release',
-    };
-    configListSection[configListUuid + '_comment'] = `Build configuration list for PBXNativeTarget "${WATCH_NAME}"`;
-
-    // Sources build phase (one PBXBuildFile per swift source).
-    const buildFileSection = proj.pbxBuildFileSection();
-    const sourceFiles = [];
-    for (const { name, ref } of swiftFileRefs) {
-      const bfUuid = proj.generateUuid();
-      buildFileSection[bfUuid] = {
-        isa: 'PBXBuildFile',
-        fileRef: ref,
-        fileRef_comment: name,
-      };
-      buildFileSection[bfUuid + '_comment'] = `${name} in Sources`;
-      sourceFiles.push({ value: bfUuid, comment: `${name} in Sources` });
-    }
-
-    const sourcePhaseUuid = proj.generateUuid();
-    const sourcePhaseSection = proj.hash.project.objects['PBXSourcesBuildPhase'] || {};
-    proj.hash.project.objects['PBXSourcesBuildPhase'] = sourcePhaseSection;
-    sourcePhaseSection[sourcePhaseUuid] = {
-      isa: 'PBXSourcesBuildPhase',
-      buildActionMask: 2147483647,
-      files: sourceFiles,
-      runOnlyForDeploymentPostprocessing: 0,
-    };
-    sourcePhaseSection[sourcePhaseUuid + '_comment'] = 'Sources';
-
-    // Frameworks build phase (SwiftUI/WatchKit are implicit, no explicit links).
-    const fwPhaseUuid = proj.generateUuid();
-    const fwSection = proj.hash.project.objects['PBXFrameworksBuildPhase'] || {};
-    proj.hash.project.objects['PBXFrameworksBuildPhase'] = fwSection;
-    fwSection[fwPhaseUuid] = {
-      isa: 'PBXFrameworksBuildPhase',
-      buildActionMask: 2147483647,
-      files: [],
-      runOnlyForDeploymentPostprocessing: 0,
-    };
-    fwSection[fwPhaseUuid + '_comment'] = 'Frameworks';
-
-    // Resources build phase (empty for now).
-    const resPhaseUuid = proj.generateUuid();
-    const resSection = proj.hash.project.objects['PBXResourcesBuildPhase'] || {};
-    proj.hash.project.objects['PBXResourcesBuildPhase'] = resSection;
-    resSection[resPhaseUuid] = {
-      isa: 'PBXResourcesBuildPhase',
-      buildActionMask: 2147483647,
-      files: [],
-      runOnlyForDeploymentPostprocessing: 0,
-    };
-    resSection[resPhaseUuid + '_comment'] = 'Resources';
-
-    // Product file reference (.app wrapper).
-    const productFileUuid = proj.generateUuid();
-    fileRefSection[productFileUuid] = {
-      isa: 'PBXFileReference',
-      explicitFileType: '"wrapper.application"',
-      includeInIndex: 0,
-      path: `${WATCH_NAME}.app`,
-      sourceTree: 'BUILT_PRODUCTS_DIR',
-    };
-    fileRefSection[productFileUuid + '_comment'] = `${WATCH_NAME}.app`;
     const prodGroup = proj.pbxGroupByName('Products');
-    if (prodGroup) {
-      proj.addToPbxGroup(productFileUuid, prodGroup.uuid);
+    const fileRefSection = proj.pbxFileReferenceSection();
+
+    // ══════════ Watch app target ══════════
+    if (!getNativeTargetUuid(proj, WATCH_NAME)) {
+      const grp = proj.addPbxGroup([...watchSwiftFiles, 'Info.plist', watchEntFile], WATCH_NAME, WATCH_NAME);
+      proj.addToPbxGroup(grp.uuid, mainGroupId);
+
+      const appFileRefs = watchSwiftFiles
+        .map((name) => ({ name, ref: findFileRef(proj, name) }))
+        .filter((x) => x.ref);
+
+      const mkSettings = (debug) => ({
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor',
+        CLANG_ANALYZER_NONNULL: 'YES',
+        CLANG_ENABLE_MODULES: 'YES',
+        CODE_SIGN_ENTITLEMENTS: `${WATCH_NAME}/${watchEntFile}`,
+        CODE_SIGN_STYLE: 'Automatic',
+        CURRENT_PROJECT_VERSION: buildNumber,
+        GENERATE_INFOPLIST_FILE: 'NO',
+        INFOPLIST_FILE: `${WATCH_NAME}/Info.plist`,
+        INFOPLIST_KEY_CFBundleDisplayName: '"Bsuir Time"',
+        INFOPLIST_KEY_NSHumanReadableCopyright: '""',
+        LD_RUNPATH_SEARCH_PATHS: '"$(inherited) @executable_path/Frameworks"',
+        MARKETING_VERSION: appVersion,
+        PRODUCT_BUNDLE_IDENTIFIER: `"${watchBundleId}"`,
+        PRODUCT_NAME: '"$(TARGET_NAME)"',
+        SDKROOT: 'watchos',
+        SKIP_INSTALL: 'NO',
+        SUPPORTED_PLATFORMS: '"watchos watchsimulator"',
+        SWIFT_EMIT_LOC_STRINGS: 'YES',
+        SWIFT_VERSION: '5.0',
+        TARGETED_DEVICE_FAMILY: '4',
+        WATCHOS_DEPLOYMENT_TARGET: WATCH_DEPLOYMENT_TARGET,
+        ...optSettings(debug),
+      });
+
+      const configListUuid = makeConfigList(proj, WATCH_NAME, mkSettings);
+      const sourcePhaseUuid = makeSourcesPhase(proj, appFileRefs);
+      const fwPhaseUuid = makeEmptyPhase(proj, 'PBXFrameworksBuildPhase', 'Frameworks');
+      const resPhaseUuid = makeEmptyPhase(proj, 'PBXResourcesBuildPhase', 'Resources');
+
+      const productFileUuid = proj.generateUuid();
+      fileRefSection[productFileUuid] = {
+        isa: 'PBXFileReference',
+        explicitFileType: '"wrapper.application"',
+        includeInIndex: 0,
+        path: `${WATCH_NAME}.app`,
+        sourceTree: 'BUILT_PRODUCTS_DIR',
+      };
+      fileRefSection[productFileUuid + '_comment'] = `${WATCH_NAME}.app`;
+      if (prodGroup) proj.addToPbxGroup(productFileUuid, prodGroup.uuid);
+
+      const targetUuid = proj.generateUuid();
+      proj.pbxNativeTargetSection()[targetUuid] = {
+        isa: 'PBXNativeTarget',
+        buildConfigurationList: configListUuid,
+        buildConfigurationList_comment: `Build configuration list for PBXNativeTarget "${WATCH_NAME}"`,
+        buildPhases: [
+          { value: sourcePhaseUuid, comment: 'Sources' },
+          { value: fwPhaseUuid, comment: 'Frameworks' },
+          { value: resPhaseUuid, comment: 'Resources' },
+        ],
+        buildRules: [],
+        dependencies: [],
+        name: `"${WATCH_NAME}"`,
+        productName: `"${WATCH_NAME}"`,
+        productReference: productFileUuid,
+        productReference_comment: `${WATCH_NAME}.app`,
+        productType: '"com.apple.product-type.application"',
+      };
+      proj.pbxNativeTargetSection()[targetUuid + '_comment'] = WATCH_NAME;
+      proj.getFirstProject().firstProject.targets.push({ value: targetUuid, comment: WATCH_NAME });
+
+      // Main app depends on & embeds the watch app.
+      const mainTargetUuid = proj.getFirstTarget().uuid;
+      addDependency(proj, mainTargetUuid, targetUuid, WATCH_NAME);
+      embedProduct(proj, mainTargetUuid, productFileUuid, `${WATCH_NAME}.app`, 'Embed Watch Content', 16, '"$(CONTENTS_FOLDER_PATH)/Watch"');
     }
 
-    // Native target (product-type application → watchOS app).
-    const targetUuid = proj.generateUuid();
-    const nativeTargetSection = proj.pbxNativeTargetSection();
-    nativeTargetSection[targetUuid] = {
-      isa: 'PBXNativeTarget',
-      buildConfigurationList: configListUuid,
-      buildConfigurationList_comment: `Build configuration list for PBXNativeTarget "${WATCH_NAME}"`,
-      buildPhases: [
-        { value: sourcePhaseUuid, comment: 'Sources' },
-        { value: fwPhaseUuid, comment: 'Frameworks' },
-        { value: resPhaseUuid, comment: 'Resources' },
-      ],
-      buildRules: [],
-      dependencies: [],
-      name: `"${WATCH_NAME}"`,
-      productName: `"${WATCH_NAME}"`,
-      productReference: productFileUuid,
-      productReference_comment: `${WATCH_NAME}.app`,
-      productType: '"com.apple.product-type.application"',
-    };
-    nativeTargetSection[targetUuid + '_comment'] = WATCH_NAME;
+    const watchTargetUuid = getNativeTargetUuid(proj, WATCH_NAME);
 
-    // Register target on the project.
-    const projectObj = proj.getFirstProject().firstProject;
-    projectObj.targets.push({ value: targetUuid, comment: WATCH_NAME });
+    // ══════════ Watch widget extension target ══════════
+    if (watchTargetUuid && !getNativeTargetUuid(proj, WATCH_WIDGET_NAME)) {
+      const grp = proj.addPbxGroup([...widgetSwiftFiles, 'Info.plist', widgetEntFile], WATCH_WIDGET_NAME, WATCH_WIDGET_NAME);
+      proj.addToPbxGroup(grp.uuid, mainGroupId);
 
-    // Target dependency: main app depends on the watch app (build order + embed).
-    const containerItemProxy = proj.generateUuid();
-    const targetDependency = proj.generateUuid();
-    const depSection = proj.hash.project.objects['PBXTargetDependency'] || {};
-    proj.hash.project.objects['PBXTargetDependency'] = depSection;
-    const proxySection = proj.hash.project.objects['PBXContainerItemProxy'] || {};
-    proj.hash.project.objects['PBXContainerItemProxy'] = proxySection;
+      // Widget-specific sources + shared model/support files (reused refs).
+      const widgetFileRefs = [
+        ...widgetSwiftFiles.map((name) => ({ name, ref: findFileRef(proj, name) })),
+        ...SHARED_SWIFT.map((name) => ({ name, ref: findFileRef(proj, name) })),
+      ].filter((x) => x.ref);
 
-    proxySection[containerItemProxy] = {
-      isa: 'PBXContainerItemProxy',
-      containerPortal: proj.getFirstProject().uuid,
-      containerPortal_comment: 'Project object',
-      proxyType: 1,
-      remoteGlobalIDString: targetUuid,
-      remoteInfo: `"${WATCH_NAME}"`,
-    };
-    depSection[targetDependency] = {
-      isa: 'PBXTargetDependency',
-      target: targetUuid,
-      target_comment: WATCH_NAME,
-      targetProxy: containerItemProxy,
-    };
-    depSection[targetDependency + '_comment'] = 'PBXTargetDependency';
+      const mkSettings = (debug) => ({
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor',
+        CLANG_ANALYZER_NONNULL: 'YES',
+        CLANG_ENABLE_MODULES: 'YES',
+        CODE_SIGN_ENTITLEMENTS: `${WATCH_WIDGET_NAME}/${widgetEntFile}`,
+        CODE_SIGN_STYLE: 'Automatic',
+        CURRENT_PROJECT_VERSION: buildNumber,
+        GENERATE_INFOPLIST_FILE: 'NO',
+        INFOPLIST_FILE: `${WATCH_WIDGET_NAME}/Info.plist`,
+        INFOPLIST_KEY_CFBundleDisplayName: 'Schedule',
+        INFOPLIST_KEY_NSHumanReadableCopyright: '""',
+        LD_RUNPATH_SEARCH_PATHS: '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"',
+        MARKETING_VERSION: appVersion,
+        PRODUCT_BUNDLE_IDENTIFIER: `"${watchWidgetBundleId}"`,
+        PRODUCT_NAME: '"$(TARGET_NAME)"',
+        SDKROOT: 'watchos',
+        SKIP_INSTALL: 'YES',
+        SUPPORTED_PLATFORMS: '"watchos watchsimulator"',
+        SWIFT_EMIT_LOC_STRINGS: 'YES',
+        SWIFT_VERSION: '5.0',
+        TARGETED_DEVICE_FAMILY: '4',
+        WATCHOS_DEPLOYMENT_TARGET: WATCH_DEPLOYMENT_TARGET,
+        ...optSettings(debug),
+      });
 
-    const mainTarget = nativeTargetSection[mainTargetUuid];
-    if (mainTarget && mainTarget.dependencies) {
-      mainTarget.dependencies.push({ value: targetDependency, comment: 'PBXTargetDependency' });
-    }
+      const configListUuid = makeConfigList(proj, WATCH_WIDGET_NAME, mkSettings);
+      const sourcePhaseUuid = makeSourcesPhase(proj, widgetFileRefs);
+      const fwPhaseUuid = makeEmptyPhase(proj, 'PBXFrameworksBuildPhase', 'Frameworks');
+      const resPhaseUuid = makeEmptyPhase(proj, 'PBXResourcesBuildPhase', 'Resources');
 
-    // "Embed Watch Content" copy-files phase on the main app.
-    // dstSubfolderSpec 16 + dstPath $(CONTENTS_FOLDER_PATH)/Watch is the
-    // canonical Xcode representation for embedding a watchOS app.
-    const embedBuildFileUuid = proj.generateUuid();
-    buildFileSection[embedBuildFileUuid] = {
-      isa: 'PBXBuildFile',
-      fileRef: productFileUuid,
-      fileRef_comment: `${WATCH_NAME}.app`,
-      settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
-    };
-    buildFileSection[embedBuildFileUuid + '_comment'] = `${WATCH_NAME}.app in Embed Watch Content`;
+      const productFileUuid = proj.generateUuid();
+      fileRefSection[productFileUuid] = {
+        isa: 'PBXFileReference',
+        explicitFileType: '"wrapper.app-extension"',
+        includeInIndex: 0,
+        path: `${WATCH_WIDGET_NAME}.appex`,
+        sourceTree: 'BUILT_PRODUCTS_DIR',
+      };
+      fileRefSection[productFileUuid + '_comment'] = `${WATCH_WIDGET_NAME}.appex`;
+      if (prodGroup) proj.addToPbxGroup(productFileUuid, prodGroup.uuid);
 
-    const embedPhaseUuid = proj.generateUuid();
-    const copySection = proj.hash.project.objects['PBXCopyFilesBuildPhase'] || {};
-    proj.hash.project.objects['PBXCopyFilesBuildPhase'] = copySection;
-    copySection[embedPhaseUuid] = {
-      isa: 'PBXCopyFilesBuildPhase',
-      buildActionMask: 2147483647,
-      dstPath: '"$(CONTENTS_FOLDER_PATH)/Watch"',
-      dstSubfolderSpec: 16,
-      files: [
-        { value: embedBuildFileUuid, comment: `${WATCH_NAME}.app in Embed Watch Content` },
-      ],
-      name: '"Embed Watch Content"',
-      runOnlyForDeploymentPostprocessing: 0,
-    };
-    copySection[embedPhaseUuid + '_comment'] = 'Embed Watch Content';
+      const targetUuid = proj.generateUuid();
+      proj.pbxNativeTargetSection()[targetUuid] = {
+        isa: 'PBXNativeTarget',
+        buildConfigurationList: configListUuid,
+        buildConfigurationList_comment: `Build configuration list for PBXNativeTarget "${WATCH_WIDGET_NAME}"`,
+        buildPhases: [
+          { value: sourcePhaseUuid, comment: 'Sources' },
+          { value: fwPhaseUuid, comment: 'Frameworks' },
+          { value: resPhaseUuid, comment: 'Resources' },
+        ],
+        buildRules: [],
+        dependencies: [],
+        name: `"${WATCH_WIDGET_NAME}"`,
+        productName: `"${WATCH_WIDGET_NAME}"`,
+        productReference: productFileUuid,
+        productReference_comment: `${WATCH_WIDGET_NAME}.appex`,
+        productType: '"com.apple.product-type.app-extension"',
+      };
+      proj.pbxNativeTargetSection()[targetUuid + '_comment'] = WATCH_WIDGET_NAME;
+      proj.getFirstProject().firstProject.targets.push({ value: targetUuid, comment: WATCH_WIDGET_NAME });
 
-    if (mainTarget && mainTarget.buildPhases) {
-      mainTarget.buildPhases.push({ value: embedPhaseUuid, comment: 'Embed Watch Content' });
+      // Watch app depends on & embeds the widget extension (into its PlugIns).
+      addDependency(proj, watchTargetUuid, targetUuid, WATCH_WIDGET_NAME);
+      embedProduct(proj, watchTargetUuid, productFileUuid, `${WATCH_WIDGET_NAME}.appex`, 'Embed App Extensions', 13, '""');
     }
 
     return mod;

@@ -171,6 +171,13 @@ App Group общий у iPhone-приложения и его расширени
   - **«Сейчас/Далее» считается локально по текущему времени** (снапшот может быть построен часами ранее). Полноценный stale-date fallback (если `today.dateISO` ≠ реальной дате) — Фаза 4.
   - **Проверено:** `swiftc -parse` — без синтаксических ошибок; **полный `swiftc -typecheck` против watchOS SDK (`arm64-apple-watchos9.0-simulator`) — 0 ошибок, 0 предупреждений**; `expo prebuild` — все 8 swift-файлов в Sources watch-таргета, граф цел.
 
+- ✅ **Фаза 3 — осложнения / complications (сделано).**
+  - `targets/watch-widget/ScheduleComplication.swift` — WidgetKit accessory-семейства (`accessoryCircular`/`accessoryRectangular`/`accessoryInline`/`accessoryCorner`), `WidgetBundle` @main, `TimelineProvider` с точками обновления на start/end пар, чтение снапшота из App Group часов, переиспользование `heroSelection()` для «сейчас/следующая».
+  - `plugins/withWatch.js` переписан: теперь создаёт **два** таргета — watch app (`BsuirWatch`) и widget extension (`BsuirWatchWidget`, product-type app-extension, watchos, bundle id `…watchkitapp.widget`), вложенный в watch app (Embed App Extensions, spec 13). Вынесены хелперы (`makeConfigList`/`makeSourcesPhase`/`embedProduct`/`addDependency`), гварды по каждому таргету отдельно.
+  - **Общие файлы `SnapshotModel.swift` + `LessonSupport.swift` компилятся в оба таргета** (один fileRef, два build-file) — без дублирования.
+  - `app.json` — добавлена запись `BsuirWatchWidget` в EAS `appExtensions`.
+  - **Проверено:** `swiftc -typecheck` виджет-сорсов (widget + shared) против watchOS SDK — 0 ошибок/0 предупреждений; `expo prebuild` — 4 таргета, виджет вложен в watch app (spec 13), `BsuirWatch.app` в main (spec 16), `ScheduleWidget` цел, shared-файлы в обоих таргетах, pbxproj парсится.
+
 ## 5. Фазы реализации
 
 | Фаза | Содержание | DoD |
