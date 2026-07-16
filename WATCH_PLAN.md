@@ -185,6 +185,37 @@ App Group общий у iPhone-приложения и его расширени
   - **Осложнения** (`ScheduleComplication.swift`): таймлайн-границы и `heroSelection` считаются от resolved-дня.
   - **Проверено:** `swiftc -typecheck` обоих target-сетов против watchOS SDK — **0 ошибок/0 предупреждений**; `expo prebuild` — 4 таргета, sources 8/3, граф цел.
 
+- 🟡 **Фаза 5 — релиз (репозиторная часть сделана; аккаунт-часть за тобой).**
+  - **Иконка watch-приложения:** `targets/watch/Assets.xcassets` (`AppIcon` single-size 1024 + `AccentColor`), плагин копирует и цепляет в Resources watch-таргета, `ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon`. Сейчас placeholder = основная иконка приложения — замени на watch-специфичную при желании.
+  - **EAS:** `eas.json` не требует изменений (версии `remote`, образ Xcode 26.2). Watch-таргеты объявлены в `app.json → extra.eas.build.experimental.ios.appExtensions` (app / watch app / watch widget) — по ним EAS выпустит provisioning profiles.
+  - См. **§4b** — чеклист релиза и что требуется от тебя.
+
+## 4b. Релиз-чеклист и что требуется от тебя
+
+### Как это собирается (важно)
+watchOS-приложение **встраивается в общую сборку** iOS-приложения: `BsuirWatch.app` кладётся в `MyApp.app/Watch/`, а осложнения (`BsuirWatchWidget.appex`) — в `BsuirWatch.app/PlugIns/`. Один архив, одна запись в App Store Connect, один `.ipa`. Отдельно watch не публикуется. То, что ты слышал — верно: как iPhone/iPad, Apple Watch это ещё один «слой» внутри того же приложения.
+
+### Иконки («фотки» в бандле)
+- **Иконка watch-приложения** — уже заведена в `targets/watch/Assets.xcassets/AppIcon.appiconset` (1024×1024, single-size — watchOS сам генерит остальные размеры). Замени `icon.png` там на свою, если нужна отдельная от iPhone.
+- Иконка **осложнений** не нужна — они рисуются кодом (SF Symbols / текст).
+
+### Скриншоты в App Store Connect («фотки» в сторе)
+Это делается **не в коде, а в ASC** (как для iPhone/iPad):
+- В карточке приложения → вкладка со скриншотами есть **отдельная секция «Apple Watch»**.
+- Нужны скриншоты 410×502 (или 416×496 для 45mm) — снимаются из watch-симулятора (`⌘S` в Simulator).
+- Появляется эта секция автоматически, как только загрузишь билд, содержащий watch-приложение.
+
+### Что требуется от тебя (аккаунт/устройства — я это сделать не могу)
+1. **Apple Developer:** зарегистрировать 2 новых App ID (или дать EAS создать их): `by.vazon.bsuirschedule.watchkitapp` и `by.vazon.bsuirschedule.watchkitapp.widget`. App Group `group.by.vazon.bsuirschedule` — включить для обоих.
+2. **EAS build:** прогнать `npm run ios:eas` (production). На этапе credentials EAS попросит создать/подтвердить provisioning для 3 bundle id — согласиться. ⚠️ Проверить, что EAS реально сгенерил профили и для watch-таргетов (иногда watch app требует ручного добавления в ASC/credentials — если упадёт на подписи, завести профили вручную в developer.apple.com и подложить).
+3. **iCloud entitlement на watch:** убедиться, что в профиле watch app включён iCloud (Key-Value Storage) — транспорт данных зависит от этого. (В entitlements-файле уже прописано `ubiquity-kvstore-identifier`; нужно, чтобы App ID это разрешал.)
+4. **TestFlight:** залить билд, проверить на **реальных** iPhone + Apple Watch, что: снапшот доезжает на часы (нужен вход в один iCloud на обоих), осложнение ставится на циферблат и в Smart Stack.
+5. **ASC:** добавить скриншоты Apple Watch (см. выше) перед сабмитом на ревью.
+6. **(Опционально)** заменить placeholder-иконку часов на отдельную.
+
+### Мои ограничения
+Сборку/typecheck локально я проверяю (Фаза Б), но **подпись, EAS credentials, TestFlight и ASC требуют твоего аккаунта** и делаются с твоей стороны.
+
 ## 5. Фазы реализации
 
 | Фаза | Содержание | DoD |

@@ -223,6 +223,13 @@ function withWatch(config) {
     const watchSwiftFiles = copySwiftSources(projectRoot, 'watch', watchDir);
     const widgetSwiftFiles = copySwiftSources(projectRoot, 'watch-widget', widgetDir);
 
+    // Watch app asset catalog (AppIcon + AccentColor). Copied whole.
+    const assetsSrc = path.join(projectRoot, 'targets', 'watch', 'Assets.xcassets');
+    const hasAssets = fs.existsSync(assetsSrc);
+    if (hasAssets) {
+      fs.cpSync(assetsSrc, path.join(watchDir, 'Assets.xcassets'), { recursive: true });
+    }
+
     // Watch app Info.plist (single-target watchOS app: WKApplication=YES).
     writePlist(path.join(watchDir, 'Info.plist'), `  <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
@@ -292,7 +299,9 @@ function withWatch(config) {
 
     // ══════════ Watch app target ══════════
     if (!getNativeTargetUuid(proj, WATCH_NAME)) {
-      const grp = proj.addPbxGroup([...watchSwiftFiles, 'Info.plist', watchEntFile], WATCH_NAME, WATCH_NAME);
+      const groupFiles = [...watchSwiftFiles, 'Info.plist', watchEntFile];
+      if (hasAssets) groupFiles.push('Assets.xcassets');
+      const grp = proj.addPbxGroup(groupFiles, WATCH_NAME, WATCH_NAME);
       proj.addToPbxGroup(grp.uuid, mainGroupId);
 
       const appFileRefs = watchSwiftFiles
@@ -300,6 +309,7 @@ function withWatch(config) {
         .filter((x) => x.ref);
 
       const mkSettings = (debug) => ({
+        ...(hasAssets ? { ASSETCATALOG_COMPILER_APPICON_NAME: 'AppIcon' } : {}),
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor',
         CLANG_ANALYZER_NONNULL: 'YES',
         CLANG_ENABLE_MODULES: 'YES',
@@ -328,6 +338,21 @@ function withWatch(config) {
       const sourcePhaseUuid = makeSourcesPhase(proj, appFileRefs);
       const fwPhaseUuid = makeEmptyPhase(proj, 'PBXFrameworksBuildPhase', 'Frameworks');
       const resPhaseUuid = makeEmptyPhase(proj, 'PBXResourcesBuildPhase', 'Resources');
+
+      // Add the asset catalog to the Resources phase so AppIcon compiles in.
+      if (hasAssets) {
+        const assetsRef = findFileRef(proj, 'Assets.xcassets');
+        if (assetsRef) {
+          const buildFileSection = proj.pbxBuildFileSection();
+          const bf = proj.generateUuid();
+          buildFileSection[bf] = { isa: 'PBXBuildFile', fileRef: assetsRef, fileRef_comment: 'Assets.xcassets' };
+          buildFileSection[bf + '_comment'] = 'Assets.xcassets in Resources';
+          proj.hash.project.objects['PBXResourcesBuildPhase'][resPhaseUuid].files.push({
+            value: bf,
+            comment: 'Assets.xcassets in Resources',
+          });
+        }
+      }
 
       const productFileUuid = proj.generateUuid();
       fileRefSection[productFileUuid] = {
