@@ -53,7 +53,7 @@ export const useAppBootstrap = () => {
         updateWidgetSnapshot();
         // После prefetch расписание defaultGroup и currentWeek уже в сторе —
         // огонёк может корректно определить учебный день.
-        FireController.onAppActive();
+        void FireController.onAppActive();
       });
       void AppVersionController.checkForUpdate();
     });

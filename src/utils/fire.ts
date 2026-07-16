@@ -221,6 +221,83 @@ export const getFlameColor = (current: number): string => {
   return FIRE_COLORS.cold;
 };
 
+// ─── Cloud merge ─────────────────────────────────────────────────────────────
+
+/** Приоритет статусов при слиянии истории: active > frozen > missed. */
+const STATUS_RANK: Record<FireDayStatus, number> = { active: 3, frozen: 2, missed: 1 };
+
+/** Более поздняя из двух ISO-дат (null считается «раньше всех»). */
+const maxISO = (a: string | null, b: string | null): string | null => {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a >= b ? a : b;
+};
+
+const mergeHistory = (
+  a: Record<string, FireDayStatus>,
+  b: Record<string, FireDayStatus>,
+): Record<string, FireDayStatus> => {
+  const out: Record<string, FireDayStatus> = { ...b };
+  for (const [k, v] of Object.entries(a)) {
+    const existing = out[k];
+    if (!existing || STATUS_RANK[v] > STATUS_RANK[existing]) out[k] = v;
+  }
+  return pruneHistory(out);
+};
+
+/**
+ * Слить локальное и облачное ядро огонька (для синка между устройствами).
+ * Серия/рекорд — max; даты — самые свежие (чтобы не переоценивать заново уже
+ * учтённые дни); заморозки — при совпадении недели min (потрачено на любом
+ * устройстве), иначе пул более свежей недели; история — объединение по
+ * приоритету статусов.
+ */
+export const mergeFireCores = (local: FireCore, remote: FireCore): FireCore => {
+  let freezes: number;
+  let freezeWeekStart: string | null;
+  if (local.freezeWeekStart && remote.freezeWeekStart) {
+    if (local.freezeWeekStart === remote.freezeWeekStart) {
+      freezeWeekStart = local.freezeWeekStart;
+      freezes = Math.min(local.freezes, remote.freezes);
+    } else if (local.freezeWeekStart > remote.freezeWeekStart) {
+      freezeWeekStart = local.freezeWeekStart;
+      freezes = local.freezes;
+    } else {
+      freezeWeekStart = remote.freezeWeekStart;
+      freezes = remote.freezes;
+    }
+  } else {
+    freezeWeekStart = local.freezeWeekStart ?? remote.freezeWeekStart;
+    freezes = local.freezeWeekStart ? local.freezes : remote.freezes;
+  }
+
+  return {
+    current: Math.max(local.current, remote.current),
+    longest: Math.max(local.longest, remote.longest),
+    lastActiveDate: maxISO(local.lastActiveDate, remote.lastActiveDate),
+    lastEvalDate: maxISO(local.lastEvalDate, remote.lastEvalDate),
+    freezes,
+    freezeWeekStart,
+    history: mergeHistory(local.history, remote.history),
+  };
+};
+
+/** Проверка, что распарсенный из облака JSON похож на `FireCore`. */
+export const isFireCore = (x: unknown): x is FireCore => {
+  if (typeof x !== 'object' || x == null) return false;
+  const c = x as Record<string, unknown>;
+  return (
+    typeof c.current === 'number' &&
+    typeof c.longest === 'number' &&
+    (c.lastActiveDate === null || typeof c.lastActiveDate === 'string') &&
+    (c.lastEvalDate === null || typeof c.lastEvalDate === 'string') &&
+    typeof c.freezes === 'number' &&
+    (c.freezeWeekStart === null || typeof c.freezeWeekStart === 'string') &&
+    typeof c.history === 'object' &&
+    c.history != null
+  );
+};
+
 // ─── Учебные дни из расписания ────────────────────────────────────────────────
 
 /**

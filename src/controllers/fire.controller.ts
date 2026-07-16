@@ -1,4 +1,5 @@
-import { useFireStore } from '@stores/fire.store';
+import { pullFireFromCloud, pushFireToCloud } from '@services/cloud/syncService';
+import { selectFireCore, useFireStore } from '@stores/fire.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { buildLessonDayChecker } from '@utils/fire';
@@ -27,14 +28,26 @@ const buildChecker = (now: Date): ((iso: string) => boolean) => {
  * Догнать прошлое и, если сегодня учебный день, начислить активность.
  * `markActivity` идемпотентен в пределах дня, поэтому повторные вызовы из
  * разных точек (вход / расписание / домашка) безопасны — максимум +1 в день.
+ * После изменения — best-effort push в облако.
  */
 const register = (now: Date): void => {
   useFireStore.getState().markActivity(now, buildChecker(now));
+  void pushFireToCloud(selectFireCore(useFireStore.getState()));
 };
 
 export const FireController = {
-  /** Старт приложения / возврат в foreground. Вызывать ПОСЛЕ prefetch. */
-  onAppActive(now: Date = new Date()): void {
+  /**
+   * Старт приложения / возврат в foreground. Вызывать ПОСЛЕ prefetch.
+   * Сначала подтягивает облачное ядро и сливает его в локальное (синк между
+   * устройствами), затем догоняет прошлое и начисляет активность.
+   */
+  async onAppActive(now: Date = new Date()): Promise<void> {
+    try {
+      const remote = await pullFireFromCloud();
+      if (remote) useFireStore.getState().mergeRemote(remote);
+    } catch {
+      // синк best-effort — офлайн не должен мешать локальному огоньку
+    }
     register(now);
   },
 

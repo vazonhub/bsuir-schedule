@@ -8,6 +8,7 @@ import {
   emptyFireCore,
   evaluateCore,
   markActivityCore,
+  mergeFireCores,
   mondayOfISO,
   prevDayISO,
   toLocalISO,
@@ -26,6 +27,8 @@ interface FireStore extends FireCore {
   /** Запрос на celebration — потребляется вью и сбрасывается. */
   pendingCelebration: PendingCelebration | null;
 
+  /** Слить облачное ядро в локальное (синк между устройствами). */
+  mergeRemote(remote: FireCore): void;
   /** Догнать прошлое (штрафы за пропуски). Вызывается контроллером. */
   evaluate(now: Date, isLessonDay: (iso: string) => boolean): void;
   /** Начислить активность за сегодня. Вызывается контроллером. */
@@ -64,6 +67,10 @@ export const useFireStore = create<FireStore>()(
       ...emptyFireCore(),
       migratedFromDiary: false,
       pendingCelebration: null,
+
+      mergeRemote: (remote) => {
+        set(mergeFireCores(pickCore(get()), remote));
+      },
 
       evaluate: (now, isLessonDay) => {
         const next = evaluateCore(pickCore(get()), toLocalISO(now), isLessonDay);
