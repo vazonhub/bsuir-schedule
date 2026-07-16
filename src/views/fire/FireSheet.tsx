@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import { FlameIcon } from '@components/fire/FlameIcon';
 import { usePalette } from '@hooks/usePalette';
@@ -30,7 +31,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<BottomSheetModal>(null);
-  const core = useFireStore(selectFireCore);
+  const core = useFireStore(useShallow(selectFireCore));
   const snapPoints = useMemo(() => ['70%'], []);
 
   useImperativeHandle(ref, () => ({

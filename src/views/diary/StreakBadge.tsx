@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 import { FlameIcon } from '@components/fire/FlameIcon';
 import { usePalette } from '@hooks/usePalette';
-import { selectFireCore, useFireStore } from '@stores/fire.store';
+import { selectFireCurrent, useFireStore } from '@stores/fire.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
-import { getFlameColor, isFireHot } from '@utils/fire';
+import { getFlameColor } from '@utils/fire';
 import { hapticLight } from '@utils/haptics';
 
 import { FireSheet } from '@views/fire/FireSheet';
@@ -18,9 +18,9 @@ type PaletteType = ReturnType<typeof usePalette>;
 export const StreakBadge = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
-  const core = useFireStore(selectFireCore);
-  const hot = isFireHot(core);
-  const flameColor = getFlameColor(core.current);
+  const current = useFireStore(selectFireCurrent);
+  const hot = current > 0;
+  const flameColor = getFlameColor(current);
   const styles = useMemo(() => makeStyles(Palette, hot, flameColor), [Palette, hot, flameColor]);
   const sheetRef = useRef<FireSheetRef>(null);
 
@@ -38,11 +38,11 @@ export const StreakBadge = () => {
         hitSlop={6}
         style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}
         accessibilityRole="button"
-        accessibilityLabel={t('fire.a11y', { n: core.current })}
+        accessibilityLabel={t('fire.a11y', { n: current })}
       >
-        <FlameIcon current={core.current} size={14} />
+        <FlameIcon current={current} size={14} />
         <Text {...textProps('footnote')} style={[styles.number, { color: textColor }]}>
-          {core.current}
+          {current}
         </Text>
       </Pressable>
       <FireSheet ref={sheetRef} />
