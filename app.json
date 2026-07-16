@@ -98,9 +98,7 @@
         ]
       },
       "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.by.vazon.bsuirschedule"
-        ]
+        "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
       }
     },
     "android": {
@@ -113,9 +111,7 @@
       "icon": "./assets/android-icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "com.google.android.gms.permission.AD_ID"
-      ],
+      "permissions": ["com.google.android.gms.permission.AD_ID"],
       "blockedPermissions": []
     },
     "web": {
@@ -134,33 +130,207 @@
       [
         "expo-alternate-app-icons",
         [
-          { "name": "IconBgDark", "ios": "./assets/icons/IconBgDark.png", "android": { "foregroundImage": "./assets/icons/IconBgDark.png", "backgroundColor": "#2C2C2E" } },
-          { "name": "IconBgRed", "ios": "./assets/icons/IconBgRed.png", "android": { "foregroundImage": "./assets/icons/IconBgRed.png", "backgroundColor": "#FF3B30" } },
-          { "name": "IconBgOrange", "ios": "./assets/icons/IconBgOrange.png", "android": { "foregroundImage": "./assets/icons/IconBgOrange.png", "backgroundColor": "#FF9500" } },
-          { "name": "IconBgGreen", "ios": "./assets/icons/IconBgGreen.png", "android": { "foregroundImage": "./assets/icons/IconBgGreen.png", "backgroundColor": "#34C759" } },
-          { "name": "IconBgPurple", "ios": "./assets/icons/IconBgPurple.png", "android": { "foregroundImage": "./assets/icons/IconBgPurple.png", "backgroundColor": "#AF52DE" } },
-          { "name": "IconBgBlue", "ios": "./assets/icons/IconBgBlue.png", "android": { "foregroundImage": "./assets/icons/IconBgBlue.png", "backgroundColor": "#007AFF" } },
-          { "name": "IconBgPink", "ios": "./assets/icons/IconBgPink.png", "android": { "foregroundImage": "./assets/icons/IconBgPink.png", "backgroundColor": "#FF2D55" } },
-          { "name": "IconBgTeal", "ios": "./assets/icons/IconBgTeal.png", "android": { "foregroundImage": "./assets/icons/IconBgTeal.png", "backgroundColor": "#5AC8FA" } },
-          { "name": "IconLightClassicBlue", "ios": "./assets/icons/IconLightClassicBlue.png", "android": { "foregroundImage": "./assets/icons/IconLightClassicBlue.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconLightBlack", "ios": "./assets/icons/IconLightBlack.png", "android": { "foregroundImage": "./assets/icons/IconLightBlack.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconLightBlue", "ios": "./assets/icons/IconLightBlue.png", "android": { "foregroundImage": "./assets/icons/IconLightBlue.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconLightPurple", "ios": "./assets/icons/IconLightPurple.png", "android": { "foregroundImage": "./assets/icons/IconLightPurple.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconLightRed", "ios": "./assets/icons/IconLightRed.png", "android": { "foregroundImage": "./assets/icons/IconLightRed.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconLightGreen", "ios": "./assets/icons/IconLightGreen.png", "android": { "foregroundImage": "./assets/icons/IconLightGreen.png", "backgroundColor": "#FFFFFF" } },
-          { "name": "IconDarkBlue", "ios": "./assets/icons/IconDarkBlue.png", "android": { "foregroundImage": "./assets/icons/IconDarkBlue.png", "backgroundColor": "#1C1C1E" } },
-          { "name": "IconDarkGreen", "ios": "./assets/icons/IconDarkGreen.png", "android": { "foregroundImage": "./assets/icons/IconDarkGreen.png", "backgroundColor": "#1C1C1E" } },
-          { "name": "IconDarkRed", "ios": "./assets/icons/IconDarkRed.png", "android": { "foregroundImage": "./assets/icons/IconDarkRed.png", "backgroundColor": "#1C1C1E" } },
-          { "name": "IconDarkOrange", "ios": "./assets/icons/IconDarkOrange.png", "android": { "foregroundImage": "./assets/icons/IconDarkOrange.png", "backgroundColor": "#1C1C1E" } },
-          { "name": "IconDarkPurple", "ios": "./assets/icons/IconDarkPurple.png", "android": { "foregroundImage": "./assets/icons/IconDarkPurple.png", "backgroundColor": "#1C1C1E" } },
-          { "name": "IconGradBluePurple", "ios": "./assets/icons/IconGradBluePurple.png", "android": { "foregroundImage": "./assets/icons/IconGradBluePurple.png", "backgroundColor": "#5856D6" } },
-          { "name": "IconGradRedOrange", "ios": "./assets/icons/IconGradRedOrange.png", "android": { "foregroundImage": "./assets/icons/IconGradRedOrange.png", "backgroundColor": "#FF6B35" } },
-          { "name": "IconGradGreenTeal", "ios": "./assets/icons/IconGradGreenTeal.png", "android": { "foregroundImage": "./assets/icons/IconGradGreenTeal.png", "backgroundColor": "#30B0A0" } },
-          { "name": "IconGradPinkPurple", "ios": "./assets/icons/IconGradPinkPurple.png", "android": { "foregroundImage": "./assets/icons/IconGradPinkPurple.png", "backgroundColor": "#DA3287" } },
-          { "name": "IconGradMidnight", "ios": "./assets/icons/IconGradMidnight.png", "android": { "foregroundImage": "./assets/icons/IconGradMidnight.png", "backgroundColor": "#191970" } }
+          {
+            "name": "IconBgDark",
+            "ios": "./assets/icons/IconBgDark.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgDark.png",
+              "backgroundColor": "#2C2C2E"
+            }
+          },
+          {
+            "name": "IconBgRed",
+            "ios": "./assets/icons/IconBgRed.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgRed.png",
+              "backgroundColor": "#FF3B30"
+            }
+          },
+          {
+            "name": "IconBgOrange",
+            "ios": "./assets/icons/IconBgOrange.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgOrange.png",
+              "backgroundColor": "#FF9500"
+            }
+          },
+          {
+            "name": "IconBgGreen",
+            "ios": "./assets/icons/IconBgGreen.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgGreen.png",
+              "backgroundColor": "#34C759"
+            }
+          },
+          {
+            "name": "IconBgPurple",
+            "ios": "./assets/icons/IconBgPurple.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgPurple.png",
+              "backgroundColor": "#AF52DE"
+            }
+          },
+          {
+            "name": "IconBgBlue",
+            "ios": "./assets/icons/IconBgBlue.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgBlue.png",
+              "backgroundColor": "#007AFF"
+            }
+          },
+          {
+            "name": "IconBgPink",
+            "ios": "./assets/icons/IconBgPink.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgPink.png",
+              "backgroundColor": "#FF2D55"
+            }
+          },
+          {
+            "name": "IconBgTeal",
+            "ios": "./assets/icons/IconBgTeal.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconBgTeal.png",
+              "backgroundColor": "#5AC8FA"
+            }
+          },
+          {
+            "name": "IconLightClassicBlue",
+            "ios": "./assets/icons/IconLightClassicBlue.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightClassicBlue.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconLightBlack",
+            "ios": "./assets/icons/IconLightBlack.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightBlack.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconLightBlue",
+            "ios": "./assets/icons/IconLightBlue.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightBlue.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconLightPurple",
+            "ios": "./assets/icons/IconLightPurple.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightPurple.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconLightRed",
+            "ios": "./assets/icons/IconLightRed.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightRed.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconLightGreen",
+            "ios": "./assets/icons/IconLightGreen.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconLightGreen.png",
+              "backgroundColor": "#FFFFFF"
+            }
+          },
+          {
+            "name": "IconDarkBlue",
+            "ios": "./assets/icons/IconDarkBlue.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconDarkBlue.png",
+              "backgroundColor": "#1C1C1E"
+            }
+          },
+          {
+            "name": "IconDarkGreen",
+            "ios": "./assets/icons/IconDarkGreen.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconDarkGreen.png",
+              "backgroundColor": "#1C1C1E"
+            }
+          },
+          {
+            "name": "IconDarkRed",
+            "ios": "./assets/icons/IconDarkRed.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconDarkRed.png",
+              "backgroundColor": "#1C1C1E"
+            }
+          },
+          {
+            "name": "IconDarkOrange",
+            "ios": "./assets/icons/IconDarkOrange.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconDarkOrange.png",
+              "backgroundColor": "#1C1C1E"
+            }
+          },
+          {
+            "name": "IconDarkPurple",
+            "ios": "./assets/icons/IconDarkPurple.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconDarkPurple.png",
+              "backgroundColor": "#1C1C1E"
+            }
+          },
+          {
+            "name": "IconGradBluePurple",
+            "ios": "./assets/icons/IconGradBluePurple.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconGradBluePurple.png",
+              "backgroundColor": "#5856D6"
+            }
+          },
+          {
+            "name": "IconGradRedOrange",
+            "ios": "./assets/icons/IconGradRedOrange.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconGradRedOrange.png",
+              "backgroundColor": "#FF6B35"
+            }
+          },
+          {
+            "name": "IconGradGreenTeal",
+            "ios": "./assets/icons/IconGradGreenTeal.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconGradGreenTeal.png",
+              "backgroundColor": "#30B0A0"
+            }
+          },
+          {
+            "name": "IconGradPinkPurple",
+            "ios": "./assets/icons/IconGradPinkPurple.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconGradPinkPurple.png",
+              "backgroundColor": "#DA3287"
+            }
+          },
+          {
+            "name": "IconGradMidnight",
+            "ios": "./assets/icons/IconGradMidnight.png",
+            "android": {
+              "foregroundImage": "./assets/icons/IconGradMidnight.png",
+              "backgroundColor": "#191970"
+            }
+          }
         ]
       ],
       "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#F08A24"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -183,43 +353,46 @@
         }
       ],
       ["./plugins/withAndroidAccentColor", "#0A84FF"],
-      ["react-native-android-widget", {
-        "widgets": [
-          {
-            "name": "ScheduleSmall",
-            "label": "Bsuir Time",
-            "minWidth": "110dp",
-            "minHeight": "110dp",
-            "targetCellWidth": 2,
-            "targetCellHeight": 2,
-            "resizeMode": "horizontal|vertical",
-            "description": "Расписание занятий",
-            "updatePeriodMillis": 1800000
-          },
-          {
-            "name": "ScheduleMedium",
-            "label": "Bsuir Time (средний)",
-            "minWidth": "250dp",
-            "minHeight": "110dp",
-            "targetCellWidth": 4,
-            "targetCellHeight": 2,
-            "resizeMode": "horizontal|vertical",
-            "description": "Расписание занятий",
-            "updatePeriodMillis": 1800000
-          },
-          {
-            "name": "ScheduleLarge",
-            "label": "Bsuir Time (большой)",
-            "minWidth": "250dp",
-            "minHeight": "250dp",
-            "targetCellWidth": 4,
-            "targetCellHeight": 4,
-            "resizeMode": "horizontal|vertical",
-            "description": "Расписание занятий",
-            "updatePeriodMillis": 1800000
-          }
-        ]
-      }],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "ScheduleSmall",
+              "label": "Bsuir Time",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "description": "Расписание занятий",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "ScheduleMedium",
+              "label": "Bsuir Time (средний)",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "description": "Расписание занятий",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "ScheduleLarge",
+              "label": "Bsuir Time (большой)",
+              "minWidth": "250dp",
+              "minHeight": "250dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 4,
+              "resizeMode": "horizontal|vertical",
+              "description": "Расписание занятий",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ],
       "./plugins/withWidgetExtras",
       "./plugins/withUnityBanner",
       "react-native-iap",
@@ -239,9 +412,7 @@
                   "targetName": "ScheduleWidget",
                   "bundleIdentifier": "by.vazon.bsuirschedule.widget",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.by.vazon.bsuirschedule"
-                    ]
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
                 }
               ]

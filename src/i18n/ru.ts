@@ -73,6 +73,8 @@ export const ru = {
     a11y: 'Огонёк, серия {{n}} дней',
     newRecord: 'Новый рекорд!',
     milestoneReached: '{{n}} дней подряд!',
+    reminderTitle: 'Не потеряй огонёк! 🔥',
+    reminderBody: 'Загляни сегодня, чтобы серия {{n}} дн. не сгорела.',
   },
 
   error: {

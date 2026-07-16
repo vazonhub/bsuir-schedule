@@ -72,6 +72,8 @@ export const be: TranslationKeys = {
     a11y: 'Агеньчык, серыя {{n}} дзён',
     newRecord: 'Новы рэкорд!',
     milestoneReached: '{{n}} дзён запар!',
+    reminderTitle: 'Не згубі агеньчык! 🔥',
+    reminderBody: 'Завітай сёння, каб серыя {{n}} дн. не згасла.',
   },
 
   error: {

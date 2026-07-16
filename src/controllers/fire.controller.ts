@@ -1,4 +1,5 @@
 import { pullFireFromCloud, pushFireToCloud } from '@services/cloud/syncService';
+import { rescheduleFireReminder } from '@services/notifications/fireReminder';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
@@ -28,11 +29,13 @@ const buildChecker = (now: Date): ((iso: string) => boolean) => {
  * Догнать прошлое и, если сегодня учебный день, начислить активность.
  * `markActivity` идемпотентен в пределах дня, поэтому повторные вызовы из
  * разных точек (вход / расписание / домашка) безопасны — максимум +1 в день.
- * После изменения — best-effort push в облако.
+ * После изменения — best-effort push в облако и перепланирование напоминания.
  */
 const register = (now: Date): void => {
-  useFireStore.getState().markActivity(now, buildChecker(now));
+  const isLessonDay = buildChecker(now);
+  useFireStore.getState().markActivity(now, isLessonDay);
   void pushFireToCloud(selectFireCore(useFireStore.getState()));
+  void rescheduleFireReminder(now, isLessonDay);
 };
 
 export const FireController = {

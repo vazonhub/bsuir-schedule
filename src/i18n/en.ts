@@ -72,6 +72,8 @@ export const en: TranslationKeys = {
     a11y: 'Streak, {{n}} days',
     newRecord: 'New record!',
     milestoneReached: '{{n}} days in a row!',
+    reminderTitle: "Don't lose your streak! 🔥",
+    reminderBody: 'Drop by today so your {{n}}-day streak survives.',
   },
 
   error: {
