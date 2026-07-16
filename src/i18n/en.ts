@@ -47,18 +47,29 @@ export const en: TranslationKeys = {
     plannerPickSubject: 'Pick a subject',
     plannerPickTask: 'Pick a task',
     plannerEditTitle: 'Edit task',
-    streakTitle: 'Streak',
-    streakCurrent: 'Current: {{n}} d.',
-    streakLongest: 'Best: {{n}} d.',
-    streakRules:
-      "Mark at least 1 task on weekdays to keep the streak going. Weekends don't count — they neither break nor extend it.",
-    streakA11y: 'Streak, {{n}} days in a row',
     plannerNoEligible: 'Set a task count on a subject to add it to the planner',
     upcomingTitle: 'Upcoming',
     upcomingEmpty: 'None',
     whenToday: 'Today',
     whenTomorrow: 'Tomorrow',
     shortDayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  },
+
+  fire: {
+    title: 'Streak',
+    current: 'Current streak',
+    longest: 'Best',
+    days: '{{n}} d.',
+    freezes: 'Freezes',
+    freezesLeft: '{{n}} of {{max}} left',
+    calendarTitle: 'Activity',
+    legendActive: 'Active',
+    legendFrozen: 'Freeze',
+    legendMissed: 'Missed',
+    rules:
+      "Open the app on school days to grow the streak (+1). Missing a school day costs 1, but freezes (2 per week) cover you. Weekends and days with no classes don't count.",
+    empty: 'Nothing yet. Drop by on a school day to light the flame.',
+    a11y: 'Streak, {{n}} days',
   },
 
   error: {

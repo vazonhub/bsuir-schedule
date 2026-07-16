@@ -1,6 +1,7 @@
 import { addDays, startOfLocalDay } from './date';
 import { flattenSchedule } from './scheduleNormalization';
 import type { ScheduleDto, WeekNumber } from '@models/dto';
+import { FIRE_COLORS, FIRE_TIERS } from '@theme/colors';
 
 /**
  * Огонёк (fire streak) — чистое ядро логики.
@@ -211,6 +212,14 @@ export const markActivityCore = (
 
 /** Огонёк «горит», если серия жива. */
 export const isFireHot = (core: Pick<FireCore, 'current'>): boolean => core.current > 0;
+
+/** Цвет пламени по длине серии (тир). Для 0 — «холодный» цвет. */
+export const getFlameColor = (current: number): string => {
+  for (const tier of FIRE_TIERS) {
+    if (current >= tier.min) return tier.color;
+  }
+  return FIRE_COLORS.cold;
+};
 
 // ─── Учебные дни из расписания ────────────────────────────────────────────────
 

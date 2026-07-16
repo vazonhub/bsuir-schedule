@@ -47,18 +47,29 @@ export const be: TranslationKeys = {
     plannerPickSubject: 'Абярыце прадмет',
     plannerPickTask: 'Абярыце заданне',
     plannerEditTitle: 'Рэдагаваць задачу',
-    streakTitle: 'Агеньчык',
-    streakCurrent: 'Зараз: {{n}} дн.',
-    streakLongest: 'Рэкорд: {{n}} дн.',
-    streakRules:
-      'Адзначай хаця б 1 заданне ў будні, каб працягваць. Выходныя не ў лік — не ламаюць і не павялічваюць.',
-    streakA11y: 'Агеньчык, {{n}} дзён запар',
     plannerNoEligible: 'Задайце колькасць заданняў у прадмета, каб дадаць яго ў планер',
     upcomingTitle: 'Найбліжэйшыя',
     upcomingEmpty: 'Няма',
     whenToday: 'Сёння',
     whenTomorrow: 'Заўтра',
     shortDayNames: ['Нд', 'Пн', 'Аў', 'Ср', 'Чц', 'Пт', 'Сб'],
+  },
+
+  fire: {
+    title: 'Агеньчык',
+    current: 'Бягучая серыя',
+    longest: 'Рэкорд',
+    days: '{{n}} дн.',
+    freezes: 'Замарозкі',
+    freezesLeft: 'засталося {{n}} з {{max}}',
+    calendarTitle: 'Актыўнасць',
+    legendActive: 'Гарэла',
+    legendFrozen: 'Замарозка',
+    legendMissed: 'Пропуск',
+    rules:
+      'Заходзь у дадатак у навучальныя дні — серыя расце на +1. Пропуск навучальнага дня здымае 1, але замарозкі (2 на тыдзень) прыкрываюць. Выходныя і дні без пар не ў лік.',
+    empty: 'Пакуль пуста. Завітай у навучальны дзень, каб распаліць агеньчык.',
+    a11y: 'Агеньчык, серыя {{n}} дзён',
   },
 
   error: {
