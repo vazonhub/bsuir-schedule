@@ -4,24 +4,21 @@ import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
-import { useDiaryStore, selectStreak, isStreakHot } from '@stores/diary.store';
+import { useFireStore, selectFireCore } from '@stores/fire.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
+import { isFireHot } from '@utils/fire';
 import { hapticLight } from '@utils/haptics';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
 const HOT_COLOR = '#F08A24';
 
-interface Props {
-  groupName: string;
-}
-
-export const StreakBadge = ({ groupName }: Props) => {
+export const StreakBadge = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
-  const streak = useDiaryStore(selectStreak(groupName));
-  const hot = useMemo(() => isStreakHot(streak, new Date()), [streak]);
+  const core = useFireStore(selectFireCore);
+  const hot = useMemo(() => isFireHot(core), [core]);
   const styles = useMemo(() => makeStyles(Palette, hot), [Palette, hot]);
 
   const iconName = hot ? 'flame' : 'flame-outline';
@@ -31,8 +28,8 @@ export const StreakBadge = ({ groupName }: Props) => {
   const handlePress = () => {
     void hapticLight();
     const lines: string[] = [
-      t('diary.streakCurrent', { n: streak.current }),
-      t('diary.streakLongest', { n: streak.longest }),
+      t('diary.streakCurrent', { n: core.current }),
+      t('diary.streakLongest', { n: core.longest }),
       '',
       t('diary.streakRules'),
     ];
@@ -47,11 +44,11 @@ export const StreakBadge = ({ groupName }: Props) => {
       hitSlop={6}
       style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}
       accessibilityRole="button"
-      accessibilityLabel={t('diary.streakA11y', { n: streak.current })}
+      accessibilityLabel={t('diary.streakA11y', { n: core.current })}
     >
       <Ionicons name={iconName as never} size={14} color={iconColor} />
       <Text {...textProps('footnote')} style={[styles.number, { color: textColor }]}>
-        {streak.current}
+        {core.current}
       </Text>
     </Pressable>
   );
