@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import { useDiaryStore, selectPlanner, selectSubjectProgress } from '@stores/diary.store';
@@ -119,7 +120,10 @@ export const DiaryStats = ({
                   groupName={groupName}
                   onEdit={() => handleEditItem(item)}
                   onLongPressAction={() => handleLongPressAction(item)}
-                  onToggleTask={() => toggleTask(groupName, item.subject, item.taskIndex)}
+                  onToggleTask={() => {
+                    toggleTask(groupName, item.subject, item.taskIndex);
+                    FireController.registerHomework();
+                  }}
                 />
               )}
             />
@@ -174,11 +178,7 @@ export const DiaryStats = ({
 
       <View style={styles.divider} />
 
-      <AddPlannerSheet
-        ref={addSheetRef}
-        groupName={groupName}
-        subjects={subjects}
-      />
+      <AddPlannerSheet ref={addSheetRef} groupName={groupName} subjects={subjects} />
     </View>
   );
 };
@@ -249,10 +249,7 @@ const TaskCell = ({
       accessibilityState={{ checked: done }}
       accessibilityLabel={`Задание ${number}${done ? ', выполнено' : ''}`}
     >
-      <Text
-        {...textProps('subhead')}
-        style={[styles.cellText, done && styles.cellTextDone]}
-      >
+      <Text {...textProps('subhead')} style={[styles.cellText, done && styles.cellTextDone]}>
         {number}
       </Text>
     </Pressable>
@@ -272,8 +269,7 @@ const UpcomingCard = ({
 }) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeMiniCardStyles(Palette), [Palette]);
-  const accent =
-    (LESSON_TYPE_COLORS as Record<string, string>)[type] ?? Palette.textSecondary;
+  const accent = (LESSON_TYPE_COLORS as Record<string, string>)[type] ?? Palette.textSecondary;
   return (
     <Pressable
       onPress={onPress}

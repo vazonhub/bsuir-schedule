@@ -22,6 +22,7 @@ import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-
 import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
 import { UnityBanner } from '@components/UnityBanner';
+import { FireController } from '@controllers/fire.controller';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
@@ -191,6 +192,12 @@ export const ScheduleView = ({
       pendingLessonRef.current = null;
       sheetRef.current?.dismiss();
     }
+  }, []);
+
+  // Просмотр расписания засчитывается как активность для огонька
+  // (идемпотентно — максимум +1 в учебный день).
+  useEffect(() => {
+    FireController.registerScheduleView();
   }, []);
 
   // Закрываем модалку при уходе с экрана (смена вкладки, back).
