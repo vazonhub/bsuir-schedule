@@ -1,3 +1,4 @@
+import * as ICloudKV from 'expo-icloud-kv';
 import { reloadAllTimelines } from 'expo-widgetkit-bridge';
 import i18n from 'i18next';
 import { Platform } from 'react-native';
@@ -25,6 +26,15 @@ const writeSnapshot = async (snapshot: WidgetSnapshot): Promise<void> => {
     if (Platform.OS === 'ios') {
       const SharedGroupPreferences = require('react-native-shared-group-preferences').default;
       await SharedGroupPreferences.setItem(WIDGET_KEY, snapshot, APP_GROUP);
+      // Mirror the snapshot into iCloud KV so the watchOS companion can read it.
+      // App Groups don't sync across devices (phone ↔ watch), so iCloud KV is the
+      // transport: the phone writes here, the watch reads NSUbiquitousKeyValueStore.
+      // Best-effort — a signed-out/quota-limited iCloud must not break the widget.
+      try {
+        await ICloudKV.setItem(WIDGET_KEY, JSON.stringify(snapshot));
+      } catch {
+        // iCloud unavailable — non-critical.
+      }
     } else if (Platform.OS === 'android') {
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
       await AsyncStorage.setItem(ANDROID_SNAPSHOT_KEY, JSON.stringify(snapshot));

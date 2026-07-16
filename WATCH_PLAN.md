@@ -155,6 +155,13 @@ App Group общий у iPhone-приложения и его расширени
   - **Проверено:** `expo prebuild -p ios --clean --no-install` проходит; pbxproj парсится; присутствуют 3 таргета (BsuirTime / BsuirWatch / ScheduleWidget), виджет цел, все 3 swift-файла в Sources, entitlements корректны.
   - **Осталось проверить руками:** реальная сборка/запуск в watchOS-симуляторе (`npm run ios:build`, требует `pod install` + Xcode с watchOS SDK).
 
+- ✅ **Фаза 1 — транспорт iCloud KV (сделано).**
+  - Телефон: `src/services/widget/index.ts` → `writeSnapshot()` дополнительно пишет снапшот в iCloud KV (`ICloudKV.setItem('widgetSnapshot', JSON.stringify(snapshot))`), best-effort, не ломает виджет при отсутствии iCloud.
+  - Часы: `targets/watch/SnapshotStore.swift` — `ObservableObject`, читает `NSUbiquitousKeyValueStore`, подписан на `didChangeExternallyNotification`, кэширует в App Group UserDefaults часов, публикует `snapshot`, дёргает `WidgetCenter.reloadAllTimelines()` (no-op до Фазы 3).
+  - UI: `ContentView.swift` рендерит реальные данные (группа + неделя + пары на сегодня, цвет типа из `typeColorHex`), empty-state когда снапшота ещё нет; `BsuirWatchApp` держит `SnapshotStore` через `@StateObject` + `environmentObject`.
+  - **Проверено:** `npm run typecheck` — чисто; lint изменённого файла — новых замечаний нет; `expo prebuild` — все 4 swift-файла попадают в Sources watch-таргета, граф цел.
+  - **Осталось проверить руками:** реальная сквозная синхронизация phone → watch (нужны устройства/симуляторы с одним iCloud-аккаунтом и входом в iCloud).
+
 ## 5. Фазы реализации
 
 | Фаза | Содержание | DoD |
