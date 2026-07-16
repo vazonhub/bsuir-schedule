@@ -44,7 +44,8 @@ struct ComplicationProvider: TimelineProvider {
     // rolls forward through the day without waiting for a background refresh.
     if let snapshot = loadSnapshot() {
       let calendar = Calendar.current
-      for lesson in myLessons(snapshot.today) {
+      let (today, _) = resolvedDays(snapshot, todayISO: currentDateISO(now))
+      for lesson in today.map(myLessons) ?? [] {
         for hhmm in [lesson.startTime, lesson.endTime] {
           if let mins = parseMinutes(hhmm),
              let boundary = calendar.date(bySettingHour: mins / 60, minute: mins % 60, second: 0, of: now),
@@ -61,7 +62,7 @@ struct ComplicationProvider: TimelineProvider {
 
   private func entry(at date: Date) -> ComplicationEntry {
     let snapshot = loadSnapshot()
-    let hero = snapshot.flatMap { heroSelection($0, now: nowMinutes(date)) }
+    let hero = snapshot.flatMap { heroSelection($0, at: date) }
     return ComplicationEntry(date: date, hero: hero, strings: snapshot?.strings)
   }
 }

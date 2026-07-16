@@ -34,6 +34,30 @@ func phase(_ lesson: WidgetLesson, now: Int) -> LessonPhase {
   return .upcoming
 }
 
+// MARK: - Stale-date resolution
+
+/// Local "yyyy-MM-dd" for the given instant, matching the format the phone
+/// writes into WidgetDayBlock.dateISO (local, hand-built — not UTC).
+func currentDateISO(_ date: Date = Date()) -> String {
+  let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+  return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+}
+
+/// Reconcile the snapshot's day blocks with the watch's real current date.
+/// The snapshot may be stale (built hours ago), so after midnight its `today`
+/// can actually be yesterday and `nextDay` the real today. Returns the blocks
+/// that genuinely correspond to today / the following day, or nil when the
+/// snapshot is too old to describe today.
+func resolvedDays(_ snapshot: WidgetSnapshot, todayISO: String) -> (today: WidgetDayBlock?, next: WidgetDayBlock?) {
+  if snapshot.today.dateISO == todayISO {
+    return (snapshot.today, snapshot.nextDay)
+  }
+  if let next = snapshot.nextDay, next.dateISO == todayISO {
+    return (next, nil)
+  }
+  return (nil, nil)
+}
+
 // MARK: - Hero (now / next)
 
 struct HeroSelection {
@@ -46,16 +70,20 @@ struct HeroSelection {
 
 /// Pick the lesson to feature at the top: an ongoing one, else the next one
 /// today, else the first lesson of the next day. `nil` = nothing left.
-func heroSelection(_ snapshot: WidgetSnapshot, now: Int) -> HeroSelection? {
-  let today = snapshot.today.lessons.filter { $0.isMine }
-  if let ongoing = today.first(where: { phase($0, now: now) == .ongoing }) {
+/// Uses `date` for both the wall-clock (now/next) and the stale-date guard.
+func heroSelection(_ snapshot: WidgetSnapshot, at date: Date = Date()) -> HeroSelection? {
+  let now = nowMinutes(date)
+  let (today, next) = resolvedDays(snapshot, todayISO: currentDateISO(date))
+  let todayLessons = today.map(myLessons) ?? []
+
+  if let ongoing = todayLessons.first(where: { phase($0, now: now) == .ongoing }) {
     return HeroSelection(lesson: ongoing, isNow: true, isTomorrow: false)
   }
-  if let next = today.first(where: { phase($0, now: now) == .upcoming }) {
-    return HeroSelection(lesson: next, isNow: false, isTomorrow: false)
+  if let upcoming = todayLessons.first(where: { phase($0, now: now) == .upcoming }) {
+    return HeroSelection(lesson: upcoming, isNow: false, isTomorrow: false)
   }
-  if let next = snapshot.nextDay?.lessons.first(where: { $0.isMine }) {
-    return HeroSelection(lesson: next, isNow: false, isTomorrow: true)
+  if let next, let first = myLessons(next).first {
+    return HeroSelection(lesson: first, isNow: false, isTomorrow: true)
   }
   return nil
 }
@@ -68,11 +96,23 @@ func myLessons(_ day: WidgetDayBlock) -> [WidgetLesson] {
 // MARK: - Labels
 
 /// "17 июля" style label from the snapshot's localized month names.
+/// `day.month` is 0-based (JS month), matching the `months` array order.
 func dayLabel(_ day: WidgetDayBlock, _ strings: WidgetStrings?) -> String {
   if let months = strings?.months, day.month >= 0, day.month < months.count {
     return "\(day.dayOfMonth) \(months[day.month])"
   }
   return "\(day.dayOfMonth)"
+}
+
+/// Same label built from a `Date` (used when the snapshot has no block for the
+/// real today). `Calendar` month is 1-based, so shift to the 0-based array.
+func dayLabel(_ date: Date, _ strings: WidgetStrings?) -> String {
+  let c = Calendar.current.dateComponents([.day, .month], from: date)
+  let monthIndex = (c.month ?? 1) - 1
+  if let months = strings?.months, monthIndex >= 0, monthIndex < months.count {
+    return "\(c.day ?? 0) \(months[monthIndex])"
+  }
+  return "\(c.day ?? 0)"
 }
 
 // MARK: - Hex color

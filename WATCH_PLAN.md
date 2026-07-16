@@ -178,6 +178,13 @@ App Group общий у iPhone-приложения и его расширени
   - `app.json` — добавлена запись `BsuirWatchWidget` в EAS `appExtensions`.
   - **Проверено:** `swiftc -typecheck` виджет-сорсов (widget + shared) против watchOS SDK — 0 ошибок/0 предупреждений; `expo prebuild` — 4 таргета, виджет вложен в watch app (spec 13), `BsuirWatch.app` в main (spec 16), `ScheduleWidget` цел, shared-файлы в обоих таргетах, pbxproj парсится.
 
+- ✅ **Фаза 4 — свежесть/фон (сделано).**
+  - **Stale-date fallback** (`LessonSupport.swift`): `currentDateISO()` + `resolvedDays()` сверяют `today.dateISO`/`nextDay.dateISO` с реальной датой часов; после полуночи `nextDay`→`today` автоматически. `heroSelection(_, at: Date)` теперь учитывает и время, и дату. Общий код для UI и осложнений.
+  - **UI** (`ContentView.swift`): использует resolved-дни; отдельное состояние «данные устарели» когда снапшот не описывает реальный сегодня; заголовок дня из даты при отсутствии блока. `onChange(scenePhase)`: `.active` → `store.reload()`, `.background` → `scheduleWatchRefresh()`.
+  - **Фон** (`SnapshotStore.swift` + `BsuirWatchApp.swift`): `syncFromCloudToLocal()` (iCloud→App Group, безопасно из фона), `scheduleWatchRefresh()` через `WKApplication.scheduleBackgroundRefresh`, обработчик `.backgroundTask(.appRefresh)` — тянет данные, релоадит осложнения, перепланирует себя.
+  - **Осложнения** (`ScheduleComplication.swift`): таймлайн-границы и `heroSelection` считаются от resolved-дня.
+  - **Проверено:** `swiftc -typecheck` обоих target-сетов против watchOS SDK — **0 ошибок/0 предупреждений**; `expo prebuild` — 4 таргета, sources 8/3, граф цел.
+
 ## 5. Фазы реализации
 
 | Фаза | Содержание | DoD |

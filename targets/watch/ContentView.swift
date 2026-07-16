@@ -2,12 +2,14 @@
 //
 // Root of the watch UI. Composes the home screen (now/next hero + today's
 // lessons + next-day link) from the decoded snapshot, or an empty state
-// before the first iCloud sync.
+// before the first iCloud sync. Reloads when the app becomes active and
+// schedules background refresh when it leaves the foreground.
 
 import SwiftUI
 
 struct ContentView: View {
   @EnvironmentObject private var store: SnapshotStore
+  @Environment(\.scenePhase) private var scenePhase
 
   var body: some View {
     NavigationStack {
@@ -15,6 +17,16 @@ struct ContentView: View {
         HomeView(snapshot: snapshot)
       } else {
         EmptyState()
+      }
+    }
+    .onChange(of: scenePhase) { phase in
+      switch phase {
+      case .active:
+        store.reload()
+      case .background:
+        scheduleWatchRefresh()
+      default:
+        break
       }
     }
   }
@@ -25,10 +37,12 @@ private struct HomeView: View {
 
   var body: some View {
     let strings = snapshot.strings
-    let now = nowMinutes()
-    let today = myLessons(snapshot.today)
-    let hero = heroSelection(snapshot, now: now)
-    let nextDay = snapshot.nextDay
+    let date = Date()
+    let now = nowMinutes(date)
+    // Reconcile against the real current date — the snapshot may be stale.
+    let (today, nextDay) = resolvedDays(snapshot, todayISO: currentDateISO(date))
+    let todayLessons = today.map(myLessons) ?? []
+    let hero = heroSelection(snapshot, at: date)
 
     List {
       Section {
@@ -48,17 +62,22 @@ private struct HomeView: View {
       }
 
       Section {
-        if today.isEmpty {
-          Text(snapshot.today.holidayName ?? strings?.noClasses ?? "Пар нет")
+        if today == nil {
+          // Snapshot is too old to describe the real today.
+          Text("Данные устарели — откройте приложение на iPhone")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        } else if todayLessons.isEmpty {
+          Text(today?.holidayName ?? strings?.noClasses ?? "Пар нет")
             .font(.footnote)
             .foregroundStyle(.secondary)
         } else {
-          ForEach(Array(today.enumerated()), id: \.offset) { _, lesson in
+          ForEach(Array(todayLessons.enumerated()), id: \.offset) { _, lesson in
             LessonRow(lesson: lesson, strings: strings, dimmed: phase(lesson, now: now) == .past)
           }
         }
       } header: {
-        Text(dayLabel(snapshot.today, strings))
+        Text(today.map { dayLabel($0, strings) } ?? dayLabel(date, strings))
       }
 
       if let nextDay, !myLessons(nextDay).isEmpty {
