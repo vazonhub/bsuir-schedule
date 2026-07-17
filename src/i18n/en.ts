@@ -79,15 +79,18 @@ export const en: TranslationKeys = {
   // Diary onboarding (spotlight tutorial)
   onboarding: {
     welcomeTitle: 'This is your diary',
-    welcomeBody: "Here you track assignments for your group's subjects. Let's take a quick tour of what you can do.",
+    welcomeBody:
+      "Here you track assignments for your group's subjects. Let's take a quick tour of what you can do.",
     streakTitle: 'Streak',
-    streakBody: 'Complete tasks and drop by on school days to grow your streak. Miss one and the flame starts to fade.',
+    streakBody:
+      'Complete tasks and drop by on school days to grow your streak. Miss one and the flame starts to fade.',
     plannerTitle: 'Planner',
     plannerBody: 'Add tasks, drag to reorder them, and check them off when done.',
     upcomingTitle: 'Upcoming',
     upcomingBody: 'Your nearest classes and deadlines. Tap one to open it in the schedule.',
     subjectCardTitle: 'Subjects',
-    subjectCardBody: 'Each card is a subject from your schedule. The counters show how many tasks are left per lesson type.',
+    subjectCardBody:
+      'Each card is a subject from your schedule. The counters show how many tasks are left per lesson type.',
     enterCountTitle: 'Task count',
     enterCountBody: 'Tap a card to set how many assignments a subject has.',
     completeTaskTitle: 'Mark as done',
@@ -98,7 +101,8 @@ export const en: TranslationKeys = {
     skip: 'Skip',
     done: 'Done',
     stepProgress: 'Step {{current}} of {{total}}',
-    replay: 'Replay the tutorial',
+    diarySection: 'Diary',
+    replay: 'Replay the diary tutorial',
   },
 
   error: {

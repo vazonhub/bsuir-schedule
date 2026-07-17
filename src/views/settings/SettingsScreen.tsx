@@ -289,6 +289,58 @@ export const SettingsScreen = () => {
               />
             </View>
           </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/accessibility');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('accessibility.title')}
+            >
+              <Ionicons name="accessibility-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('accessibility.title')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/holidays');
+              }}
+            >
+              <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.holidaysSection')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.navSection}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('onboarding.diarySection')}
+          </Text>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={handleReplayTutorial}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboarding.replay')}
+            >
+              <Ionicons name="school-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('onboarding.replay')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.navSection}>
@@ -321,58 +373,6 @@ export const SettingsScreen = () => {
               <Ionicons name="color-palette-outline" size={20} color={Palette.accent} />
               <Text {...textProps('body')} style={styles.navLabel}>
                 {t('settings.appearanceSection')}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-            </Pressable>
-          </View>
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-              onPress={handleReplayTutorial}
-              accessibilityRole="button"
-              accessibilityLabel={t('onboarding.replay')}
-            >
-              <Ionicons name="school-outline" size={20} color={Palette.accent} />
-              <Text {...textProps('body')} style={styles.navLabel}>
-                {t('onboarding.replay')}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.navSection}>
-          <Text {...textProps('footnote')} style={styles.sectionTitle}>
-            {t('settings.additionalSection')}
-          </Text>
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-              onPress={() => {
-                sheetRef.current?.dismiss();
-                router.push('/(tabs)/(settings)/accessibility');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('accessibility.title')}
-            >
-              <Ionicons name="accessibility-outline" size={20} color={Palette.accent} />
-              <Text {...textProps('body')} style={styles.navLabel}>
-                {t('accessibility.title')}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-            </Pressable>
-          </View>
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-              onPress={() => {
-                sheetRef.current?.dismiss();
-                router.push('/(tabs)/(settings)/holidays');
-              }}
-            >
-              <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
-              <Text {...textProps('body')} style={styles.navLabel}>
-                {t('settings.holidaysSection')}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
             </Pressable>
