@@ -182,7 +182,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             {groupName}
           </Text>
         </View>
-        <StreakBadge groupName={groupName} />
+        <StreakBadge />
       </View>
       <FlatList
         data={listData}

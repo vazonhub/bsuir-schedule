@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 
+import { FireController } from '@controllers/fire.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectSubjectProgress } from '@stores/diary.store';
@@ -50,8 +51,7 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
     transform: [{ scale: scale.value }],
   }));
   const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor:
-      bg.value > 0.5 ? Palette.cardPressed : Palette.card,
+    backgroundColor: bg.value > 0.5 ? Palette.cardPressed : Palette.card,
   }));
 
   const handlePressIn = useCallback(() => {
@@ -90,8 +90,7 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
       Alert.alert(t('diary.actionsTitle'), subject.subjectFullName, [
         {
           text: t('diary.actionEnter'),
-          onPress: () =>
-            onRequestEnterCount(subject.subject, subject.subjectFullName, null),
+          onPress: () => onRequestEnterCount(subject.subject, subject.subjectFullName, null),
         },
         hideAction,
         cancelAction,
@@ -102,11 +101,7 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
       {
         text: t('diary.actionEdit'),
         onPress: () =>
-          onRequestEnterCount(
-            subject.subject,
-            subject.subjectFullName,
-            progress.taskCount,
-          ),
+          onRequestEnterCount(subject.subject, subject.subjectFullName, progress.taskCount),
       },
       {
         text: t('diary.actionReset'),
@@ -133,50 +128,50 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
         unstable_pressDelay={80}
       >
         <Animated.View style={[styles.card, bgStyle]}>
-      {/* ── Top: subject code (left) + counters (right), full name below ── */}
-      <View style={styles.topBlock}>
-        <View style={styles.headerRow}>
-          <Text {...textProps('title')} style={styles.subjectCode} numberOfLines={1}>
-            {subject.subject}
-          </Text>
-          <View style={styles.countersBlock}>
-            {DIARY_LESSON_TYPES.map((type) => {
-              const remaining = subject.remaining[type];
-              const total = subject.total[type];
-              if (total === 0) return null;
-              return <CounterPill key={type} type={type} value={remaining} />;
-            })}
+          {/* ── Top: subject code (left) + counters (right), full name below ── */}
+          <View style={styles.topBlock}>
+            <View style={styles.headerRow}>
+              <Text {...textProps('title')} style={styles.subjectCode} numberOfLines={1}>
+                {subject.subject}
+              </Text>
+              <View style={styles.countersBlock}>
+                {DIARY_LESSON_TYPES.map((type) => {
+                  const remaining = subject.remaining[type];
+                  const total = subject.total[type];
+                  if (total === 0) return null;
+                  return <CounterPill key={type} type={type} value={remaining} />;
+                })}
+              </View>
+            </View>
+            <Text {...textProps('footnote')} style={styles.subjectFull} numberOfLines={2}>
+              {subject.subjectFullName}
+            </Text>
           </View>
-        </View>
-        <Text {...textProps('footnote')} style={styles.subjectFull} numberOfLines={2}>
-          {subject.subjectFullName}
-        </Text>
-      </View>
 
-      <View style={styles.separator} />
+          <View style={styles.separator} />
 
-      {/* ── Bottom: enter-count button OR grid ── */}
-      {!hasCount ? (
-        <Pressable
-          onPress={() =>
-            onRequestEnterCount(subject.subject, subject.subjectFullName, null)
-          }
-          style={({ pressed }) => [
-            styles.enterBtn,
-            pressed && styles.enterBtnPressed,
-          ]}
-        >
-          <Text {...textProps('body')} style={styles.enterBtnLabel}>
-            {t('diary.enterTaskCount')}
-          </Text>
-        </Pressable>
-      ) : (
-        <TaskGrid
-          count={progress.taskCount as number}
-          completed={progress.completed}
-          onToggle={(idx) => toggleTask(groupName, subject.subject, idx)}
-        />
-      )}
+          {/* ── Bottom: enter-count button OR grid ── */}
+          {!hasCount ? (
+            <Pressable
+              onPress={() => onRequestEnterCount(subject.subject, subject.subjectFullName, null)}
+              style={({ pressed }) => [styles.enterBtn, pressed && styles.enterBtnPressed]}
+            >
+              <Text {...textProps('body')} style={styles.enterBtnLabel}>
+                {t('diary.enterTaskCount')}
+              </Text>
+            </Pressable>
+          ) : (
+            <TaskGrid
+              count={progress.taskCount as number}
+              completed={progress.completed}
+              onToggle={(idx) => {
+                const wasDone = progress.completed.includes(idx);
+                toggleTask(groupName, subject.subject, idx);
+                // Отметка задачи выполненной = активность для огонька.
+                if (!wasDone) FireController.registerHomework();
+              }}
+            />
+          )}
         </Animated.View>
       </Pressable>
     </Animated.View>

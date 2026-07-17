@@ -18,40 +18,6 @@ export interface PlannerItem {
   taskIndex: number;
 }
 
-export interface StreakState {
-  /** Current run length in working days. */
-  current: number;
-  /** All-time record for this group. */
-  longest: number;
-  /** ISO date "YYYY-MM-DD" of the last day that counted, or null if never. */
-  lastActiveDate: string | null;
-}
-
-const EMPTY_STREAK: StreakState = { current: 0, longest: 0, lastActiveDate: null };
-
-/** ISO-format local calendar day (avoids timezone drift from `toISOString()`). */
-const toLocalISO = (d: Date): string => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-const isWeekday = (iso: string): boolean => {
-  const d = new Date(iso + 'T00:00:00');
-  const dow = d.getDay();
-  return dow !== 0 && dow !== 6;
-};
-
-/** Returns the next Mon-Fri after the given ISO date. */
-const nextWorkingDayAfter = (iso: string): string => {
-  const d = new Date(iso + 'T00:00:00');
-  do {
-    d.setDate(d.getDate() + 1);
-  } while (d.getDay() === 0 || d.getDay() === 6);
-  return toLocalISO(d);
-};
-
 interface DiaryState {
   /** Progress keyed by group name → subject code → per-subject state. */
   progress: Record<string, Record<string, SubjectProgress>>;
@@ -59,8 +25,6 @@ interface DiaryState {
   hidden: Record<string, string[]>;
   /** Ordered planner items per group (top = highest priority). */
   planner: Record<string, PlannerItem[]>;
-  /** "Streak" (огонёк) counter keyed by group. */
-  streak: Record<string, StreakState>;
 
   setTaskCount(groupName: string, subject: string, count: number): void;
   toggleTask(groupName: string, subject: string, index: number): void;
@@ -92,7 +56,6 @@ export const useDiaryStore = create<DiaryState>()(
       progress: {},
       hidden: {},
       planner: {},
-      streak: {},
 
       toggleHidden: (groupName, subject) => {
         set((s) => {
@@ -122,9 +85,8 @@ export const useDiaryStore = create<DiaryState>()(
                 [subject]: { taskCount: clamped, completed: nextCompleted },
               },
             },
-            planner: nextPlanner === groupPlanner
-              ? s.planner
-              : { ...s.planner, [groupName]: nextPlanner },
+            planner:
+              nextPlanner === groupPlanner ? s.planner : { ...s.planner, [groupName]: nextPlanner },
           };
         });
       },
@@ -153,30 +115,6 @@ export const useDiaryStore = create<DiaryState>()(
             }
           }
 
-          // Streak bookkeeping — only on unchecked → checked, only on weekdays.
-          let nextStreakMap = s.streak;
-          if (!has) {
-            const today = toLocalISO(new Date());
-            if (isWeekday(today)) {
-              const prevStreak = s.streak[groupName] ?? EMPTY_STREAK;
-              if (prevStreak.lastActiveDate !== today) {
-                const consecutive =
-                  prevStreak.lastActiveDate !== null &&
-                  nextWorkingDayAfter(prevStreak.lastActiveDate) === today;
-                const newCurrent = consecutive ? prevStreak.current + 1 : 1;
-                const newLongest = Math.max(prevStreak.longest, newCurrent);
-                nextStreakMap = {
-                  ...s.streak,
-                  [groupName]: {
-                    current: newCurrent,
-                    longest: newLongest,
-                    lastActiveDate: today,
-                  },
-                };
-              }
-            }
-          }
-
           return {
             progress: {
               ...s.progress,
@@ -186,7 +124,6 @@ export const useDiaryStore = create<DiaryState>()(
               },
             },
             planner: nextPlanner,
-            streak: nextStreakMap,
           };
         });
       },
@@ -267,7 +204,6 @@ export const useDiaryStore = create<DiaryState>()(
         progress: state.progress,
         hidden: state.hidden,
         planner: state.planner,
-        streak: state.streak,
       }),
     },
   ),
@@ -296,23 +232,3 @@ export const selectPlanner =
   (groupName: string) =>
   (s: DiaryState): PlannerItem[] =>
     s.planner[groupName] ?? EMPTY_PLANNER;
-
-/** Selector helper: streak state for a group. */
-export const selectStreak =
-  (groupName: string) =>
-  (s: DiaryState): StreakState =>
-    s.streak[groupName] ?? EMPTY_STREAK;
-
-/**
- * Compute whether a streak is "hot" — the user hasn't yet missed their next
- * chance. Hot when `today <= nextWorkingDayAfter(lastActiveDate)`.
- * Cold means at least one working day has been missed; `current` is still
- * stored but the badge should render muted.
- */
-export const isStreakHot = (streak: StreakState, now: Date = new Date()): boolean => {
-  if (streak.lastActiveDate == null || streak.current === 0) return false;
-  const todayIso = toLocalISO(now);
-  if (streak.lastActiveDate === todayIso) return true;
-  const nextChance = nextWorkingDayAfter(streak.lastActiveDate);
-  return todayIso <= nextChance;
-};

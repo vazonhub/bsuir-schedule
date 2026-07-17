@@ -9,6 +9,7 @@ import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-c
 
 import { Text, TextInput } from 'react-native';
 
+import { FireCelebration } from '@components/fire/FireCelebration';
 import { UpdateBadge } from '@components/UpdateBadge';
 import { UpdateModal } from '@components/UpdateModal';
 import { AppVersionController } from '@controllers/appVersion.controller';
@@ -126,6 +127,7 @@ export default function RootLayout() {
             storeUrl={storeUrl}
             onClose={closeUpdateModal}
           />
+          <FireCelebration />
           <StatusBar style={isDark ? 'light' : 'dark'} />
         </BottomSheetModalProvider>
       </SafeAreaProvider>

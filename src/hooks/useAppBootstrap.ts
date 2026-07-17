@@ -3,6 +3,7 @@ import { Appearance, AppState } from 'react-native';
 
 import { AppVersionController } from '@controllers/appVersion.controller';
 import { EmployeesController } from '@controllers/employees.controller';
+import { FireController } from '@controllers/fire.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { HolidaysController } from '@controllers/holidays.controller';
 import { initAds } from '@services/ads';
@@ -48,7 +49,12 @@ export const useAppBootstrap = () => {
       void GroupsController.loadAll();
       void EmployeesController.loadAll();
       void HolidaysController.sync(new Date().getFullYear());
-      void prefetchPinned().then(() => updateWidgetSnapshot());
+      void prefetchPinned().then(() => {
+        updateWidgetSnapshot();
+        // После prefetch расписание defaultGroup и currentWeek уже в сторе —
+        // огонёк может корректно определить учебный день.
+        void FireController.onAppActive();
+      });
       void AppVersionController.checkForUpdate();
     });
     return () => sub.remove();
