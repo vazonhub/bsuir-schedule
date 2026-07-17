@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef } from 'react';
 import { GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +45,8 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
       const letter = letters[idx];
       if (letter && letter !== lastLetterRef.current) {
         lastLetterRef.current = letter;
+        // Лёгкий тик при переходе на новую букву (как в iOS Контактах).
+        void Haptics.selectionAsync();
         onSelect(letter);
       }
     },
