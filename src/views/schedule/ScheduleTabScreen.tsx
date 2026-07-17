@@ -19,6 +19,7 @@ import type { ViewToken } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AlphabetIndex } from '@components/AlphabetIndex';
 import { SearchBar } from '@components/SearchBar';
 import { UnityBanner } from '@components/UnityBanner';
 import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
@@ -168,6 +169,13 @@ export const ScheduleTabScreen = () => {
     const key = viewableItems[0]?.section?.key as string | undefined;
     setActiveLetter(key === PINNED_EMP_KEY ? SCRUBBER_STAR : (key ?? null));
   });
+
+  // Буквы скраббера: только присутствующие + ★ сверху, если есть закреплённые.
+  const scrubberLetters = useMemo(() => {
+    const letters = employeeSections.filter((s) => s.key !== PINNED_EMP_KEY).map((s) => s.key);
+    const hasPinned = employeeSections.some((s) => s.key === PINNED_EMP_KEY);
+    return hasPinned ? [SCRUBBER_STAR, ...letters] : letters;
+  }, [employeeSections]);
 
   const listContent = useMemo(
     () => ({
@@ -417,6 +425,14 @@ export const ScheduleTabScreen = () => {
                   }
                   renderItem={renderEmployeeRow}
                   refreshControl={employeesRefreshControl}
+                />
+              )}
+              {!isEmpSearching && scrubberLetters.length > 0 && (
+                <AlphabetIndex
+                  letters={scrubberLetters}
+                  onSelect={handleSelectLetter}
+                  activeLetter={activeLetter}
+                  scheme={isDark ? 'dark' : 'light'}
                 />
               )}
             </>
