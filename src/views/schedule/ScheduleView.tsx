@@ -89,6 +89,15 @@ const EMPTY_HOLIDAYS: Holiday[] = [];
 // label, so eager firing keeps the label in sync while scrolling.
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 1, minimumViewTime: 0 };
 
+// Высота плавающего `FloatingTopBar` НИЖЕ safe-area (кнопка 38pt + отступ).
+// Уходит в `contentContainerStyle.paddingTop`, в `viewOffset` программного
+// скролла и в `progressViewOffset` RefreshControl. Сама safe-area (чёлка)
+// отдаётся отдельной обёртке списка (`paddingTop: insets.top`), чтобы scroll-view
+// не лез под чёлку — иначе iOS при возврате с другого таба заново добавляет
+// safe-area поверх нашего padding и отступ удваивается.
+const BAR_CLEARANCE = 38 + Spacing.lg;
+const SCROLL_INDICATOR_INSETS = { top: BAR_CLEARANCE };
+
 export const ScheduleView = ({
   schedule,
   currentWeek,
@@ -336,26 +345,21 @@ export const ScheduleView = ({
     setPendingLessonBlockId,
   ]);
 
-  // Высота «зоны» FloatingTopBar — нужна и для верхнего отступа контента,
-  // и для смещения индикатора RefreshControl (чтобы он появлялся в safe-зоне,
-  // а не под чёлкой), и как `viewOffset` при программном скролле.
-  const topInset = insets.top + 38 + Spacing.lg;
-
   const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
 
-  // Отступы задаём ТОЛЬКО через contentContainerStyle (без нативного
-  // contentInset). `contentInsetAdjustmentBehavior="never"` не даёт нативному
-  // UITabBarController добавить safe area поверх нашего padding (иначе при
-  // переключении табов отступ удваивался и «появлялся не сразу»).
+  // Обёртка списка съедает верхнюю safe-area, чтобы scroll-view начинался ниже
+  // чёлки (см. BAR_CLEARANCE). Плавающий хедер остаётся абсолютным сиблингом.
+  const listWrapStyle = useMemo(() => ({ flex: 1, paddingTop: insets.top }), [insets.top]);
+
+  // Внутри scroll-view (уже ниже чёлки) отступаем только на высоту хедера
+  // сверху и на таб-бар снизу.
   const contentStyle = useMemo(
     () => ({
-      paddingTop: topInset,
+      paddingTop: BAR_CLEARANCE,
       paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
     }),
-    [topInset, insets.bottom],
+    [insets.bottom],
   );
-
-  const scrollIndicatorInsets = useMemo(() => ({ top: topInset }), [topInset]);
 
   // ───── Программный скролл (через плоский индекс строки) ─────
   const headerRowIndicesRef = useRef(headerRowIndices);
@@ -368,18 +372,15 @@ export const ScheduleView = ({
     rowsRef.current = rows;
   }, [rows]);
 
-  const scrollToSection = useCallback(
-    (sectionIndex: number, animated = true) => {
-      const rowIndex = headerRowIndicesRef.current[sectionIndex];
-      if (rowIndex == null) return;
-      void listRef.current
-        ?.scrollToIndex({ index: rowIndex, viewOffset: topInset, viewPosition: 0, animated })
-        .catch(() => {
-          /* list not laid out yet */
-        });
-    },
-    [topInset],
-  );
+  const scrollToSection = useCallback((sectionIndex: number, animated = true) => {
+    const rowIndex = headerRowIndicesRef.current[sectionIndex];
+    if (rowIndex == null) return;
+    void listRef.current
+      ?.scrollToIndex({ index: rowIndex, viewOffset: BAR_CLEARANCE, viewPosition: 0, animated })
+      .catch(() => {
+        /* list not laid out yet */
+      });
+  }, []);
 
   const jumpToUpcoming = useCallback(
     (animated: boolean) => {
@@ -570,7 +571,12 @@ export const ScheduleView = ({
     if (idx < 0) return;
     setTimeout(() => {
       void listRef.current
-        ?.scrollToIndex({ index: idx, viewOffset: topInset, viewPosition: 0.4, animated: true })
+        ?.scrollToIndex({
+          index: idx,
+          viewOffset: BAR_CLEARANCE,
+          viewPosition: 0.4,
+          animated: true,
+        })
         .catch(() => {
           /* unmounted */
         });
@@ -677,31 +683,33 @@ export const ScheduleView = ({
         return false;
       }}
     >
-      <FlashList
-        ref={listRef}
-        data={rows}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        extraData={extraData}
-        contentContainerStyle={contentStyle}
-        contentInsetAdjustmentBehavior="never"
-        automaticallyAdjustsScrollIndicatorInsets={false}
-        scrollIndicatorInsets={scrollIndicatorInsets}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={VIEWABILITY_CONFIG}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Palette.textTertiary}
-              progressViewOffset={topInset}
-            />
-          ) : undefined
-        }
-      />
+      <View style={listWrapStyle}>
+        <FlashList
+          ref={listRef}
+          data={rows}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          extraData={extraData}
+          contentContainerStyle={contentStyle}
+          contentInsetAdjustmentBehavior="never"
+          automaticallyAdjustsScrollIndicatorInsets={false}
+          scrollIndicatorInsets={SCROLL_INDICATOR_INSETS}
+          onViewableItemsChanged={handleViewableItemsChanged}
+          viewabilityConfig={VIEWABILITY_CONFIG}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={Palette.textTertiary}
+                progressViewOffset={BAR_CLEARANCE}
+              />
+            ) : undefined
+          }
+        />
+      </View>
       <FloatingTopBar
         pinned={isPinned}
         onTogglePin={handleTogglePin}
