@@ -38,6 +38,8 @@ import {
   buildAlphabetSections,
   buildPinnedEmployeeSection,
 } from '@utils/employeeGrouping';
+import type { EmployeeSection } from '@utils/employeeGrouping';
+import type { EmployeeDto } from '@models/dto';
 
 import { EmployeeRow } from '@views/employees/EmployeeRow';
 import { GroupRow } from '@views/groups/GroupRow';
@@ -47,6 +49,9 @@ type PaletteType = ReturnType<typeof usePalette>;
 type ScheduleTab = 'groups' | 'employees';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+
+/** Верхний якорь скраббера — прыжок к закреплённым / началу списка. */
+const SCRUBBER_STAR = '★';
 
 /**
  * Combined tab that lets the user browse groups and employees to open a
@@ -121,6 +126,38 @@ export const ScheduleTabScreen = () => {
     return pinned ? [pinned, ...alphabet] : alphabet;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, pinnedEmployeeIds, i18n.language]);
+
+  // ─── Алфавитный индекс (скраббер) ───
+  const employeeListRef = useRef<SectionList<EmployeeDto, EmployeeSection>>(null);
+  // Последняя запрошенная секция — для повтора при onScrollToIndexFailed.
+  const pendingSectionRef = useRef<number | null>(null);
+
+  const scrollToSectionIndex = useCallback((sectionIndex: number, animated = true) => {
+    pendingSectionRef.current = sectionIndex;
+    employeeListRef.current?.scrollToLocation({
+      sectionIndex,
+      itemIndex: 0,
+      viewPosition: 0,
+      animated,
+    });
+  }, []);
+
+  const handleSelectLetter = useCallback(
+    (letter: string) => {
+      const sectionIndex =
+        letter === SCRUBBER_STAR ? 0 : employeeSections.findIndex((s) => s.key === letter);
+      if (sectionIndex < 0) return;
+      scrollToSectionIndex(sectionIndex);
+    },
+    [employeeSections, scrollToSectionIndex],
+  );
+
+  const handleScrollToIndexFailed = useCallback(() => {
+    const sectionIndex = pendingSectionRef.current;
+    if (sectionIndex == null) return;
+    // Целевые строки ещё не отрендерены — повторяем на следующем кадре без анимации.
+    requestAnimationFrame(() => scrollToSectionIndex(sectionIndex, false));
+  }, [scrollToSectionIndex]);
 
   const listContent = useMemo(
     () => ({
@@ -341,11 +378,13 @@ export const ScheduleTabScreen = () => {
                 />
               ) : (
                 <SectionList
+                  ref={employeeListRef}
                   sections={employeeSections}
                   keyExtractor={(e) => String(e.id)}
                   stickySectionHeadersEnabled
                   keyboardShouldPersistTaps="handled"
                   keyboardDismissMode="on-drag"
+                  onScrollToIndexFailed={handleScrollToIndexFailed}
                   contentContainerStyle={listContent}
                   renderSectionHeader={({ section }) => (
                     <View style={styles.sectionHeader}>
