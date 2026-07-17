@@ -54,8 +54,9 @@ export const SpotlightOverlay = () => {
   const win = Dimensions.get('window');
 
   // Разрешённый прямоугольник цели (уже с паддингом). null = шаг по центру.
+  // Во время повторного замера держим предыдущий rect — кольцо плавно
+  // перетекает со старой цели на новую, без мигания центрированного тултипа.
   const [rect, setRect] = useState<TargetRect | null>(null);
-  const [resolving, setResolving] = useState(false);
 
   // Shared values подсветки — для плавного перехода кольца/затемнения.
   const sx = useSharedValue(0);
@@ -95,10 +96,8 @@ export const SpotlightOverlay = () => {
     let cancelled = false;
 
     const run = async () => {
-      setResolving(true);
       if (!currentStep.target) {
         if (!cancelled) setRect(null);
-        setResolving(false);
         return;
       }
       let r = await measureKey(currentStep);
@@ -120,7 +119,6 @@ export const SpotlightOverlay = () => {
           }
         : null;
       setRect(padded);
-      setResolving(false);
     };
 
     void run();
@@ -191,7 +189,7 @@ export const SpotlightOverlay = () => {
   if (!active || !currentStep) return null;
 
   const isLast = stepIndex >= steps.length - 1;
-  const hasTarget = rect !== null && !resolving;
+  const hasTarget = rect !== null;
 
   const tooltipPos = getTooltipPosition(rect, win.height, insets);
 

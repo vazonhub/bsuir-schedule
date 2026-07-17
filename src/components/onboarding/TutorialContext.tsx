@@ -81,14 +81,12 @@ export const TutorialProvider = ({ children, onFinish }: TutorialProviderProps) 
   }, [onFinish]);
 
   const next = useCallback(() => {
-    setStepIndex((i) => {
-      if (i >= TUTORIAL_STEPS.length - 1) {
-        close();
-        return i;
-      }
-      return i + 1;
-    });
-  }, [close]);
+    if (stepIndex >= TUTORIAL_STEPS.length - 1) {
+      close();
+    } else {
+      setStepIndex((i) => i + 1);
+    }
+  }, [stepIndex, close]);
 
   const skip = useCallback(() => {
     close();

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -283,6 +284,7 @@ const TutorialRunner = ({
 }) => {
   const { active, start, setScroller } = useTutorial();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const seen = usePreferencesStore(selectDiaryOnboardingSeen);
   const [hydrated, setHydrated] = useState(() => usePreferencesStore.persist.hasHydrated());
 
@@ -310,11 +312,12 @@ const TutorialRunner = ({
   }, [setScroller, insets.top, listRef, scrollOffsetRef]);
 
   // Триггер первого показа (и повторного запуска после сброса флага).
+  // Гейт по фокусу — чтобы обучалка не стартовала, пока вкладка в фоне.
   useEffect(() => {
-    if (!hydrated || seen || !hasSubjects || active) return;
+    if (!isFocused || !hydrated || seen || !hasSubjects || active) return;
     const timer = setTimeout(() => start(), 450);
     return () => clearTimeout(timer);
-  }, [hydrated, seen, hasSubjects, active, start]);
+  }, [isFocused, hydrated, seen, hasSubjects, active, start]);
 
   return null;
 };
