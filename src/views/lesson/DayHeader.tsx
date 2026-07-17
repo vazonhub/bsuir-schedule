@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
 import type { WeekNumber } from '@models/dto';
-import { Spacing } from '@theme';
-import { textProps } from '@theme/typography';
-import { formatDayHeader, formatExamDayHeader } from '@utils/date';
+import { Radius, Spacing } from '@theme';
+import { formatDayDate, formatDayName } from '@utils/date';
 import { buildLabel } from '@utils/a11y';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -27,82 +26,152 @@ interface Props {
 }
 
 /**
- * Sticky section header for the schedule view. Renders as plain text on the
- * screen background; opaque `backgroundColor` ensures it cleanly hides cards
- * scrolling behind it when the section list pins it to the top.
+ * Двухстрочный заголовок дня: крупное название дня недели сверху, дата и
+ * статус («Сегодня» / «Завтра») — снизу, номер недели цикла — чипом справа.
+ * Рендерится на фоне экрана (`Palette.background`), sticky отключён —
+ * «текущий день» показывает `FloatingTopBar`.
  */
-export const DayHeader = React.memo(({ date, week, isToday = false, isTomorrow = false, isExam = false, isPast = false, holidayName }: Props) => {
-  const { t } = useTranslation();
-  const Palette = usePalette();
-  const styles = useMemo(() => makeStyles(Palette), [Palette]);
-
-  const dayText = isExam ? formatExamDayHeader(date) : formatDayHeader(date, week);
-  const a11yLabel = buildLabel(
-    dayText,
-    isToday && t('date.today'),
-    isTomorrow && t('date.tomorrow'),
+export const DayHeader = React.memo(
+  ({
+    date,
+    week,
+    isToday = false,
+    isTomorrow = false,
+    isExam = false,
+    isPast = false,
     holidayName,
-  );
+  }: Props) => {
+    const { t } = useTranslation();
+    const Palette = usePalette();
+    const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
-  return (
-    <View style={styles.wrap} accessibilityRole="header" accessibilityLabel={a11yLabel}>
-      <View style={styles.row}>
-        <Text
-          {...textProps('footnote')}
-          style={[styles.text, isToday && styles.today, isTomorrow && styles.tomorrow, isPast && styles.past]}
-        >
-          {isExam ? formatExamDayHeader(date) : formatDayHeader(date, week)}
-        </Text>
-        {holidayName != null && (
-          <View style={styles.holidayBadge}>
-            <Text maxFontSizeMultiplier={1} style={styles.holidayText} numberOfLines={1}>
-              {holidayName}
+    const dayName = formatDayName(date);
+    const dateText = formatDayDate(date);
+    const weekLabel = t('schedule.week', { n: week });
+    const statusLabel = isToday ? t('date.today') : isTomorrow ? t('date.tomorrow') : null;
+
+    const a11yLabel = buildLabel(
+      `${dayName}, ${dateText}`,
+      !isExam && weekLabel,
+      statusLabel,
+      holidayName,
+    );
+
+    return (
+      <View style={styles.wrap} accessibilityRole="header" accessibilityLabel={a11yLabel}>
+        <View style={styles.textCol}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={[styles.dayName, isToday && styles.accentText, isPast && styles.pastText]}
+            numberOfLines={1}
+          >
+            {dayName}
+          </Text>
+          <View style={styles.subRow}>
+            <Text
+              maxFontSizeMultiplier={1.3}
+              style={[styles.dateText, isPast && styles.pastText]}
+              numberOfLines={1}
+            >
+              {dateText}
+              {statusLabel != null && (
+                <Text style={isTomorrow ? styles.statusTomorrow : styles.statusToday}>
+                  {'  ·  '}
+                  {statusLabel}
+                </Text>
+              )}
+            </Text>
+            {holidayName != null && (
+              <View style={styles.holidayBadge}>
+                <Text maxFontSizeMultiplier={1} style={styles.holidayText} numberOfLines={1}>
+                  {holidayName}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+        {!isExam && (
+          <View style={styles.weekChip}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.weekChipText} numberOfLines={1}>
+              {weekLabel}
             </Text>
           </View>
         )}
       </View>
-    </View>
-  );
-});
+    );
+  },
+);
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  wrap: {
-    paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8,
-    paddingTop: Spacing.sectionTop,
-    paddingBottom: Spacing.sectionBottom,
-    backgroundColor: Palette.background,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  text: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Palette.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  today: {
-    color: Palette.accent,
-  },
-  tomorrow: {
-    color: Palette.destructive,
-  },
-  past: {
-    opacity: 0.4,
-  },
-  holidayBadge: {
-    backgroundColor: Palette.accent + '26', // 15% opacity
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    flexShrink: 1,
-  },
-  holidayText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Palette.accent,
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    wrap: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.md,
+      paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8,
+      paddingTop: Spacing.sectionTop,
+      paddingBottom: Spacing.sectionBottom,
+      backgroundColor: Palette.background,
+    },
+    textCol: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    dayName: {
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: 0.2,
+      color: Palette.textPrimary,
+    },
+    subRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    dateText: {
+      flexShrink: 1,
+      fontSize: 13,
+      fontWeight: '500',
+      color: Palette.textSecondary,
+    },
+    statusToday: {
+      fontWeight: '700',
+      color: Palette.accent,
+    },
+    statusTomorrow: {
+      fontWeight: '700',
+      color: Palette.destructive,
+    },
+    accentText: {
+      color: Palette.accent,
+    },
+    pastText: {
+      color: Palette.textTertiary,
+    },
+    weekChip: {
+      alignSelf: 'flex-start',
+      marginTop: 2,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: Radius.sm,
+      backgroundColor: Palette.accent + '1A', // 10% accent tint
+    },
+    weekChipText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: Palette.accent,
+    },
+    holidayBadge: {
+      backgroundColor: Palette.accent + '26', // 15% opacity
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+      flexShrink: 1,
+    },
+    holidayText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: Palette.accent,
+    },
+  });

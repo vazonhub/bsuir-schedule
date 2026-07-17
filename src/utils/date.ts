@@ -1,7 +1,13 @@
-import { addDays as fnsAddDays, format, isSameDay as fnsIsSameDay, parse, startOfDay } from 'date-fns';
+import {
+  addDays as fnsAddDays,
+  format,
+  isSameDay as fnsIsSameDay,
+  parse,
+  startOfDay,
+} from 'date-fns';
 
 import i18n from '@i18n';
-import type { BsuirDateString, DayNameRu, WeekNumber } from '@models/dto';
+import type { BsuirDateString, DayNameRu } from '@models/dto';
 
 const BSUIR_DATE_FMT = 'dd.MM.yyyy';
 
@@ -57,35 +63,25 @@ const MONTHS_GENITIVE_RU = [
 ] as const;
 
 /** Get localized day names (Sun=0..Sat=6) from i18n. */
-export const getDayNames = (): string[] =>
-  i18n.t('date.days', { returnObjects: true }) as string[];
+export const getDayNames = (): string[] => i18n.t('date.days', { returnObjects: true }) as string[];
 
 /** Get localized month names from i18n. */
-const getMonthNames = (): string[] =>
-  i18n.t('date.months', { returnObjects: true }) as string[];
+const getMonthNames = (): string[] => i18n.t('date.months', { returnObjects: true }) as string[];
 
 /** Get localized short day names from i18n. */
 const getDayNamesShort = (): string[] =>
   i18n.t('date.daysShort', { returnObjects: true }) as string[];
 
-/** "Понедельник, 14 апреля" — without week info (used for exams). */
-export const formatExamDayHeader = (date: Date): string => {
+/** "Понедельник" — только название дня недели (для двухстрочного заголовка). */
+export const formatDayName = (date: Date): string => {
   const days = getDayNames();
-  const months = getMonthNames();
-  const dayName = days[date.getDay()];
-  const dom = date.getDate();
-  const month = months[date.getMonth()];
-  return `${dayName}, ${dom} ${month}`;
+  return days[date.getDay()] ?? '';
 };
 
-/** "Понедельник, 14 апреля · Неделя 2" */
-export const formatDayHeader = (date: Date, week: WeekNumber): string => {
-  const days = getDayNames();
+/** "14 апреля" — день месяца + месяц (без дня недели и номера недели). */
+export const formatDayDate = (date: Date): string => {
   const months = getMonthNames();
-  const dayName = days[date.getDay()];
-  const dom = date.getDate();
-  const month = months[date.getMonth()];
-  return `${dayName}, ${dom} ${month} · ${i18n.t('schedule.week', { n: week })}`;
+  return `${date.getDate()} ${months[date.getMonth()] ?? ''}`;
 };
 
 /** "Сегодня" / "Завтра" / "Понедельник, 14 апреля". Used for non-sticky labels. */
