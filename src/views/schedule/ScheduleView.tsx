@@ -106,6 +106,11 @@ const BAR_CLEARANCE = 38 + Spacing.lg;
 // баром и системе нечего до-применять.
 const BOTTOM_CLEARANCE = (initialWindowMetrics?.insets.bottom ?? 0) + TAB_BAR_HEIGHT;
 
+// Пре-рендер ~1.5 экрана вперёд/назад: меньше «белых пустот» при быстром
+// флинге по длинному списку (весь семестр — сотни строк). Виртуализация
+// FlashList оставляет в памяти лишь окно вокруг вьюпорта.
+const DRAW_DISTANCE = Math.round(Dimensions.get('window').height * 1.5);
+
 export const ScheduleView = ({
   schedule,
   currentWeek,
@@ -726,6 +731,7 @@ export const ScheduleView = ({
           keyExtractor={keyExtractor}
           getItemType={getItemType}
           extraData={extraData}
+          drawDistance={DRAW_DISTANCE}
           contentContainerStyle={contentStyle}
           ListHeaderComponent={
             hasPastToReveal ? (
