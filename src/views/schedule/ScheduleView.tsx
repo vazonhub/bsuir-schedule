@@ -367,7 +367,7 @@ export const ScheduleView = ({
   const contentStyle = useMemo(
     () => ({
       paddingTop: BAR_CLEARANCE,
-      paddingBottom: insets.bottom + Spacing.md,
+      paddingBottom: insets.bottom + Spacing.xs,
     }),
     [insets.bottom],
   );
