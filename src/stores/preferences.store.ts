@@ -84,6 +84,9 @@ interface PreferencesState {
   /** Последняя версия, release notes которой пользователь уже просмотрел. */
   lastSeenVersion: string | null;
   setLastSeenVersion(version: string): void;
+  /** Просмотрена ли пошаговая обучалка на вкладке «Дневник». */
+  diaryOnboardingSeen: boolean;
+  setDiaryOnboardingSeen(value: boolean): void;
   /** Заблокированные пары: entityKey → массив block-ID. */
   blockedLessons: Record<string, string[]>;
   toggleBlockedLesson(entityKey: string, blockId: string): void;
@@ -122,6 +125,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       androidDifferentiateWithoutColor: false,
       androidHighContrast: false,
       lastSeenVersion: null,
+      diaryOnboardingSeen: false,
       blockedLessons: {},
       lessonColorOverrides: {},
       iconOverrides: {},
@@ -178,6 +182,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       setAndroidDifferentiateWithoutColor: (value) => set({ androidDifferentiateWithoutColor: value }),
       setAndroidHighContrast: (value) => set({ androidHighContrast: value }),
       setLastSeenVersion: (version) => set({ lastSeenVersion: version }),
+      setDiaryOnboardingSeen: (value) => set({ diaryOnboardingSeen: value }),
       toggleBlockedLesson: (entityKey, blockId) =>
         set((s) => {
           const current = s.blockedLessons[entityKey] ?? [];
@@ -232,6 +237,7 @@ export const usePreferencesStore = create<PreferencesState>()(
         androidDifferentiateWithoutColor: state.androidDifferentiateWithoutColor,
         androidHighContrast: state.androidHighContrast,
         lastSeenVersion: state.lastSeenVersion,
+        diaryOnboardingSeen: state.diaryOnboardingSeen,
         blockedLessons: state.blockedLessons,
         lessonColorOverrides: state.lessonColorOverrides,
         iconOverrides: state.iconOverrides,
@@ -273,6 +279,10 @@ export const waitForHydration = (): Promise<void> => {
     });
   });
 };
+
+/** Selector helper: has the diary tutorial already been shown? */
+export const selectDiaryOnboardingSeen = (s: PreferencesState): boolean =>
+  s.diaryOnboardingSeen;
 
 /** Selector helper: is `name` pinned in `pinnedGroups`? */
 export const selectIsGroupPinned = (name: string) => (s: PreferencesState) =>
