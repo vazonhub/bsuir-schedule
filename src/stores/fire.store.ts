@@ -10,7 +10,6 @@ import {
   markActivityCore,
   mergeFireCores,
   mondayOfISO,
-  prevDayISO,
   toLocalISO,
 } from '@utils/fire';
 import type { FireCore } from '@utils/fire';
@@ -116,7 +115,9 @@ export const useFireStore = create<FireStore>()(
                 current: maxCurrent,
                 longest: maxLongest,
                 lastActiveDate: latest,
-                lastEvalDate: latest ? prevDayISO(latest) : null,
+                // latest уже был активным днём — считаем его учтённым, иначе
+                // первый evaluate оштрафует его как пропуск.
+                lastEvalDate: latest,
                 freezes: WEEKLY_FREEZES,
                 freezeWeekStart: mondayOfISO(today),
               });

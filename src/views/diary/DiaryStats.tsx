@@ -120,10 +120,7 @@ export const DiaryStats = ({
                   groupName={groupName}
                   onEdit={() => handleEditItem(item)}
                   onLongPressAction={() => handleLongPressAction(item)}
-                  onToggleTask={() => {
-                    toggleTask(groupName, item.subject, item.taskIndex);
-                    FireController.registerHomework();
-                  }}
+                  onToggleTask={() => toggleTask(groupName, item.subject, item.taskIndex)}
                 />
               )}
             />
@@ -214,7 +211,15 @@ const PlannerCard = ({
         <Text {...textProps('body')} style={styles.subject} numberOfLines={1}>
           {item.subject}
         </Text>
-        <TaskCell number={item.taskIndex} done={done} onPress={onToggleTask} />
+        <TaskCell
+          number={item.taskIndex}
+          done={done}
+          onPress={() => {
+            onToggleTask();
+            // Отметка задачи выполненной = активность для огонька (не снятие).
+            if (!done) FireController.registerHomework();
+          }}
+        />
       </View>
     </Pressable>
   );

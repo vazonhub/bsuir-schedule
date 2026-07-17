@@ -83,7 +83,10 @@ export const toLocalISO = (d: Date): string => {
 };
 
 /** Разобрать локальный ISO-день в `Date` (полночь по локальному времени). */
-export const parseLocalISO = (iso: string): Date => new Date(`${iso}T00:00:00`);
+export const parseLocalISO = (iso: string): Date => {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+};
 
 /** Следующий календарный день. */
 export const nextDayISO = (iso: string): string => toLocalISO(addDays(parseLocalISO(iso), 1));
