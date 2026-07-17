@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
 import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
@@ -50,6 +51,8 @@ export const DiaryStats = ({
   const router = useRouter();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const addSheetRef = useRef<AddPlannerSheetRef>(null);
+  const plannerRef = useTutorialTarget('planner');
+  const upcomingRef = useTutorialTarget('upcoming');
 
   const planner = useDiaryStore(selectPlanner(groupName));
   const reorderPlanner = useDiaryStore((s) => s.reorderPlanner);
@@ -104,7 +107,7 @@ export const DiaryStats = ({
     <View style={styles.wrap}>
       <View style={styles.columns}>
         {/* ── Left: Planner ── */}
-        <View style={styles.column}>
+        <View ref={plannerRef} style={styles.column}>
           <Text {...textProps('footnote')} style={styles.columnTitle}>
             {t('diary.plannerTitle')}
           </Text>
@@ -147,7 +150,7 @@ export const DiaryStats = ({
         </View>
 
         {/* ── Right: Upcoming ── */}
-        <View style={styles.column}>
+        <View ref={upcomingRef} style={styles.column}>
           <Text {...textProps('footnote')} style={styles.columnTitle}>
             {t('diary.upcomingTitle')}
           </Text>

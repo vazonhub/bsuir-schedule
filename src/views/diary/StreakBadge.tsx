@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { FlameIcon } from '@components/fire/FlameIcon';
+import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
 import { usePalette } from '@hooks/usePalette';
 import { selectFireCurrent, useFireStore } from '@stores/fire.store';
 import { Radius, Spacing } from '@theme';
@@ -23,6 +24,7 @@ export const StreakBadge = () => {
   const flameColor = getFlameColor(current);
   const styles = useMemo(() => makeStyles(Palette, hot, flameColor), [Palette, hot, flameColor]);
   const sheetRef = useRef<FireSheetRef>(null);
+  const tutorialRef = useTutorialTarget('streak');
 
   const handlePress = () => {
     void hapticLight();
@@ -34,6 +36,7 @@ export const StreakBadge = () => {
   return (
     <>
       <Pressable
+        ref={tutorialRef}
         onPress={handlePress}
         hitSlop={6}
         style={({ pressed }) => [styles.pill, pressed && styles.pillPressed]}

@@ -1,14 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -200,13 +193,14 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
           if (item.kind === 'hiddenHeader') return '__hidden-header';
           return `${item.kind}:${item.subject.subject}`;
         }}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           if (item.kind === 'card') {
             return (
               <SubjectCard
                 subject={item.subject}
                 groupName={groupName}
                 onRequestEnterCount={handleRequestEnterCount}
+                isTutorialTarget={index === 0}
               />
             );
           }

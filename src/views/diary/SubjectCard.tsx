@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 
+import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
 import { FireController } from '@controllers/fire.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
@@ -27,9 +28,16 @@ interface Props {
   subject: DiarySubject;
   groupName: string;
   onRequestEnterCount(subject: string, subjectFullName: string, initial: number | null): void;
+  /** Регистрировать эту карточку как цель обучалки (только первая видимая). */
+  isTutorialTarget?: boolean;
 }
 
-export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) => {
+export const SubjectCard = ({
+  subject,
+  groupName,
+  onRequestEnterCount,
+  isTutorialTarget = false,
+}: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -40,6 +48,11 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
   const toggleHidden = useDiaryStore((s) => s.toggleHidden);
 
   const hasCount = progress.taskCount != null && progress.taskCount > 0;
+
+  // ── Tutorial targets (только для первой видимой карточки) ──
+  const cardTutorialRef = useTutorialTarget('subjectCard', isTutorialTarget);
+  const enterTutorialRef = useTutorialTarget('enterCount', isTutorialTarget && !hasCount);
+  const completeTutorialRef = useTutorialTarget('completeTask', isTutorialTarget && hasCount);
 
   // ── Press-and-hold animation ──
   // Immediate light "press" (scale 0.99 + bg swap) at touch-down, then a
@@ -119,6 +132,7 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
   return (
     <Animated.View style={[styles.cardWrap, animStyle]}>
       <Pressable
+        ref={cardTutorialRef}
         onLongPress={handleLongPress}
         delayLongPress={350}
         onPressIn={handlePressIn}
@@ -153,6 +167,7 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
           {/* ── Bottom: enter-count button OR grid ── */}
           {!hasCount ? (
             <Pressable
+              ref={enterTutorialRef}
               onPress={() => onRequestEnterCount(subject.subject, subject.subjectFullName, null)}
               style={({ pressed }) => [styles.enterBtn, pressed && styles.enterBtnPressed]}
             >
@@ -161,16 +176,18 @@ export const SubjectCard = ({ subject, groupName, onRequestEnterCount }: Props) 
               </Text>
             </Pressable>
           ) : (
-            <TaskGrid
-              count={progress.taskCount as number}
-              completed={progress.completed}
-              onToggle={(idx) => {
-                const wasDone = progress.completed.includes(idx);
-                toggleTask(groupName, subject.subject, idx);
-                // Отметка задачи выполненной = активность для огонька.
-                if (!wasDone) FireController.registerHomework();
-              }}
-            />
+            <View ref={completeTutorialRef}>
+              <TaskGrid
+                count={progress.taskCount as number}
+                completed={progress.completed}
+                onToggle={(idx) => {
+                  const wasDone = progress.completed.includes(idx);
+                  toggleTask(groupName, subject.subject, idx);
+                  // Отметка задачи выполненной = активность для огонька.
+                  if (!wasDone) FireController.registerHomework();
+                }}
+              />
+            </View>
           )}
         </Animated.View>
       </Pressable>
