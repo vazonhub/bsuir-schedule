@@ -90,32 +90,39 @@ export const rescheduleFireReminder = async (
   now: Date,
   isLessonDay: (iso: string) => boolean,
 ): Promise<void> => {
-  configureHandler();
+  // Вся функция best-effort: вызывается через `void` из контроллера, поэтому
+  // любой reject expo-notifications глушим здесь, чтобы не словить unhandled
+  // rejection и не сломать поток регистрации активности.
+  try {
+    configureHandler();
 
-  // Всегда снимаем предыдущее напоминание — состояние могло поменяться.
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
+    // Всегда снимаем предыдущее напоминание — состояние могло поменяться.
+    await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
 
-  const core = selectFireCore(useFireStore.getState());
-  // Планируем только когда серия под угрозой: есть что терять и нет заморозок.
-  if (core.current <= 0 || core.freezes > 0) return;
+    const core = selectFireCore(useFireStore.getState());
+    // Планируем только когда серия под угрозой: есть что терять и нет заморозок.
+    if (core.current <= 0 || core.freezes > 0) return;
 
-  const target = findReminderDate(now, isLessonDay, core.lastActiveDate);
-  if (!target) return;
+    const target = findReminderDate(now, isLessonDay, core.lastActiveDate);
+    if (!target) return;
 
-  const granted = await ensurePermission();
-  if (!granted) return;
+    const granted = await ensurePermission();
+    if (!granted) return;
 
-  await ensureChannel();
-  await Notifications.scheduleNotificationAsync({
-    identifier: REMINDER_ID,
-    content: {
-      title: i18n.t('fire.reminderTitle'),
-      body: i18n.t('fire.reminderBody', { n: core.current }),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: target,
-      channelId: CHANNEL_ID,
-    },
-  });
+    await ensureChannel();
+    await Notifications.scheduleNotificationAsync({
+      identifier: REMINDER_ID,
+      content: {
+        title: i18n.t('fire.reminderTitle'),
+        body: i18n.t('fire.reminderBody', { n: core.current }),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: target,
+        channelId: CHANNEL_ID,
+      },
+    });
+  } catch {
+    // напоминание — необязательная функциональность, ошибки проглатываем
+  }
 };

@@ -3,7 +3,7 @@ import { rescheduleFireReminder } from '@services/notifications/fireReminder';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
-import { buildLessonDayChecker } from '@utils/fire';
+import { buildLessonDayChecker, toLocalISO } from '@utils/fire';
 
 /**
  * Оркестрация огонька — единственное место, где логика огонька пересекается
@@ -15,14 +15,39 @@ import { buildLessonDayChecker } from '@utils/fire';
  * несправедливо). Поэтому `onAppActive` вызывается ПОСЛЕ `prefetchPinned`,
  * когда `currentWeek` и расписание уже в сторе.
  */
-const buildChecker = (now: Date): ((iso: string) => boolean) => {
+type LessonDayChecker = (iso: string) => boolean;
+
+/**
+ * Однослотовый мемо: `buildLessonDayChecker` разворачивает всё расписание
+ * семестра, а `register` дёргается часто (вход / расписание / каждая отметка
+ * домашки). В пределах одного дня с той же ссылкой на расписание и неделей
+ * результат неизменен — переиспользуем его вместо повторной раскрутки.
+ * Ключ по календарному дню (`todayISO`), т.к. номера недель считаются от него.
+ */
+let checkerCache:
+  | { schedule: unknown; currentWeek: unknown; todayISO: string; checker: LessonDayChecker }
+  | null = null;
+
+const buildChecker = (now: Date): LessonDayChecker => {
   const { defaultGroup } = usePreferencesStore.getState();
   if (!defaultGroup) return () => false;
   const scheduleStore = useScheduleStore.getState();
   const schedule = scheduleStore.byKey[defaultGroup];
   const currentWeek = scheduleStore.currentWeek;
   if (!schedule || currentWeek == null) return () => false;
-  return buildLessonDayChecker(schedule, currentWeek, now);
+
+  const todayISO = toLocalISO(now);
+  if (
+    checkerCache &&
+    checkerCache.schedule === schedule &&
+    checkerCache.currentWeek === currentWeek &&
+    checkerCache.todayISO === todayISO
+  ) {
+    return checkerCache.checker;
+  }
+  const checker = buildLessonDayChecker(schedule, currentWeek, now);
+  checkerCache = { schedule, currentWeek, todayISO, checker };
+  return checker;
 };
 
 /**
