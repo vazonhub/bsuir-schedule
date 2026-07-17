@@ -13,6 +13,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -59,6 +60,8 @@ export const SettingsScreen = () => {
   const setTheme = usePreferencesStore((s) => s.setTheme);
   const language = usePreferencesStore((s) => s.language);
   const setLanguage = usePreferencesStore((s) => s.setLanguage);
+  const hidePastLessons = usePreferencesStore((s) => s.hidePastLessons);
+  const setHidePastLessons = usePreferencesStore((s) => s.setHidePastLessons);
 
   const reduceMotion = useReduceMotion();
   const themeLabels = [t('settings.themeAuto'), t('settings.themeLight'), t('settings.themeDark')];
@@ -209,6 +212,26 @@ export const SettingsScreen = () => {
 
       <View style={styles.bannerSection}>
         <UnityBanner marginHorizontal={0} />
+      </View>
+
+      <View style={styles.navSection}>
+        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.scheduleSection')}</Text>
+        <View style={styles.card}>
+          <View
+            style={styles.navRow}
+            accessibilityRole="switch"
+            accessibilityLabel={t('settings.hidePastLessons')}
+            accessibilityState={{ checked: hidePastLessons }}
+          >
+            <Ionicons name="time-outline" size={20} color={Palette.accent} />
+            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.hidePastLessons')}</Text>
+            <Switch
+              value={hidePastLessons}
+              onValueChange={setHidePastLessons}
+              trackColor={{ true: Palette.accent }}
+            />
+          </View>
+        </View>
       </View>
 
       <View style={styles.navSection}>

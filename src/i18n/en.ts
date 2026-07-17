@@ -26,9 +26,10 @@ export const en: TranslationKeys = {
     emptyPickTitle: 'Diary is empty',
     emptyPickSubtitle: 'Pin a group to see subjects and track tasks',
     employeeUnsupportedTitle: 'Diary works with groups only',
-    employeeUnsupportedSubtitle: 'You currently have a teacher pinned. Select your group to use the diary',
+    employeeUnsupportedSubtitle:
+      'You currently have a teacher pinned. Select your group to use the diary',
     emptySubjectsTitle: 'No subjects',
-    emptySubjectsSubtitle: 'No lectures, PS or LR were found in this group\'s schedule',
+    emptySubjectsSubtitle: "No lectures, PS or LR were found in this group's schedule",
     enterTaskCount: 'Enter task count',
     enterTaskCountTitle: 'How many tasks?',
     enterTaskCountHint: 'From {{min}} to {{max}}',
@@ -49,7 +50,8 @@ export const en: TranslationKeys = {
     streakTitle: 'Streak',
     streakCurrent: 'Current: {{n}} d.',
     streakLongest: 'Best: {{n}} d.',
-    streakRules: 'Mark at least 1 task on weekdays to keep the streak going. Weekends don\'t count — they neither break nor extend it.',
+    streakRules:
+      "Mark at least 1 task on weekdays to keep the streak going. Weekends don't count — they neither break nor extend it.",
     streakA11y: 'Streak, {{n}} days in a row',
     plannerNoEligible: 'Set a task count on a subject to add it to the planner',
     upcomingTitle: 'Upcoming',
@@ -67,7 +69,8 @@ export const en: TranslationKeys = {
     generic: 'Failed to load schedule',
     genericHint: 'Please try again',
     apiDisabled: 'iis.bsuir.by source is disabled',
-    apiDisabledHint: 'This schedule is not available in cloud storage. Enable iis.bsuir.by in "Network & Data" settings to load it',
+    apiDisabledHint:
+      'This schedule is not available in cloud storage. Enable iis.bsuir.by in "Network & Data" settings to load it',
   },
 
   mySchedule: {
@@ -86,6 +89,7 @@ export const en: TranslationKeys = {
     unpin: 'Unpin schedule',
     changeGroup: 'Change schedule',
     week: 'Week {{n}}',
+    showPast: 'Show past lessons',
   },
 
   groups: {
@@ -146,8 +150,18 @@ export const en: TranslationKeys = {
     days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     daysShort: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
     months: [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ],
   },
 
@@ -214,7 +228,8 @@ export const en: TranslationKeys = {
     sourceICloud: 'apple.com',
     sourceGoogleDrive: 'google.com',
     signIn: 'Sign in',
-    availabilityHint: 'Choose where the app fetches schedule data from. iis.bsuir.by is the official BSUIR API. Cloud backup (iCloud on iOS, Google Drive on Android) syncs across your devices and works as a fallback when the API is unavailable.',
+    availabilityHint:
+      'Choose where the app fetches schedule data from. iis.bsuir.by is the official BSUIR API. Cloud backup (iCloud on iOS, Google Drive on Android) syncs across your devices and works as a fallback when the API is unavailable.',
     dataLabel: 'Data',
     clearCache: 'Clear cache',
     clearCacheConfirm: 'Schedule cache will be deleted. Data will reload on next launch.',
@@ -235,7 +250,8 @@ export const en: TranslationKeys = {
     tipJarUnavailable: 'Purchases are not available on this device',
     holidaysSection: 'Public Holidays',
     holidaysSource: 'Data Source',
-    holidaysSourceDesc: 'The list of public holidays of the Republic of Belarus is loaded from the open Nager.Date API. If the service is unavailable, a built-in list is used.',
+    holidaysSourceDesc:
+      'The list of public holidays of the Republic of Belarus is loaded from the open Nager.Date API. If the service is unavailable, a built-in list is used.',
     holidaysListTitle: 'Holidays',
     holidaysUserAdded: 'added',
     holidaysRemoved: 'hidden',
@@ -251,7 +267,8 @@ export const en: TranslationKeys = {
     holidaysResetConfirm: 'Restore the holiday list to default?',
     aboutSection: 'About',
     aboutSocials: 'Social media',
-    aboutTelegramHint: 'The channel features the latest app updates. You can also ask the developer a question.',
+    aboutTelegramHint:
+      'The channel features the latest app updates. You can also ask the developer a question.',
     aboutDocuments: 'Documents',
     aboutPrivacyPolicy: 'Privacy Policy',
     interfaceSection: 'Interface',
@@ -266,7 +283,8 @@ export const en: TranslationKeys = {
 
   accessibility: {
     title: 'Accessibility',
-    subtitle: 'The app automatically adapts to your device\'s accessibility settings. Current status is shown below.',
+    subtitle:
+      "The app automatically adapts to your device's accessibility settings. Current status is shown below.",
     voiceOver: 'VoiceOver',
     voiceOverDesc: 'Voice guidance for interface elements',
     talkBack: 'TalkBack',
@@ -289,8 +307,10 @@ export const en: TranslationKeys = {
     systemSection: 'Device settings',
     appSection: 'App settings',
     openSettings: 'Open device settings',
-    footnote: 'These options are managed in your device\'s system settings. The app supports VoiceOver, Voice Control, Dynamic Type, Reduce Motion, and high contrast mode.',
-    footnoteAndroid: 'Some options like Differentiate Without Color and Increase Contrast can be toggled directly here. Other options are managed in your device\'s system settings.',
+    footnote:
+      "These options are managed in your device's system settings. The app supports VoiceOver, Voice Control, Dynamic Type, Reduce Motion, and high contrast mode.",
+    footnoteAndroid:
+      "Some options like Differentiate Without Color and Increase Contrast can be toggled directly here. Other options are managed in your device's system settings.",
   },
 
   a11y: {
