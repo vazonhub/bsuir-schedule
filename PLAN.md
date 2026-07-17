@@ -323,25 +323,25 @@
 
 #### 11.A Миграция движка списка на FlashList
 
-- [ ] **Шаг 1.** `npx expo install @shopify/flash-list` (v2 — под new arch, `estimatedItemSize` не нужен). Проверить `newArchEnabled` в `app.json`. Пересборка dev-client: `npx expo run:ios`. — коммит `chore: add @shopify/flash-list dependency`
-- [ ] **Шаг 2.** В `utils/scheduleNormalization.ts` добавить тип `ScheduleRow` (`header | lesson | examsSeparator | banner`) и `flattenSectionsToRows(sections)`. Секционные билдеры не трогаем — конвертируем секции → плоские строки на выходе. — коммит `refactor(schedule): add flat row model for FlashList`
-- [ ] **Шаг 3.** Переписать `ScheduleView` с `SectionList` на `FlashList` (`data`, `renderItem`, `getItemType`, `keyExtractor`). Лейбл даты в хедере ← `onViewableItemsChanged` (удалить `measureInWindow` + `sectionOffsetsRef` + `recomputeTopSection`). Скролл (автоскролл / date-picker / переход к паре / deep-link / `initialScrollIndex`) ← `scrollToIndex({ viewOffset, viewPosition })` (удалить 3-таймерные ретраи и `scrollToLocation`). Сохранить: RefreshControl, подгруппы, blocked, баннеры Unity, экзамен-режим, праздники, deep-link, date picker, LessonDetailsSheet. — коммит `feat(schedule): migrate ScheduleView to FlashList`
-- [ ] **Шаг 4.** Починка скролл-бокса: убрать iOS-хак `contentInset`/`contentOffset` → единый `contentContainerStyle.paddingTop = topInset`; выставить `RefreshControl.progressViewOffset`; удалить прод-`console.log`. — коммит `fix(schedule): correct scroll box insets and initial position`
+- [x] **Шаг 1.** `npx expo install @shopify/flash-list` (v2 — под new arch, `estimatedItemSize` не нужен). Проверить `newArchEnabled` в `app.json`. Пересборка dev-client: `npx expo run:ios`. — коммит `chore: add @shopify/flash-list dependency`
+- [x] **Шаг 2.** В `utils/scheduleNormalization.ts` добавить тип `ScheduleRow` (`header | lesson | examsSeparator | banner`) и `flattenSectionsToRows(sections)`. Секционные билдеры не трогаем — конвертируем секции → плоские строки на выходе. — коммит `refactor(schedule): add flat row model for FlashList`
+- [x] **Шаг 3.** Переписать `ScheduleView` с `SectionList` на `FlashList` (`data`, `renderItem`, `getItemType`, `keyExtractor`). Лейбл даты в хедере ← `onViewableItemsChanged` (удалить `measureInWindow` + `sectionOffsetsRef` + `recomputeTopSection`). Скролл (автоскролл / date-picker / переход к паре / deep-link / `initialScrollIndex`) ← `scrollToIndex({ viewOffset, viewPosition })` (удалить 3-таймерные ретраи и `scrollToLocation`). Сохранить: RefreshControl, подгруппы, blocked, баннеры Unity, экзамен-режим, праздники, deep-link, date picker, LessonDetailsSheet. — коммит `feat(schedule): migrate ScheduleView to FlashList`
+- [x] **Шаг 4.** Починка скролл-бокса: убрать iOS-хак `contentInset`/`contentOffset` → единый `contentContainerStyle.paddingTop = topInset`; выставить `RefreshControl.progressViewOffset`; удалить прод-`console.log`. — коммит `fix(schedule): correct scroll box insets and initial position`
 
 #### 11.B Рестайл списка
 
-- [ ] **Шаг 5.** `DayHeader`: акценты today/tomorrow/past, разделитель между неделями цикла (1–4), выравнивание по дизайн-токенам. — коммит `style(schedule): redesign day headers and week separators`
-- [ ] **Шаг 6.** `LessonCard` (обычный / compact / blocked): ритм, типографика, цветовая полоса типа пары (через `getLessonAccentColor`, без хардкода), overlay «прошедшей» части; a11y-лейблы не ломать. — коммит `style(schedule): redesign lesson cards`
+- [x] **Шаг 5.** `DayHeader`: акценты today/tomorrow/past, разделитель между неделями цикла (1–4), выравнивание по дизайн-токенам. — коммит `style(schedule): redesign day headers and week separators`
+- [x] **Шаг 6.** `LessonCard` (обычный / compact / blocked): ритм, типографика, цветовая полоса типа пары (через `getLessonAccentColor`, без хардкода), overlay «прошедшей» части; a11y-лейблы не ломать. — коммит `style(schedule): redesign lesson cards`
 
 #### 11.C Доступ к прошедшим парам
 
-- [ ] **Шаг 7.** В `SettingsScreen` (раздел «Интерфейс») строка-переключатель `hidePastLessons` (RN `Switch`), i18n `settings.hidePastLessons` уже есть. — коммит `feat(settings): expose "hide past lessons" toggle`
-- [ ] **Шаг 8.** Локальный override `showPastOverride` в `ScheduleView` (`showAll = !hidePastLessons || showPastOverride`) + кнопка «Показать прошедшие» сверху списка; разворачивание без прыжка через `maintainVisibleContentPosition`. — коммит `feat(schedule): add "load earlier" button for past lessons`
+- [x] **Шаг 7.** В `SettingsScreen` (раздел «Интерфейс») строка-переключатель `hidePastLessons` (RN `Switch`), i18n `settings.hidePastLessons` уже есть. — коммит `feat(settings): expose "hide past lessons" toggle`
+- [x] **Шаг 8.** Локальный override `showPastOverride` в `ScheduleView` (`showAll = !hidePastLessons || showPastOverride`) + кнопка «Показать прошедшие» сверху списка; разворачивание без прыжка через `maintainVisibleContentPosition`. — коммит `feat(schedule): add "load earlier" button for past lessons`
 
 #### 11.D Производительность и финал
 
-- [ ] **Шаг 9.** Прогон `showAll` на полном семестре (сотни секций): плавность, память, `getItemType`/мемоизация `LessonCard`. — коммит `perf(schedule): tune FlashList for full-semester load`
-- [ ] **Шаг 10.** `npm run typecheck` + `npm run lint:fix` + `npm run format`, проверка на iOS и Android. — коммит `chore: typecheck, lint and format schedule rebuild`
+- [x] **Шаг 9.** Прогон `showAll` на полном семестре (сотни секций): плавность, память, `getItemType`/мемоизация `LessonCard`. — коммит `perf(schedule): tune FlashList for full-semester load`
+- [x] **Шаг 10.** `npm run typecheck` + `npm run lint:fix` + `npm run format`, проверка на iOS и Android. — коммит `chore: typecheck, lint and format schedule rebuild`
 
 ---
 
