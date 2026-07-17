@@ -37,6 +37,13 @@ import { usePreferencesStore } from '@stores/preferences.store';
 
 configureGoogleSignIn();
 
+// Anchor the root stack to the `(tabs)` group so a cold start (and the
+// dev-client launch URL) deterministically resolves to the tabs instead of
+// landing on the sitemap / "unmatched route" screen.
+export const unstable_settings = {
+  initialRouteName: '(tabs)',
+};
+
 export default function RootLayout() {
   useAppBootstrap();
   const isDark = useIsDark();
