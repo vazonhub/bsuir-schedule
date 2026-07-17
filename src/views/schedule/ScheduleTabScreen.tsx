@@ -179,7 +179,10 @@ export const ScheduleTabScreen = () => {
   const viewabilityConfigRef = useRef({ itemVisiblePercentThreshold: 0 });
   const onViewableItemsChangedRef = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const key = viewableItems[0]?.section?.key as string | undefined;
-    setActiveLetter(key === PINNED_EMP_KEY ? SCRUBBER_STAR : (key ?? null));
+    // При overscroll/bounce список может отдать пустой набор — не сбрасываем
+    // подсветку в null, чтобы точка не мигала, а сохраняем прошлую букву.
+    if (key == null) return;
+    setActiveLetter(key === PINNED_EMP_KEY ? SCRUBBER_STAR : key);
   });
 
   // Буквы скраббера: только присутствующие + ★ сверху, если есть закреплённые.
