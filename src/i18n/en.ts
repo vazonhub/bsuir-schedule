@@ -89,6 +89,7 @@ export const en: TranslationKeys = {
     unpin: 'Unpin schedule',
     changeGroup: 'Change schedule',
     week: 'Week {{n}}',
+    showPast: 'Show past lessons',
   },
 
   groups: {
@@ -122,7 +123,6 @@ export const en: TranslationKeys = {
     group: 'Group',
     groups: 'Groups',
     notMySubgroup: 'not my subgroup',
-    subgroupShort: 'gr. {{n}}',
     blocked: 'Blocked',
     block: 'Block',
     unblock: 'Unblock',

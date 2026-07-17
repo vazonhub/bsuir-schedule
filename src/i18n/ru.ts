@@ -93,6 +93,7 @@ export const ru = {
     unpin: 'Открепить расписание',
     changeGroup: 'Сменить расписание',
     week: 'Неделя {{n}}',
+    showPast: 'Показать прошедшие',
   },
 
   // Groups
@@ -130,7 +131,6 @@ export const ru = {
     group: 'Группа',
     groups: 'Группы',
     notMySubgroup: 'не моя подгруппа',
-    subgroupShort: 'п/г {{n}}',
     blocked: 'Заблокировано',
     block: 'Заблокировать',
     unblock: 'Разблокировать',

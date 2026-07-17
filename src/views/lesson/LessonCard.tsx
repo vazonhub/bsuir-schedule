@@ -180,15 +180,14 @@ export const LessonCard = React.memo(
     const hasAvatar = avatarItems.length > 0;
     const numSubgroup = lesson.raw.numSubgroup;
     const showSubgroup = numSubgroup === 1 || numSubgroup === 2;
+    const hasRightArea = hasAvatar || showSubgroup;
 
-    // Мета-строка под названием: «ТИП · аудитория · п/г N» (пустые части пропускаем).
-    const metaParts: string[] = [];
-    if (!isAnnouncement && typeAbbrev) metaParts.push(typeAbbrev);
-    if (auditories.length > 0) metaParts.push(auditories);
-    if (showSubgroup) metaParts.push(t('lesson.subgroupShort', { n: numSubgroup }));
-    const metaText = metaParts.join('  ·  ');
+    // Мета-строка под названием: аудитория. Тип пары показываем только текстовым
+    // бейджем при включённом «различать без цвета» (a11y) — в остальных случаях
+    // тип передаёт цветная полоса слева.
+    const showTypeBadge = isDifferentiateWithoutColorEnabled && !isAnnouncement && !!typeAbbrev;
     const showNowBadge = isDifferentiateWithoutColorEnabled && timeStatus?.kind === 'ongoing';
-    const showMetaRow = isAnnouncement || showNowBadge || metaText.length > 0;
+    const showMetaRow = isAnnouncement || showTypeBadge || showNowBadge || auditories.length > 0;
 
     const statusLabel =
       timeStatus?.kind === 'ongoing'
@@ -258,10 +257,10 @@ export const LessonCard = React.memo(
 
         <View style={styles.row}>
           <View style={styles.timeCol} importantForAccessibility="no">
-            <Text maxFontSizeMultiplier={1.3} style={styles.timeStart}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.timeStart} numberOfLines={1}>
               {lesson.startTime}
             </Text>
-            <Text maxFontSizeMultiplier={1.3} style={styles.timeEnd}>
+            <Text maxFontSizeMultiplier={1.2} style={styles.timeEnd} numberOfLines={1}>
               {lesson.endTime}
             </Text>
           </View>
@@ -293,6 +292,13 @@ export const LessonCard = React.memo(
                     </Text>
                   </View>
                 )}
+                {showTypeBadge && (
+                  <View style={[styles.typeBadge, { backgroundColor: accent + '1A' }]}>
+                    <Text {...textProps('tiny')} style={[styles.typeBadgeText, { color: accent }]}>
+                      {typeAbbrev}
+                    </Text>
+                  </View>
+                )}
                 {showNowBadge && (
                   <Text
                     maxFontSizeMultiplier={1}
@@ -301,9 +307,9 @@ export const LessonCard = React.memo(
                     {t('a11y.now')}
                   </Text>
                 )}
-                {metaText.length > 0 && (
+                {auditories.length > 0 && (
                   <Text {...textProps('footnote')} style={styles.meta} numberOfLines={1}>
-                    {metaText}
+                    {auditories}
                   </Text>
                 )}
               </View>
@@ -315,13 +321,23 @@ export const LessonCard = React.memo(
             )}
           </View>
 
-          {hasAvatar && (
+          {hasRightArea && (
             <View style={styles.right}>
-              <AvatarGroup
-                items={avatarItems}
-                size={48}
-                maxChars={entityType === 'employee' ? 6 : undefined}
-              />
+              {showSubgroup && (
+                <View style={styles.subgroupChip}>
+                  <Ionicons name={subgroupIcon as never} size={16} color={Palette.textSecondary} />
+                  <Text maxFontSizeMultiplier={1} style={styles.subgroupNumber}>
+                    {numSubgroup}
+                  </Text>
+                </View>
+              )}
+              {hasAvatar && (
+                <AvatarGroup
+                  items={avatarItems}
+                  size={48}
+                  maxChars={entityType === 'employee' ? 6 : undefined}
+                />
+              )}
             </View>
           )}
         </View>
@@ -347,10 +363,13 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'stretch',
     },
     timeCol: {
-      width: 54,
+      // Без фиксированной ширины: время всегда "HH:MM" (5 знаков), поэтому
+      // колонки выравниваются сами, а «14:50» не обрезается и не переносится.
       paddingLeft: Spacing.lg,
+      paddingRight: Spacing.md,
       paddingVertical: Spacing.md,
       justifyContent: 'center',
+      alignItems: 'flex-start',
       gap: 1,
     },
     timeStart: {
@@ -411,6 +430,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     body: {
       flex: 1,
+      justifyContent: 'center',
       paddingVertical: Spacing.md,
       paddingLeft: Spacing.lg,
       paddingRight: Spacing.lg,
@@ -422,8 +442,9 @@ const makeStyles = (Palette: PaletteType) =>
       gap: Spacing.sm,
     },
     right: {
-      justifyContent: 'center',
-      paddingLeft: Spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
       paddingRight: Spacing.lg,
     },
     subgroupChip: {
@@ -436,6 +457,16 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 16,
       fontWeight: '600',
       color: Palette.textSecondary,
+    },
+    typeBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: 4,
+    },
+    typeBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 0.2,
     },
 
     announcementBadge: {

@@ -89,6 +89,7 @@ export const be: TranslationKeys = {
     unpin: 'Адмацаваць расклад',
     changeGroup: 'Змяніць расклад',
     week: 'Тыдзень {{n}}',
+    showPast: 'Паказаць мінулыя',
   },
 
   groups: {
@@ -122,7 +123,6 @@ export const be: TranslationKeys = {
     group: 'Група',
     groups: 'Групы',
     notMySubgroup: 'не мая падгрупа',
-    subgroupShort: 'п/г {{n}}',
     blocked: 'Заблакіравана',
     block: 'Заблакіраваць',
     unblock: 'Разблакіраваць',
