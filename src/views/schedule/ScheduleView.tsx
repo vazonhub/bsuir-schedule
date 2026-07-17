@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
@@ -34,7 +34,7 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import type { Holiday } from '@models/holiday';
 import { useDeepLinkStore } from '@stores/deepLink.store';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
@@ -96,6 +96,15 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 1, minimumViewTime: 0 
 // не лез под чёлку — иначе iOS при возврате с другого таба заново добавляет
 // safe-area поверх нашего padding и отступ удваивается.
 const BAR_CLEARANCE = 38 + Spacing.lg;
+
+// Нижний клиренс под нативный таб-бар — СТАБИЛЬНАЯ константа из
+// `initialWindowMetrics` (окно, home-indicator), плюс высота бара. НЕ берём
+// из `useSafeAreaInsets`, т.к. на экране-табе его нижний инсет «плавает»:
+// на первом кадре бар ещё не учтён (мало), после возврата с другого таба
+// система до-применяет safe-area бара (много) — отсюда скачки отступа.
+// Клиренс уходит в обёртку списка, поэтому scroll-view заканчивается НАД
+// баром и системе нечего до-применять.
+const BOTTOM_CLEARANCE = (initialWindowMetrics?.insets.bottom ?? 0) + TAB_BAR_HEIGHT;
 
 export const ScheduleView = ({
   schedule,
@@ -356,22 +365,23 @@ export const ScheduleView = ({
 
   const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
 
-  // Обёртка списка съедает верхнюю safe-area, чтобы scroll-view начинался ниже
-  // чёлки (см. BAR_CLEARANCE). Плавающий хедер остаётся абсолютным сиблингом.
-  const listWrapStyle = useMemo(() => ({ flex: 1, paddingTop: insets.top }), [insets.top]);
+  // Обёртка списка съедает верхнюю safe-area (чёлку) и нижний клиренс под
+  // таб-бар СТАБИЛЬНОЙ константой, чтобы scroll-view не лез ни под чёлку, ни
+  // под таб-бар — тогда система не «доклеивает» инсеты при возврате с таба
+  // (ни сверху, ни снизу), и отступы не скачут. Хедер — абсолютный сиблинг.
+  const listWrapStyle = useMemo(
+    () => ({ flex: 1, paddingTop: insets.top, paddingBottom: BOTTOM_CLEARANCE }),
+    [insets.top],
+  );
 
-  // Внутри scroll-view (уже ниже чёлки) отступаем только на высоту хедера
-  // сверху. Снизу: у нативного таб-бара (`unstable-native-tabs`) его высота
-  // уже входит в `insets.bottom` экрана-таба, поэтому TAB_BAR_HEIGHT добавлять
-  // НЕ нужно — иначе таб-бар учитывается дважды и снизу зияет большой отступ.
+  // Внутри scroll-view (уже между чёлкой и таб-баром) — только зазор под хедер
+  // сверху и небольшой отступ снизу.
   const contentStyle = useMemo(
     () => ({
       paddingTop: BAR_CLEARANCE,
-      // Минимальный безопасный зазор: ниже последняя карточка уходит под
-      // плавающий таб-бар (его высота уже учтена в insets.bottom экрана-таба).
-      paddingBottom: insets.bottom + Spacing.md,
+      paddingBottom: Spacing.md,
     }),
-    [insets.bottom],
+    [],
   );
 
   // ───── Программный скролл (через плоский индекс строки) ─────
