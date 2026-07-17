@@ -44,9 +44,21 @@ const TIP_PRODUCT_IDS = [
 ];
 
 const TIP_META: Record<string, { icon: string; nameKey: string; descKey: string }> = {
-  'by.vazon.bsuirtime.tip.small': { icon: 'cafe-outline', nameKey: 'settings.tipSmallName', descKey: 'settings.tipSmallDesc' },
-  'by.vazon.bsuirtime.tip.medium': { icon: 'rocket-outline', nameKey: 'settings.tipMediumName', descKey: 'settings.tipMediumDesc' },
-  'by.vazon.bsuirtime.tip.large': { icon: 'diamond-outline', nameKey: 'settings.tipLargeName', descKey: 'settings.tipLargeDesc' },
+  'by.vazon.bsuirtime.tip.small': {
+    icon: 'cafe-outline',
+    nameKey: 'settings.tipSmallName',
+    descKey: 'settings.tipSmallDesc',
+  },
+  'by.vazon.bsuirtime.tip.medium': {
+    icon: 'rocket-outline',
+    nameKey: 'settings.tipMediumName',
+    descKey: 'settings.tipMediumDesc',
+  },
+  'by.vazon.bsuirtime.tip.large': {
+    icon: 'diamond-outline',
+    nameKey: 'settings.tipLargeName',
+    descKey: 'settings.tipLargeDesc',
+  },
 };
 
 export const SettingsScreen = () => {
@@ -62,6 +74,7 @@ export const SettingsScreen = () => {
   const setLanguage = usePreferencesStore((s) => s.setLanguage);
   const hidePastLessons = usePreferencesStore((s) => s.hidePastLessons);
   const setHidePastLessons = usePreferencesStore((s) => s.setHidePastLessons);
+  const setOnboardingSeen = usePreferencesStore((s) => s.setDiaryOnboardingSeen);
 
   const reduceMotion = useReduceMotion();
   const themeLabels = [t('settings.themeAuto'), t('settings.themeLight'), t('settings.themeDark')];
@@ -82,18 +95,32 @@ export const SettingsScreen = () => {
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast(message);
-    Animated.timing(toastOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
-    toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: reduceMotion ? 0 : 300, useNativeDriver: true }).start(
-        () => setToast(null),
-      );
-    }, 2500);
-  }, [toastOpacity, reduceMotion]);
+  const showToast = useCallback(
+    (message: string) => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      setToast(message);
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start();
+      toastTimer.current = setTimeout(() => {
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: reduceMotion ? 0 : 300,
+          useNativeDriver: true,
+        }).start(() => setToast(null));
+      }, 2500);
+    },
+    [toastOpacity, reduceMotion],
+  );
 
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -109,10 +136,12 @@ export const SettingsScreen = () => {
             (a: { price?: number | null }, b: { price?: number | null }) =>
               (a.price ?? 0) - (b.price ?? 0),
           );
-          setProducts(sorted.map((p: { id: string; displayPrice: string }) => ({
-            id: p.id,
-            displayPrice: p.displayPrice,
-          })));
+          setProducts(
+            sorted.map((p: { id: string; displayPrice: string }) => ({
+              id: p.id,
+              displayPrice: p.displayPrice,
+            })),
+          );
         }
       } catch {
         // IAP not available (simulator without StoreKit config, etc.)
@@ -125,241 +154,327 @@ export const SettingsScreen = () => {
         try {
           const RNIap = require('react-native-iap');
           void RNIap.endConnection();
-        } catch { /* */ }
+        } catch {
+          /* */
+        }
       }
     };
   }, []);
 
-  const handlePurchase = useCallback(async (productId: string) => {
-    if (purchasing) return;
-    if (!iapReady.current) {
-      showToast(t('settings.tipJarUnavailable'));
-      return;
-    }
-    setPurchasing(productId);
-    try {
-      const RNIap = require('react-native-iap');
-      const purchase = await RNIap.requestPurchase({
-        request: {
-          apple: {
-            sku: productId,
-            andDangerouslyFinishTransactionAutomatically: true,
+  const handlePurchase = useCallback(
+    async (productId: string) => {
+      if (purchasing) return;
+      if (!iapReady.current) {
+        showToast(t('settings.tipJarUnavailable'));
+        return;
+      }
+      setPurchasing(productId);
+      try {
+        const RNIap = require('react-native-iap');
+        const purchase = await RNIap.requestPurchase({
+          request: {
+            apple: {
+              sku: productId,
+              andDangerouslyFinishTransactionAutomatically: true,
+            },
+            google: { skus: [productId] },
           },
-          google: { skus: [productId] },
-        },
-        type: 'in-app',
-      });
-      // On Android, consumables must be consumed so they can be purchased again
-      if (Platform.OS === 'android' && purchase) {
-        const token = Array.isArray(purchase)
-          ? purchase[0]?.purchaseToken
-          : purchase.purchaseToken;
-        if (token) {
-          await RNIap.finishTransaction({ purchase: Array.isArray(purchase) ? purchase[0] : purchase, isConsumable: true });
+          type: 'in-app',
+        });
+        // On Android, consumables must be consumed so they can be purchased again
+        if (Platform.OS === 'android' && purchase) {
+          const token = Array.isArray(purchase)
+            ? purchase[0]?.purchaseToken
+            : purchase.purchaseToken;
+          if (token) {
+            await RNIap.finishTransaction({
+              purchase: Array.isArray(purchase) ? purchase[0] : purchase,
+              isConsumable: true,
+            });
+          }
         }
+        void hapticSuccess();
+        showToast(t('settings.tipJarThanks'));
+      } catch (err: unknown) {
+        const error = err as { code?: string };
+        if (error.code !== 'E_USER_CANCELLED') {
+          Alert.alert('Error', String(err));
+        }
+      } finally {
+        setPurchasing(null);
       }
-      void hapticSuccess();
-      showToast(t('settings.tipJarThanks'));
-    } catch (err: unknown) {
-      const error = err as { code?: string };
-      if (error.code !== 'E_USER_CANCELLED') {
-        Alert.alert('Error', String(err));
-      }
-    } finally {
-      setPurchasing(null);
-    }
-  }, [purchasing, showToast, t]);
+    },
+    [purchasing, showToast, t],
+  );
 
   const handleTipPress = useCallback(() => {
     void hapticLight();
     sheetRef.current?.present();
   }, []);
 
+  const handleReplayTutorial = useCallback(() => {
+    void hapticLight();
+    setOnboardingSeen(false);
+    sheetRef.current?.dismiss();
+    router.push('/(tabs)/(diary)');
+  }, [setOnboardingSeen, router]);
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
-      <Text {...textProps('title')} style={styles.screenTitle}>{t('settings.title')}</Text>
+      <Text {...textProps('title')} style={styles.screenTitle}>
+        {t('settings.title')}
+      </Text>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md }}>
-      <View style={styles.section}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.themeSection')}</Text>
-        <SegmentedControl
-          values={themeLabels}
-          selectedIndex={themeIndex >= 0 ? themeIndex : 0}
-          onChange={(e) => {
-            const value = THEME_VALUES[e.nativeEvent.selectedSegmentIndex];
-            if (value) setTheme(value);
-          }}
-          fontStyle={{ color: Palette.textPrimary }}
-          activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
-          appearance={isDark ? 'dark' : 'light'}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.languageSection')}</Text>
-        <SegmentedControl
-          values={LANG_LABELS}
-          selectedIndex={langIndex >= 0 ? langIndex : 0}
-          onChange={(e) => {
-            const value = LANG_VALUES[e.nativeEvent.selectedSegmentIndex];
-            if (value) setLanguage(value);
-          }}
-          fontStyle={{ color: Palette.textPrimary }}
-          activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
-          appearance={isDark ? 'dark' : 'light'}
-        />
-      </View>
-
-      <View style={styles.bannerSection}>
-        <UnityBanner marginHorizontal={0} />
-      </View>
-
-      <View style={styles.navSection}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.scheduleSection')}</Text>
-        <View style={styles.card}>
-          <View
-            style={styles.navRow}
-            accessibilityRole="switch"
-            accessibilityLabel={t('settings.hidePastLessons')}
-            accessibilityState={{ checked: hidePastLessons }}
-          >
-            <Ionicons name="time-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.hidePastLessons')}</Text>
-            <Switch
-              value={hidePastLessons}
-              onValueChange={setHidePastLessons}
-              trackColor={{ true: Palette.accent }}
-            />
-          </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md }}
+      >
+        <View style={styles.section}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.themeSection')}
+          </Text>
+          <SegmentedControl
+            values={themeLabels}
+            selectedIndex={themeIndex >= 0 ? themeIndex : 0}
+            onChange={(e) => {
+              const value = THEME_VALUES[e.nativeEvent.selectedSegmentIndex];
+              if (value) setTheme(value);
+            }}
+            fontStyle={{ color: Palette.textPrimary }}
+            activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+            appearance={isDark ? 'dark' : 'light'}
+          />
         </View>
-      </View>
 
-      <View style={styles.navSection}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.interfaceSection')}</Text>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/app-icon'); }}
-          >
-            <Ionicons name="sparkles" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.appIconSection')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
+        <View style={styles.section}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.languageSection')}
+          </Text>
+          <SegmentedControl
+            values={LANG_LABELS}
+            selectedIndex={langIndex >= 0 ? langIndex : 0}
+            onChange={(e) => {
+              const value = LANG_VALUES[e.nativeEvent.selectedSegmentIndex];
+              if (value) setLanguage(value);
+            }}
+            fontStyle={{ color: Palette.textPrimary }}
+            activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+            appearance={isDark ? 'dark' : 'light'}
+          />
         </View>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/appearance'); }}
-          >
-            <Ionicons name="color-palette-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.appearanceSection')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
-        </View>
-      </View>
 
-      <View style={styles.navSection}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.additionalSection')}</Text>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/accessibility'); }}
-            accessibilityRole="button"
-            accessibilityLabel={t('accessibility.title')}
-          >
-            <Ionicons name="accessibility-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('accessibility.title')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
+        <View style={styles.bannerSection}>
+          <UnityBanner marginHorizontal={0} />
         </View>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/holidays'); }}
-          >
-            <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.holidaysSection')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
-        </View>
-      </View>
 
-      <View style={styles.navSection}>
-        <Text {...textProps('footnote')} style={styles.sectionTitle}>{t('settings.otherSection')}</Text>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/network'); }}
-          >
-            <Ionicons name="cloud-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.networkSection')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
-        </View>
-        <View style={styles.card}>
-          <Pressable
-            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-            onPress={() => { sheetRef.current?.dismiss(); router.push('/(tabs)/(settings)/about'); }}
-          >
-            <Ionicons name="information-circle-outline" size={20} color={Palette.accent} />
-            <Text {...textProps('body')} style={styles.navLabel}>{t('settings.aboutSection')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-          </Pressable>
-        </View>
-      </View>
-
-      {__DEV__ && (
         <View style={styles.navSection}>
           <Text {...textProps('footnote')} style={styles.sectionTitle}>
-            {t('settings.debugSection')}
+            {t('settings.scheduleSection')}
+          </Text>
+          <View style={styles.card}>
+            <View
+              style={styles.navRow}
+              accessibilityRole="switch"
+              accessibilityLabel={t('settings.hidePastLessons')}
+              accessibilityState={{ checked: hidePastLessons }}
+            >
+              <Ionicons name="time-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.hidePastLessons')}
+              </Text>
+              <Switch
+                value={hidePastLessons}
+                onValueChange={setHidePastLessons}
+                trackColor={{ true: Palette.accent }}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.navSection}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.interfaceSection')}
           </Text>
           <View style={styles.card}>
             <Pressable
               style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
               onPress={() => {
-                void hapticSuccess();
-                ScheduleController.seedDemoSchedule();
-                showToast(t('settings.debugSeedDone'));
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/app-icon');
               }}
             >
-              <Ionicons name="flask-outline" size={20} color={Palette.accent} />
+              <Ionicons name="sparkles" size={20} color={Palette.accent} />
               <Text {...textProps('body')} style={styles.navLabel}>
-                {t('settings.debugSeedDemo')}
+                {t('settings.appIconSection')}
               </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
             </Pressable>
           </View>
           <View style={styles.card}>
             <Pressable
               style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
               onPress={() => {
-                void hapticLight();
-                ScheduleController.clearDemoSchedule();
-                showToast(t('settings.debugClearDone'));
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/appearance');
               }}
             >
-              <Ionicons name="trash-outline" size={20} color={Palette.destructive} />
-              <Text {...textProps('body')} style={[styles.navLabel, { color: Palette.destructive }]}>
-                {t('settings.debugClearDemo')}
+              <Ionicons name="color-palette-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.appearanceSection')}
               </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={handleReplayTutorial}
+              accessibilityRole="button"
+              accessibilityLabel={t('onboarding.replay')}
+            >
+              <Ionicons name="school-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('onboarding.replay')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
             </Pressable>
           </View>
         </View>
-      )}
 
-      {Platform.OS === 'ios' && (
-      <View style={styles.tipSection}>
-        <View style={[styles.tipCard, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
-          <Pressable
-            style={({ pressed }) => [styles.tipRow, pressed && { backgroundColor: PINK + (isDark ? '40' : '24') }]}
-            onPress={handleTipPress}
-          >
-            <Ionicons name="heart" size={20} color={PINK} />
-            <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>{t('settings.tipJar')}</Text>
-          </Pressable>
+        <View style={styles.navSection}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.additionalSection')}
+          </Text>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/accessibility');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('accessibility.title')}
+            >
+              <Ionicons name="accessibility-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('accessibility.title')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/holidays');
+              }}
+            >
+              <Ionicons name="calendar-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.holidaysSection')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.tipHint}>{t('settings.tipJarHint')}</Text>
-      </View>
-      )}
+
+        <View style={styles.navSection}>
+          <Text {...textProps('footnote')} style={styles.sectionTitle}>
+            {t('settings.otherSection')}
+          </Text>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/network');
+              }}
+            >
+              <Ionicons name="cloud-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.networkSection')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+          <View style={styles.card}>
+            <Pressable
+              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+              onPress={() => {
+                sheetRef.current?.dismiss();
+                router.push('/(tabs)/(settings)/about');
+              }}
+            >
+              <Ionicons name="information-circle-outline" size={20} color={Palette.accent} />
+              <Text {...textProps('body')} style={styles.navLabel}>
+                {t('settings.aboutSection')}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+            </Pressable>
+          </View>
+        </View>
+
+        {__DEV__ && (
+          <View style={styles.navSection}>
+            <Text {...textProps('footnote')} style={styles.sectionTitle}>
+              {t('settings.debugSection')}
+            </Text>
+            <View style={styles.card}>
+              <Pressable
+                style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+                onPress={() => {
+                  void hapticSuccess();
+                  ScheduleController.seedDemoSchedule();
+                  showToast(t('settings.debugSeedDone'));
+                }}
+              >
+                <Ionicons name="flask-outline" size={20} color={Palette.accent} />
+                <Text {...textProps('body')} style={styles.navLabel}>
+                  {t('settings.debugSeedDemo')}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.card}>
+              <Pressable
+                style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+                onPress={() => {
+                  void hapticLight();
+                  ScheduleController.clearDemoSchedule();
+                  showToast(t('settings.debugClearDone'));
+                }}
+              >
+                <Ionicons name="trash-outline" size={20} color={Palette.destructive} />
+                <Text
+                  {...textProps('body')}
+                  style={[styles.navLabel, { color: Palette.destructive }]}
+                >
+                  {t('settings.debugClearDemo')}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {Platform.OS === 'ios' && (
+          <View style={styles.tipSection}>
+            <View style={[styles.tipCard, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.tipRow,
+                  pressed && { backgroundColor: PINK + (isDark ? '40' : '24') },
+                ]}
+                onPress={handleTipPress}
+              >
+                <Ionicons name="heart" size={20} color={PINK} />
+                <Text maxFontSizeMultiplier={1} style={styles.tipLabel}>
+                  {t('settings.tipJar')}
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={styles.tipHint}>{t('settings.tipJarHint')}</Text>
+          </View>
+        )}
       </ScrollView>
 
       <BottomSheetModal
@@ -386,20 +501,26 @@ export const SettingsScreen = () => {
               return (
                 <Pressable
                   key={id}
-                  style={({ pressed }) => [styles.sheetTipCard, pressed && styles.sheetTipCardPressed]}
+                  style={({ pressed }) => [
+                    styles.sheetTipCard,
+                    pressed && styles.sheetTipCardPressed,
+                  ]}
                   onPress={() => void handlePurchase(id)}
                   disabled={isPurchasing}
                 >
-                  <View style={[styles.sheetTipIcon, { backgroundColor: PINK + (isDark ? '30' : '14') }]}>
+                  <View
+                    style={[
+                      styles.sheetTipIcon,
+                      { backgroundColor: PINK + (isDark ? '30' : '14') },
+                    ]}
+                  >
                     <Ionicons name={meta.icon as never} size={22} color={PINK} />
                   </View>
                   <View style={styles.sheetTipInfo}>
                     <Text style={styles.sheetTipName}>{t(meta.nameKey)}</Text>
                     <Text style={styles.sheetTipDesc}>{t(meta.descKey)}</Text>
                   </View>
-                  <Text style={styles.sheetTipPrice}>
-                    {product?.displayPrice ?? '...'}
-                  </Text>
+                  <Text style={styles.sheetTipPrice}>{product?.displayPrice ?? '...'}</Text>
                   {isPurchasing && (
                     <View style={styles.purchaseOverlay}>
                       {Platform.OS === 'ios' ? (
