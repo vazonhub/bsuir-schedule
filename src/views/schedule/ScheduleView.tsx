@@ -237,13 +237,23 @@ export const ScheduleView = ({
     return !!start && today.getTime() >= start.getTime();
   }, [schedule.startExamsDate, today]);
 
+  // Разовое раскрытие прошедших пар из списка (кнопка «Показать прошедшие»),
+  // даже когда в настройках включено «скрывать прошедшие».
+  const [showPastOverride, setShowPastOverride] = useState(false);
+  const showAll = !hidePastLessons || showPastOverride;
+
+  // Есть ли что «докрутить» вверх: прошлое скрыто, но семестр начался раньше сегодня.
+  const hasPastToReveal = useMemo(() => {
+    if (showAll || isExamSession) return false;
+    const start = parseBsuirDate(schedule.startDate);
+    return !!start && startOfLocalDay(start).getTime() < today.getTime();
+  }, [showAll, isExamSession, schedule.startDate, today]);
+
   const regularSections = useMemo(() => {
     if (isExamSession) return [];
-    const flat = flattenSchedule(schedule, currentWeek, today, {
-      showAll: !hidePastLessons,
-    });
+    const flat = flattenSchedule(schedule, currentWeek, today, { showAll });
     return groupLessonsByDay(flat);
-  }, [schedule, currentWeek, today, hidePastLessons, isExamSession]);
+  }, [schedule, currentWeek, today, showAll, isExamSession]);
 
   const examSections = useMemo(() => {
     const flat = flattenExams(schedule, currentWeek, today);
@@ -383,11 +393,23 @@ export const ScheduleView = ({
 
   const jumpToUpcoming = useCallback(
     (animated: boolean) => {
-      if (upcomingIndex < 0) return;
+      // `<= 0`: если ближайший день уже первый в списке — не скроллим, чтобы
+      // не прятать шапку списка (кнопку «Показать прошедшие») над ним.
+      if (upcomingIndex <= 0) return;
       scrollToSection(upcomingIndex, animated);
     },
     [upcomingIndex, scrollToSection],
   );
+
+  // Смена расписания (или сущности) сбрасывает разовое раскрытие прошлого.
+  useEffect(() => {
+    setShowPastOverride(false);
+  }, [scheduleIdentity]);
+
+  const handleShowPast = useCallback(() => {
+    void hapticLight();
+    setShowPastOverride(true);
+  }, []);
 
   // 1) При первом рендере / смене расписания — прыжок к ближайшему дню.
   //    rAF гарантирует, что FlashList успел разложить первый вьюпорт.
@@ -691,6 +713,15 @@ export const ScheduleView = ({
           getItemType={getItemType}
           extraData={extraData}
           contentContainerStyle={contentStyle}
+          ListHeaderComponent={
+            hasPastToReveal ? (
+              <LoadPastButton
+                label={t('schedule.showPast')}
+                onPress={handleShowPast}
+                Palette={Palette}
+              />
+            ) : undefined
+          }
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={VIEWABILITY_CONFIG}
           onScrollBeginDrag={handleScrollBeginDrag}
@@ -814,6 +845,28 @@ export const ScheduleView = ({
   );
 };
 
+interface LoadPastButtonProps {
+  label: string;
+  onPress(): void;
+  Palette: PaletteType;
+}
+
+/** Шапка списка: разово раскрывает прошедшие пары, когда они скрыты настройкой. */
+const LoadPastButton = ({ label, onPress, Palette }: LoadPastButtonProps) => {
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.loadPastBtn, pressed && styles.loadPastBtnPressed]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <Ionicons name="chevron-up" size={16} color={Palette.accent} />
+      <Text style={styles.loadPastText}>{label}</Text>
+    </Pressable>
+  );
+};
+
 interface ExamsSeparatorProps {
   Palette: PaletteType;
 }
@@ -840,6 +893,25 @@ const makeStyles = (Palette: PaletteType) =>
     scheduleBannerWrap: {
       alignItems: 'center',
       paddingVertical: Spacing.md,
+    },
+    loadPastBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      alignSelf: 'center',
+      marginTop: Spacing.sm,
+      marginBottom: Spacing.md,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      borderRadius: Radius.pill,
+      backgroundColor: Palette.card,
+    },
+    loadPastBtnPressed: { backgroundColor: Palette.cardPressed },
+    loadPastText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: Palette.accent,
     },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
     empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
