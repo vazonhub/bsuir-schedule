@@ -1,19 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
+import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
+import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
 import {
   usePreferencesStore,
   selectBlockedLessons,
+  selectDiaryOnboardingSeen,
   selectSubgroup,
+  waitForHydration,
 } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
@@ -58,6 +63,9 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
+  const listRef = useRef<FlatList<ListItem>>(null);
+  const scrollOffsetRef = useRef(0);
+  const setOnboardingSeen = usePreferencesStore((s) => s.setDiaryOnboardingSeen);
 
   const schedule = useScheduleStore((s) => s.byKey[groupName]);
   const currentWeek = useScheduleStore((s) => s.currentWeek);
@@ -132,6 +140,14 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
     [groupName, setTaskCount],
   );
 
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+  }, []);
+
+  const handleTutorialFinish = useCallback(() => {
+    setOnboardingSeen(true);
+  }, [setOnboardingSeen]);
+
   if (!schedule || !currentWeek) {
     if (error && !isLoading) {
       return (
@@ -165,75 +181,142 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text {...textProps('title')} style={styles.headerTitle}>
-            {t('tabs.diary')}
-          </Text>
-          <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
-            {groupName}
-          </Text>
-        </View>
-        <StreakBadge />
-      </View>
-      <FlatList
-        data={listData}
-        ListHeaderComponent={
-          <DiaryStats
-            groupName={groupName}
-            schedule={schedule}
-            currentWeek={currentWeek}
-            subgroup={subgroup}
-            blocked={blocked}
-            subjects={visible}
-          />
-        }
-        keyExtractor={(item) => {
-          if (item.kind === 'hiddenHeader') return '__hidden-header';
-          return `${item.kind}:${item.subject.subject}`;
-        }}
-        renderItem={({ item, index }) => {
-          if (item.kind === 'card') {
-            return (
-              <SubjectCard
-                subject={item.subject}
+    <TutorialProvider onFinish={handleTutorialFinish}>
+      <View style={styles.root}>
+        <SafeAreaView edges={['top']} style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerText}>
+              <Text {...textProps('title')} style={styles.headerTitle}>
+                {t('tabs.diary')}
+              </Text>
+              <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
+                {groupName}
+              </Text>
+            </View>
+            <StreakBadge />
+          </View>
+          <FlatList
+            ref={listRef}
+            data={listData}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            ListHeaderComponent={
+              <DiaryStats
                 groupName={groupName}
-                onRequestEnterCount={handleRequestEnterCount}
-                isTutorialTarget={index === 0}
+                schedule={schedule}
+                currentWeek={currentWeek}
+                subgroup={subgroup}
+                blocked={blocked}
+                subjects={visible}
               />
-            );
-          }
-          if (item.kind === 'hiddenHeader') {
-            return (
-              <View style={styles.hiddenHeaderWrap}>
-                <Text {...textProps('footnote')} style={styles.hiddenHeader}>
-                  {t('diary.hiddenSectionTitle')}
-                </Text>
-              </View>
-            );
-          }
-          return (
-            <HiddenSubjectStrip
-              subject={item.subject.subject}
-              subjectFullName={item.subject.subjectFullName}
-              onUnhide={() => toggleHidden(groupName, item.subject.subject)}
-            />
-          );
-        }}
-        ItemSeparatorComponent={() => <View style={styles.gap} />}
-        contentContainerStyle={contentContainerStyle}
-        refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={load}
-            tintColor={Palette.textTertiary}
+            }
+            keyExtractor={(item) => {
+              if (item.kind === 'hiddenHeader') return '__hidden-header';
+              return `${item.kind}:${item.subject.subject}`;
+            }}
+            renderItem={({ item, index }) => {
+              if (item.kind === 'card') {
+                return (
+                  <SubjectCard
+                    subject={item.subject}
+                    groupName={groupName}
+                    onRequestEnterCount={handleRequestEnterCount}
+                    isTutorialTarget={index === 0}
+                  />
+                );
+              }
+              if (item.kind === 'hiddenHeader') {
+                return (
+                  <View style={styles.hiddenHeaderWrap}>
+                    <Text {...textProps('footnote')} style={styles.hiddenHeader}>
+                      {t('diary.hiddenSectionTitle')}
+                    </Text>
+                  </View>
+                );
+              }
+              return (
+                <HiddenSubjectStrip
+                  subject={item.subject.subject}
+                  subjectFullName={item.subject.subjectFullName}
+                  onUnhide={() => toggleHidden(groupName, item.subject.subject)}
+                />
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={styles.gap} />}
+            contentContainerStyle={contentContainerStyle}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={load}
+                tintColor={Palette.textTertiary}
+              />
+            }
           />
-        }
-      />
-      <EnterTaskCountSheet ref={sheetRef} onSubmit={handleSubmitCount} />
-    </SafeAreaView>
+          <EnterTaskCountSheet ref={sheetRef} onSubmit={handleSubmitCount} />
+        </SafeAreaView>
+        <TutorialRunner
+          hasSubjects={visible.length > 0}
+          listRef={listRef}
+          scrollOffsetRef={scrollOffsetRef}
+        />
+        <SpotlightOverlay />
+      </View>
+    </TutorialProvider>
   );
+};
+
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Запускает обучалку при первом заходе на дневник (после гидрации префов,
+ * если есть предметы) и регистрирует скроллер для автоскролла к целям.
+ * Рендерит `null` — только эффекты. Живёт внутри `TutorialProvider`.
+ */
+const TutorialRunner = ({
+  hasSubjects,
+  listRef,
+  scrollOffsetRef,
+}: {
+  hasSubjects: boolean;
+  listRef: React.RefObject<FlatList<ListItem> | null>;
+  scrollOffsetRef: React.RefObject<number>;
+}) => {
+  const { active, start, setScroller } = useTutorial();
+  const insets = useSafeAreaInsets();
+  const seen = usePreferencesStore(selectDiaryOnboardingSeen);
+  const [hydrated, setHydrated] = useState(() => usePreferencesStore.persist.hasHydrated());
+
+  useEffect(() => {
+    if (hydrated) return;
+    let mounted = true;
+    void waitForHydration().then(() => {
+      if (mounted) setHydrated(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [hydrated]);
+
+  // Скроллер: подтягивает цель под шапку, если она вне вьюпорта.
+  useEffect(() => {
+    setScroller(async (rect) => {
+      const desiredY = insets.top + Spacing.xxxl * 3;
+      const delta = rect.y - desiredY;
+      if (Math.abs(delta) < 8) return;
+      const nextOffset = Math.max(0, scrollOffsetRef.current + delta);
+      listRef.current?.scrollToOffset({ offset: nextOffset, animated: true });
+    });
+    return () => setScroller(null);
+  }, [setScroller, insets.top, listRef, scrollOffsetRef]);
+
+  // Триггер первого показа (и повторного запуска после сброса флага).
+  useEffect(() => {
+    if (!hydrated || seen || !hasSubjects || active) return;
+    const timer = setTimeout(() => start(), 450);
+    return () => clearTimeout(timer);
+  }, [hydrated, seen, hasSubjects, active, start]);
+
+  return null;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -292,6 +375,7 @@ const EmployeePinnedState = () => {
 
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
+    root: { flex: 1 },
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
       flexDirection: 'row',
