@@ -1,7 +1,8 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo, useRef } from 'react';
-import { GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { GestureResponderEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useIsScreenReader } from '@hooks/useAccessibility';
@@ -17,6 +18,8 @@ interface Props {
   activeLetter?: string | null;
   /** Resolved color scheme for BlurView tint. */
   scheme?: 'light' | 'dark';
+  /** Нижний отступ (высота таб-бара + safe area), чтобы strip не уходил под таб-бар. */
+  bottomInset?: number;
 }
 
 /**
@@ -24,11 +27,21 @@ interface Props {
  * Supports both tap and pan gesture. The currently visible letter
  * is shown as a bullet dot (•) instead of the letter.
  */
-export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light' }: Props) => {
+export const AlphabetIndex = ({
+  letters,
+  onSelect,
+  activeLetter,
+  scheme = 'light',
+  bottomInset = 0,
+}: Props) => {
   const { t } = useTranslation();
   const isScreenReader = useIsScreenReader();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
+  const containerStyle = useMemo(
+    () => [styles.container, bottomInset ? { paddingBottom: bottomInset } : null],
+    [styles.container, bottomInset],
+  );
   const innerRef = useRef<View>(null);
   const layoutRef = useRef({ y: 0, height: 0 });
   const lastLetterRef = useRef<string | null>(null);
@@ -86,7 +99,10 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
             accessibilityRole="button"
             accessibilityLabel={t('a11y.alphabetJumpTo', { letter: l })}
           >
-            <Text maxFontSizeMultiplier={1}style={[styles.letter, l === activeLetter && styles.letterActive]}>
+            <Text
+              maxFontSizeMultiplier={1}
+              style={[styles.letter, l === activeLetter && styles.letterActive]}
+            >
               {l === activeLetter ? '•' : l}
             </Text>
           </Pressable>
@@ -95,13 +111,9 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
     );
 
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         {Platform.OS === 'ios' ? (
-          <BlurView
-            intensity={40}
-            tint={scheme === 'dark' ? 'dark' : 'light'}
-            style={styles.blur}
-          >
+          <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={styles.blur}>
             {accessibleInner}
           </BlurView>
         ) : (
@@ -132,7 +144,7 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
 
   return (
     <View
-      style={styles.container}
+      style={containerStyle}
       pointerEvents="box-only"
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
@@ -140,11 +152,7 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
       onResponderMove={handleTouchMove}
     >
       {Platform.OS === 'ios' ? (
-        <BlurView
-          intensity={40}
-          tint={scheme === 'dark' ? 'dark' : 'light'}
-          style={styles.blur}
-        >
+        <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={styles.blur}>
           {inner}
         </BlurView>
       ) : (
