@@ -96,7 +96,6 @@ const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 1, minimumViewTime: 0 
 // не лез под чёлку — иначе iOS при возврате с другого таба заново добавляет
 // safe-area поверх нашего padding и отступ удваивается.
 const BAR_CLEARANCE = 38 + Spacing.lg;
-const SCROLL_INDICATOR_INSETS = { top: BAR_CLEARANCE };
 
 export const ScheduleView = ({
   schedule,
@@ -692,9 +691,6 @@ export const ScheduleView = ({
           getItemType={getItemType}
           extraData={extraData}
           contentContainerStyle={contentStyle}
-          contentInsetAdjustmentBehavior="never"
-          automaticallyAdjustsScrollIndicatorInsets={false}
-          scrollIndicatorInsets={SCROLL_INDICATOR_INSETS}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={VIEWABILITY_CONFIG}
           onScrollBeginDrag={handleScrollBeginDrag}
