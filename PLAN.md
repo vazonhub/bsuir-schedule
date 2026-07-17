@@ -309,6 +309,40 @@
 - [x] Background fetch: `src/services/widget/backgroundTask.ts` — `expo-background-fetch` + `expo-task-manager`, задача `WIDGET_REFRESH` каждые 2 часа обновляет расписание и snapshot.
 - [x] Ограничения: iOS не гарантирует точный интервал background fetch — зависит от паттернов использования устройства.
 
+### Phase 11 — Ребилд главного экрана расписания + прошедшие пары
+
+Цель: переделать **отображение** вкладки «Моё» (функционал уже работает), устранить баги скролл-бокса и вернуть просмотр прошедших пар без тормозов.
+
+Единый экран `ScheduleView` используется на трёх местах (вкладка «Моё», расписание группы, расписание преподавателя) — все изменения применяются сразу ко всем трём, требуется регрессия на каждом.
+
+Развилки зафиксированы: **рестайл** текущего вертикального списка (день-за-днём остаётся), миграция движка на **FlashList**, доступ к прошлому — **и тумблер в настройках, и кнопка «раньше»**.
+
+**Не трогаем:** `FloatingTopBar` (хедер) и `utils/diary.ts` (уже использует `flattenSchedule({ showAll })` независимо).
+
+> Каждый подшаг ниже = отдельный коммит от лица разработчика (без Co-Authored-By).
+
+#### 11.A Миграция движка списка на FlashList
+
+- [ ] **Шаг 1.** `npx expo install @shopify/flash-list` (v2 — под new arch, `estimatedItemSize` не нужен). Проверить `newArchEnabled` в `app.json`. Пересборка dev-client: `npx expo run:ios`. — коммит `chore: add @shopify/flash-list dependency`
+- [ ] **Шаг 2.** В `utils/scheduleNormalization.ts` добавить тип `ScheduleRow` (`header | lesson | examsSeparator | banner`) и `flattenSectionsToRows(sections)`. Секционные билдеры не трогаем — конвертируем секции → плоские строки на выходе. — коммит `refactor(schedule): add flat row model for FlashList`
+- [ ] **Шаг 3.** Переписать `ScheduleView` с `SectionList` на `FlashList` (`data`, `renderItem`, `getItemType`, `keyExtractor`). Лейбл даты в хедере ← `onViewableItemsChanged` (удалить `measureInWindow` + `sectionOffsetsRef` + `recomputeTopSection`). Скролл (автоскролл / date-picker / переход к паре / deep-link / `initialScrollIndex`) ← `scrollToIndex({ viewOffset, viewPosition })` (удалить 3-таймерные ретраи и `scrollToLocation`). Сохранить: RefreshControl, подгруппы, blocked, баннеры Unity, экзамен-режим, праздники, deep-link, date picker, LessonDetailsSheet. — коммит `feat(schedule): migrate ScheduleView to FlashList`
+- [ ] **Шаг 4.** Починка скролл-бокса: убрать iOS-хак `contentInset`/`contentOffset` → единый `contentContainerStyle.paddingTop = topInset`; выставить `RefreshControl.progressViewOffset`; удалить прод-`console.log`. — коммит `fix(schedule): correct scroll box insets and initial position`
+
+#### 11.B Рестайл списка
+
+- [ ] **Шаг 5.** `DayHeader`: акценты today/tomorrow/past, разделитель между неделями цикла (1–4), выравнивание по дизайн-токенам. — коммит `style(schedule): redesign day headers and week separators`
+- [ ] **Шаг 6.** `LessonCard` (обычный / compact / blocked): ритм, типографика, цветовая полоса типа пары (через `getLessonAccentColor`, без хардкода), overlay «прошедшей» части; a11y-лейблы не ломать. — коммит `style(schedule): redesign lesson cards`
+
+#### 11.C Доступ к прошедшим парам
+
+- [ ] **Шаг 7.** В `SettingsScreen` (раздел «Интерфейс») строка-переключатель `hidePastLessons` (RN `Switch`), i18n `settings.hidePastLessons` уже есть. — коммит `feat(settings): expose "hide past lessons" toggle`
+- [ ] **Шаг 8.** Локальный override `showPastOverride` в `ScheduleView` (`showAll = !hidePastLessons || showPastOverride`) + кнопка «Показать прошедшие» сверху списка; разворачивание без прыжка через `maintainVisibleContentPosition`. — коммит `feat(schedule): add "load earlier" button for past lessons`
+
+#### 11.D Производительность и финал
+
+- [ ] **Шаг 9.** Прогон `showAll` на полном семестре (сотни секций): плавность, память, `getItemType`/мемоизация `LessonCard`. — коммит `perf(schedule): tune FlashList for full-semester load`
+- [ ] **Шаг 10.** `npm run typecheck` + `npm run lint:fix` + `npm run format`, проверка на iOS и Android. — коммит `chore: typecheck, lint and format schedule rebuild`
+
 ---
 
 ## 5. Связь файлов с фазами (быстрый индекс для Claude Code)
@@ -326,6 +360,7 @@
 | 8 | `theme/*`, `components/Surface.tsx` |
 | 9 | `utils/haptics.ts`, инфраструктура i18n |
 | 10 | `services/widget/*`, нативные таргеты iOS WidgetKit + Android Glance, изменения в `app.json` (App Group, entitlements) |
+| 11 | `utils/scheduleNormalization.ts`, `views/schedule/ScheduleView.tsx`, `views/lesson/LessonCard.tsx`, `views/lesson/DayHeader.tsx`, `views/settings/SettingsScreen.tsx`, `package.json` (+`@shopify/flash-list`) |
 
 ---
 
