@@ -65,5 +65,15 @@ export const buildAlphabetSections = (
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b, 'ru'))
-    .map(([letter, data]) => ({ key: letter, title: letter, data }));
+    .map(([letter, data]) => ({
+      key: letter,
+      title: letter,
+      // Внутри буквы сортируем по алфавиту (фамилия, затем имя),
+      // иначе прыжок по алфавитному индексу ведёт в случайное место буквы.
+      data: [...data].sort(
+        (a, b) =>
+          a.lastName.localeCompare(b.lastName, 'ru') ||
+          a.firstName.localeCompare(b.firstName, 'ru'),
+      ),
+    }));
 };
