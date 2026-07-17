@@ -404,7 +404,10 @@ export const ScheduleView = ({
     const rowIndex = headerRowIndicesRef.current[sectionIndex];
     if (rowIndex == null) return;
     void listRef.current
-      ?.scrollToIndex({ index: rowIndex, viewOffset: BAR_CLEARANCE, viewPosition: 0, animated })
+      // FlashList v2 ADDS viewOffset to the scroll offset (RN SectionList
+      // subtracted it), so a NEGATIVE offset lands the day header just below
+      // the floating bar instead of ~2×BAR_CLEARANCE above the viewport.
+      ?.scrollToIndex({ index: rowIndex, viewOffset: -BAR_CLEARANCE, viewPosition: 0, animated })
       .catch(() => {
         /* list not laid out yet */
       });
@@ -582,11 +585,15 @@ export const ScheduleView = ({
 
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null; isViewable: boolean }[] }) => {
+      // Берём самую верхнюю видимую строку-контент (заголовок дня или пару),
+      // пропуская разделитель экзаменов и баннер, чтобы лейбл даты показывал
+      // корректный день на границе экзаменов и не «прилипал» к баннеру.
       let minIndex = Infinity;
       for (const token of viewableItems) {
-        if (token.isViewable && typeof token.index === 'number' && token.index < minIndex) {
-          minIndex = token.index;
-        }
+        if (!token.isViewable || typeof token.index !== 'number') continue;
+        const row = rowsRef.current[token.index];
+        if (!row || (row.type !== 'header' && row.type !== 'lesson')) continue;
+        if (token.index < minIndex) minIndex = token.index;
       }
       if (minIndex === Infinity) return;
       const sectionIndex = rowToSectionRef.current[minIndex];
@@ -613,7 +620,7 @@ export const ScheduleView = ({
       void listRef.current
         ?.scrollToIndex({
           index: idx,
-          viewOffset: BAR_CLEARANCE,
+          viewOffset: -BAR_CLEARANCE,
           viewPosition: 0.4,
           animated: true,
         })

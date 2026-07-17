@@ -91,8 +91,12 @@ export const DayHeader = React.memo(
           </View>
         </View>
         {!isExam && (
-          <View style={styles.weekChip}>
-            <Text maxFontSizeMultiplier={1.2} style={styles.weekChipText} numberOfLines={1}>
+          <View style={[styles.weekChip, isPast && styles.weekChipPast]}>
+            <Text
+              maxFontSizeMultiplier={1.2}
+              style={[styles.weekChipText, isPast && styles.weekChipTextPast]}
+              numberOfLines={1}
+            >
               {weekLabel}
             </Text>
           </View>
@@ -161,6 +165,12 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 12,
       fontWeight: '600',
       color: Palette.accent,
+    },
+    weekChipPast: {
+      backgroundColor: Palette.separator,
+    },
+    weekChipTextPast: {
+      color: Palette.textTertiary,
     },
     holidayBadge: {
       backgroundColor: Palette.accent + '26', // 15% opacity
