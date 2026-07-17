@@ -15,6 +15,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import type { ViewToken } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -158,6 +159,15 @@ export const ScheduleTabScreen = () => {
     // Целевые строки ещё не отрендерены — повторяем на следующем кадре без анимации.
     requestAnimationFrame(() => scrollToSectionIndex(sectionIndex, false));
   }, [scrollToSectionIndex]);
+
+  // Активная буква = секция верхней видимой строки. Подсвечивается в скраббере.
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
+  // RN требует стабильные ссылки для onViewableItemsChanged / viewabilityConfig.
+  const viewabilityConfigRef = useRef({ itemVisiblePercentThreshold: 0 });
+  const onViewableItemsChangedRef = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const key = viewableItems[0]?.section?.key as string | undefined;
+    setActiveLetter(key === PINNED_EMP_KEY ? SCRUBBER_STAR : (key ?? null));
+  });
 
   const listContent = useMemo(
     () => ({
@@ -385,6 +395,8 @@ export const ScheduleTabScreen = () => {
                   keyboardShouldPersistTaps="handled"
                   keyboardDismissMode="on-drag"
                   onScrollToIndexFailed={handleScrollToIndexFailed}
+                  onViewableItemsChanged={onViewableItemsChangedRef.current}
+                  viewabilityConfig={viewabilityConfigRef.current}
                   contentContainerStyle={listContent}
                   renderSectionHeader={({ section }) => (
                     <View style={styles.sectionHeader}>
