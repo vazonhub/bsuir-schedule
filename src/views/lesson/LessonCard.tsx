@@ -334,7 +334,7 @@ export const LessonCard = React.memo(
               {hasAvatar && (
                 <AvatarGroup
                   items={avatarItems}
-                  size={48}
+                  size={40}
                   maxChars={entityType === 'employee' ? 6 : undefined}
                 />
               )}
@@ -369,7 +369,7 @@ const makeStyles = (Palette: PaletteType) =>
       paddingRight: Spacing.md,
       paddingVertical: Spacing.md,
       justifyContent: 'center',
-      alignItems: 'flex-start',
+      alignItems: 'flex-end',
       gap: 1,
     },
     timeStart: {
