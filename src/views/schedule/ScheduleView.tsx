@@ -367,7 +367,9 @@ export const ScheduleView = ({
   const contentStyle = useMemo(
     () => ({
       paddingTop: BAR_CLEARANCE,
-      paddingBottom: insets.bottom + Spacing.xs,
+      // Минимальный безопасный зазор: ниже последняя карточка уходит под
+      // плавающий таб-бар (его высота уже учтена в insets.bottom экрана-таба).
+      paddingBottom: insets.bottom + Spacing.md,
     }),
     [insets.bottom],
   );
