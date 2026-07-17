@@ -34,7 +34,7 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Radius, Spacing } from '@theme';
 import type { Holiday } from '@models/holiday';
 import { useDeepLinkStore } from '@stores/deepLink.store';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
@@ -361,11 +361,13 @@ export const ScheduleView = ({
   const listWrapStyle = useMemo(() => ({ flex: 1, paddingTop: insets.top }), [insets.top]);
 
   // Внутри scroll-view (уже ниже чёлки) отступаем только на высоту хедера
-  // сверху и на таб-бар снизу.
+  // сверху. Снизу: у нативного таб-бара (`unstable-native-tabs`) его высота
+  // уже входит в `insets.bottom` экрана-таба, поэтому TAB_BAR_HEIGHT добавлять
+  // НЕ нужно — иначе таб-бар учитывается дважды и снизу зияет большой отступ.
   const contentStyle = useMemo(
     () => ({
       paddingTop: BAR_CLEARANCE,
-      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+      paddingBottom: insets.bottom + Spacing.md,
     }),
     [insets.bottom],
   );
