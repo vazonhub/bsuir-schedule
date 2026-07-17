@@ -29,7 +29,6 @@ const SPOTLIGHT_PAD = 6;
 const TOOLTIP_GAP = Spacing.lg;
 /** Грубая оценка высоты тултипа для выбора «сверху/снизу». */
 const TOOLTIP_ESTIMATE = 180;
-const SCRIM_COLOR = '#000000B3';
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -164,18 +163,6 @@ export const SpotlightOverlay = () => {
     if (active) void hapticLight();
   }, [active, stepIndex]);
 
-  const dimTopStyle = useAnimatedStyle(() => ({ height: Math.max(0, sy.value) }));
-  const dimBottomStyle = useAnimatedStyle(() => ({ top: sy.value + sh.value }));
-  const dimLeftStyle = useAnimatedStyle(() => ({
-    top: sy.value,
-    height: sh.value,
-    width: Math.max(0, sx.value),
-  }));
-  const dimRightStyle = useAnimatedStyle(() => ({
-    top: sy.value,
-    height: sh.value,
-    left: sx.value + sw.value,
-  }));
   const ringStyle = useAnimatedStyle(() => ({
     left: sx.value,
     top: sy.value,
@@ -237,19 +224,12 @@ export const SpotlightOverlay = () => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {hasTarget ? (
-        <>
-          <Animated.View style={[styles.dimTop, dimTopStyle]} />
-          <Animated.View style={[styles.dimBottom, dimBottomStyle]} />
-          <Animated.View style={[styles.dimLeft, dimLeftStyle]} />
-          <Animated.View style={[styles.dimRight, dimRightStyle]} />
-          {/* Тап по подсвеченному элементу тоже ведёт дальше. */}
-          <Animated.View style={[styles.ringWrap, ringStyle]} pointerEvents="box-none">
-            <Pressable style={StyleSheet.absoluteFill} onPress={next} />
-          </Animated.View>
-        </>
-      ) : (
-        <View style={styles.scrimFull} />
-      )}
+        // Без затемнения — только мигающая рамка вокруг цели.
+        // Тап по подсвеченному элементу тоже ведёт дальше.
+        <Animated.View style={[styles.ringWrap, ringStyle]} pointerEvents="box-none">
+          <Pressable style={StyleSheet.absoluteFill} onPress={next} />
+        </Animated.View>
+      ) : null}
       {tooltip}
     </View>
   );
@@ -274,34 +254,6 @@ const getTooltipPosition = (
 
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
-    dimTop: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: 0,
-      backgroundColor: SCRIM_COLOR,
-    },
-    dimBottom: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: SCRIM_COLOR,
-    },
-    dimLeft: {
-      position: 'absolute',
-      left: 0,
-      backgroundColor: SCRIM_COLOR,
-    },
-    dimRight: {
-      position: 'absolute',
-      right: 0,
-      backgroundColor: SCRIM_COLOR,
-    },
-    scrimFull: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: SCRIM_COLOR,
-    },
     ringWrap: {
       position: 'absolute',
       borderWidth: 2,
