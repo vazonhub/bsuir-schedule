@@ -432,7 +432,8 @@ const makeStyles = (Palette: PaletteType) =>
       flex: 1,
       justifyContent: 'center',
       paddingVertical: Spacing.md,
-      paddingLeft: Spacing.lg,
+      // Симметрично зазору слева от полосы (timeCol.paddingRight = Spacing.md).
+      paddingLeft: Spacing.md,
       paddingRight: Spacing.lg,
       gap: 3,
     },
