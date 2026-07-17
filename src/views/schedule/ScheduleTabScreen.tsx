@@ -55,6 +55,9 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 /** Верхний якорь скраббера — прыжок к закреплённым / началу списка. */
 const SCRUBBER_STAR = '★';
 
+/** Сколько раз повторяем scrollToLocation при onScrollToIndexFailed, прежде чем сдаться. */
+const MAX_SCROLL_RETRIES = 5;
+
 /**
  * Combined tab that lets the user browse groups and employees to open a
  * schedule. Segmented control at the top switches between the two lists
@@ -133,6 +136,8 @@ export const ScheduleTabScreen = () => {
   const employeeListRef = useRef<SectionList<EmployeeDto, EmployeeSection>>(null);
   // Последняя запрошенная секция — для повтора при onScrollToIndexFailed.
   const pendingSectionRef = useRef<number | null>(null);
+  // Счётчик повторов текущего прыжка (защита от busy-loop без getItemLayout).
+  const scrollRetriesRef = useRef(0);
 
   const scrollToSectionIndex = useCallback((sectionIndex: number, animated = true) => {
     pendingSectionRef.current = sectionIndex;
@@ -149,6 +154,7 @@ export const ScheduleTabScreen = () => {
       const sectionIndex =
         letter === SCRUBBER_STAR ? 0 : employeeSections.findIndex((s) => s.key === letter);
       if (sectionIndex < 0) return;
+      scrollRetriesRef.current = 0;
       scrollToSectionIndex(sectionIndex);
     },
     [employeeSections, scrollToSectionIndex],
@@ -157,7 +163,13 @@ export const ScheduleTabScreen = () => {
   const handleScrollToIndexFailed = useCallback(() => {
     const sectionIndex = pendingSectionRef.current;
     if (sectionIndex == null) return;
-    // Целевые строки ещё не отрендерены — повторяем на следующем кадре без анимации.
+    // Дальние строки ещё не измерены. Повторяем на следующем кадре — но ограниченно,
+    // иначе при недостижимой позиции rAF будет вызываться каждый кадр (busy-loop).
+    if (scrollRetriesRef.current >= MAX_SCROLL_RETRIES) {
+      pendingSectionRef.current = null;
+      return;
+    }
+    scrollRetriesRef.current += 1;
     requestAnimationFrame(() => scrollToSectionIndex(sectionIndex, false));
   }, [scrollToSectionIndex]);
 
