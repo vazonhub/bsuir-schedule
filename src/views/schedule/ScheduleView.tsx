@@ -2,10 +2,20 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
+import type { FlashListRef } from '@shopify/flash-list';
 import { useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Dimensions, Modal, Platform, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import {
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,13 +42,14 @@ import { addDays, isSameDay, parseBsuirDate, startOfLocalDay } from '@utils/date
 import { findHolidayName, toDateISO } from '@utils/holidays';
 import { buildLessonBlockId, getLessonTimeStatus } from '@utils/lesson';
 import {
+  buildScheduleRows,
   findUpcomingSectionIndex,
   flattenExams,
   flattenSchedule,
   groupExamsByDay,
   groupLessonsByDay,
 } from '@utils/scheduleNormalization';
-import type { ScheduleSection } from '@utils/scheduleNormalization';
+import type { ScheduleRow, ScheduleSection } from '@utils/scheduleNormalization';
 
 import { DayHeader } from '@views/lesson/DayHeader';
 import { LessonCard } from '@views/lesson/LessonCard';
@@ -73,6 +84,11 @@ interface Props {
 
 const EMPTY_HOLIDAYS: Holiday[] = [];
 
+// Viewability tuned to fire as soon as any sliver of a row enters the viewport —
+// we use it only to pick the top-most visible row for the FloatingTopBar date
+// label, so eager firing keeps the label in sync while scrolling.
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 1, minimumViewTime: 0 };
+
 export const ScheduleView = ({
   schedule,
   currentWeek,
@@ -91,7 +107,7 @@ export const ScheduleView = ({
   const insets = useSafeAreaInsets();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
-  const listRef = useRef<SectionList<unknown>>(null);
+  const listRef = useRef<FlashListRef<ScheduleRow>>(null);
   const sheetRef = useRef<BottomSheetModal>(null);
   // Lesson data lives in a ref so it's always available synchronously when
   // the sheet renders — no dependency on React's async state batching.
@@ -197,7 +213,8 @@ export const ScheduleView = ({
     [now.getFullYear(), now.getMonth(), now.getDate()],
   );
 
-  const apiHolidays = useHolidaysStore((s) => s.byYear[String(today.getFullYear())]) ?? EMPTY_HOLIDAYS;
+  const apiHolidays =
+    useHolidaysStore((s) => s.byYear[String(today.getFullYear())]) ?? EMPTY_HOLIDAYS;
   const userAdded = useHolidaysStore((s) => s.userAdded);
   const userRemoved = useHolidaysStore((s) => s.userRemoved);
   const userAddedHidden = useHolidaysStore((s) => s.userAddedHidden);
@@ -231,28 +248,6 @@ export const ScheduleView = ({
     [regularSections, examSections],
   );
 
-  // Lock Screen widget deep link. When the app is opened from
-  // `bsuirtime://lesson?id=<blockId>`, the id is stashed in `deepLinkStore`
-  // by `app/_layout.tsx`. Only the default schedule handles it — the blockId
-  // is generated against the default group's snapshot.
-  const pendingLessonBlockId = useDeepLinkStore((s) => s.pendingLessonBlockId);
-  const setPendingLessonBlockId = useDeepLinkStore((s) => s.setPendingLessonBlockId);
-  useEffect(() => {
-    if (!isDefaultSchedule || !pendingLessonBlockId || sections.length === 0) return;
-    for (const section of sections) {
-      for (const lesson of (section as ScheduleSection).data) {
-        if (buildLessonBlockId(lesson) === pendingLessonBlockId) {
-          handleLessonPress(lesson);
-          setPendingLessonBlockId(null);
-          return;
-        }
-      }
-    }
-    // Lesson not found in the currently loaded schedule (stale widget,
-    // schedule rebuilt after weeks rolled). Clear anyway to avoid re-firing.
-    setPendingLessonBlockId(null);
-  }, [isDefaultSchedule, pendingLessonBlockId, sections, handleLessonPress, setPendingLessonBlockId]);
-
   const hasExams = examSections.length > 0;
 
   const upcomingIndex = useMemo(() => {
@@ -266,78 +261,6 @@ export const ScheduleView = ({
     }
     return -1;
   }, [regularSections, examSections, firstExamSectionIndex, hasExams, today]);
-
-  // Высота «зоны» FloatingTopBar — нужна и для верхнего отступа контента,
-  // и для смещения индикатора RefreshControl (чтобы он появлялся в safe-зоне,
-  // а не под чёлкой).
-  const topInset = insets.top + 38 + Spacing.lg;
-
-  // Auto-scroll to the closest upcoming day.
-  // `viewOffset: topInset` гарантирует, что заголовок дня приземляется под
-  // FloatingTopBar, а не под статус-баром.
-  const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
-
-  const jumpToUpcoming = useCallback(
-    (delay: number) => {
-      if (upcomingIndex < 0 || sections.length === 0) return undefined;
-      const target = upcomingIndex;
-      const opts = {
-        sectionIndex: target,
-        itemIndex: 0,
-        animated: false,
-        viewPosition: 0 as const,
-        viewOffset: topInset,
-      };
-      const ids: ReturnType<typeof setTimeout>[] = [];
-      // Multiple attempts — SectionList without getItemLayout needs
-      // several passes to land on the correct position.
-      for (const d of [delay, delay + 150, delay + 500]) {
-        ids.push(setTimeout(() => {
-          console.log(`[ScheduleView] scrollToLocation section=${target} viewOffset=${topInset} delay=${d}`);
-          try { listRef.current?.scrollToLocation(opts); } catch { /* unmounted */ }
-        }, d));
-      }
-      return ids;
-    },
-    [upcomingIndex, sections.length, topInset],
-  );
-
-  // 1) При первом рендере / смене расписания — мгновенный jump.
-  useEffect(() => {
-    const ids = jumpToUpcoming(50);
-    return () => { ids?.forEach(clearTimeout); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scheduleIdentity]);
-
-  // 2) При переключении hidePastLessons — jump с задержкой на layout.
-  const isFirstRender = useRef(true);
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    const ids = jumpToUpcoming(300);
-    return () => { ids?.forEach(clearTimeout); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hidePastLessons]);
-
-  const isIOS = Platform.OS === 'ios';
-
-  // На iOS используем contentInset вместо paddingTop — иначе
-  // RefreshControl-спиннер прячется за FloatingTopBar.
-  const contentStyle = useMemo(
-    () => ({
-      paddingTop: isIOS ? 0 : topInset,
-      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
-    }),
-    [insets.bottom, topInset, isIOS],
-  );
-
-  // Stable ref — не создаём новый объект каждый рендер,
-  // иначе iOS будет скроллить к этой позиции при каждом re-render.
-  const initialContentOffset = useRef(
-    isIOS ? { x: 0, y: -topInset } : undefined,
-  ).current;
 
   // Banner indices for employee schedules: starting at upcomingIndex, every 3 days with lessons.
   const bannerSectionIndices = useMemo(() => {
@@ -354,6 +277,138 @@ export const ScheduleView = ({
     return indices;
   }, [entityType, upcomingIndex, sections]);
 
+  // Плоский поток строк для FlashList: заголовок дня → пары → (баннер),
+  // с одноразовым разделителем перед первой секцией экзаменов.
+  const examsSeparatorBeforeIndex =
+    hasExams && regularSections.length > 0 ? firstExamSectionIndex : undefined;
+  const rows = useMemo(
+    () => buildScheduleRows(sections, { examsSeparatorBeforeIndex, bannerSectionIndices }),
+    [sections, examsSeparatorBeforeIndex, bannerSectionIndices],
+  );
+
+  // Индекс строки-заголовка для каждой секции (в порядке секций). Нужен, чтобы
+  // `scrollToIndex` (работающий с плоским индексом) прыгал к нужному дню.
+  const headerRowIndices = useMemo(() => {
+    const idx: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i]?.type === 'header') idx.push(i);
+    }
+    return idx;
+  }, [rows]);
+
+  // Обратный маппинг: индекс строки → индекс секции. Используется в
+  // `onViewableItemsChanged`, чтобы понять, какой день сейчас наверху.
+  const rowToSectionIndex = useMemo(() => {
+    const map: number[] = new Array(rows.length).fill(-1);
+    let sectionIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i]?.type === 'header') sectionIdx += 1;
+      map[i] = sectionIdx;
+    }
+    return map;
+  }, [rows]);
+
+  // Lock Screen widget deep link. When the app is opened from
+  // `bsuirtime://lesson?id=<blockId>`, the id is stashed in `deepLinkStore`
+  // by `app/_layout.tsx`. Only the default schedule handles it — the blockId
+  // is generated against the default group's snapshot.
+  const pendingLessonBlockId = useDeepLinkStore((s) => s.pendingLessonBlockId);
+  const setPendingLessonBlockId = useDeepLinkStore((s) => s.setPendingLessonBlockId);
+  useEffect(() => {
+    if (!isDefaultSchedule || !pendingLessonBlockId || sections.length === 0) return;
+    for (const section of sections) {
+      for (const lesson of section.data) {
+        if (buildLessonBlockId(lesson) === pendingLessonBlockId) {
+          handleLessonPress(lesson);
+          setPendingLessonBlockId(null);
+          return;
+        }
+      }
+    }
+    // Lesson not found in the currently loaded schedule (stale widget,
+    // schedule rebuilt after weeks rolled). Clear anyway to avoid re-firing.
+    setPendingLessonBlockId(null);
+  }, [
+    isDefaultSchedule,
+    pendingLessonBlockId,
+    sections,
+    handleLessonPress,
+    setPendingLessonBlockId,
+  ]);
+
+  // Высота «зоны» FloatingTopBar — нужна и для верхнего отступа контента,
+  // и для смещения индикатора RefreshControl (чтобы он появлялся в safe-зоне,
+  // а не под чёлкой), и как `viewOffset` при программном скролле.
+  const topInset = insets.top + 38 + Spacing.lg;
+
+  const scheduleIdentity = `${entityKey}:${schedule.startDate}:${schedule.endDate}`;
+
+  // Отступы задаём ТОЛЬКО через contentContainerStyle (без нативного
+  // contentInset). `contentInsetAdjustmentBehavior="never"` не даёт нативному
+  // UITabBarController добавить safe area поверх нашего padding (иначе при
+  // переключении табов отступ удваивался и «появлялся не сразу»).
+  const contentStyle = useMemo(
+    () => ({
+      paddingTop: topInset,
+      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+    }),
+    [topInset, insets.bottom],
+  );
+
+  const scrollIndicatorInsets = useMemo(() => ({ top: topInset }), [topInset]);
+
+  // ───── Программный скролл (через плоский индекс строки) ─────
+  const headerRowIndicesRef = useRef(headerRowIndices);
+  useEffect(() => {
+    headerRowIndicesRef.current = headerRowIndices;
+  }, [headerRowIndices]);
+
+  const rowsRef = useRef(rows);
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
+
+  const scrollToSection = useCallback(
+    (sectionIndex: number, animated = true) => {
+      const rowIndex = headerRowIndicesRef.current[sectionIndex];
+      if (rowIndex == null) return;
+      void listRef.current
+        ?.scrollToIndex({ index: rowIndex, viewOffset: topInset, viewPosition: 0, animated })
+        .catch(() => {
+          /* list not laid out yet */
+        });
+    },
+    [topInset],
+  );
+
+  const jumpToUpcoming = useCallback(
+    (animated: boolean) => {
+      if (upcomingIndex < 0) return;
+      scrollToSection(upcomingIndex, animated);
+    },
+    [upcomingIndex, scrollToSection],
+  );
+
+  // 1) При первом рендере / смене расписания — прыжок к ближайшему дню.
+  //    rAF гарантирует, что FlashList успел разложить первый вьюпорт.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => jumpToUpcoming(false));
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduleIdentity]);
+
+  // 2) При переключении hidePastLessons — прыжок с задержкой на релейаут.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const id = setTimeout(() => jumpToUpcoming(false), 150);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hidePastLessons]);
+
   const handleTogglePin = useCallback(() => {
     void hapticSuccess();
     if (entityType === 'group') togglePinnedGroup(entityKey);
@@ -366,28 +421,9 @@ export const ScheduleView = ({
 
   // Селектор подгруппы только для расписания группы. У преподавателя
   // фильтр по подгруппе не имеет смысла — он ведёт обе.
-  const isGroup = entityType === 'group';
   const handleSubgroupChange = useCallback(
     (v: typeof subgroup) => setSubgroup(entityKey, v),
     [entityKey, setSubgroup],
-  );
-
-  const scrollToSection = useCallback(
-    (sectionIndex: number, animated = true) => {
-      if (sections.length === 0) return;
-      const opts = {
-        sectionIndex,
-        itemIndex: 0,
-        animated,
-        viewPosition: 0 as const,
-        viewOffset: topInset,
-      };
-      listRef.current?.scrollToLocation(opts);
-      // scrollToLocation без getItemLayout оценивает позицию приблизительно —
-      // повторный вызов после завершения первой анимации «дотягивает» до цели.
-      setTimeout(() => listRef.current?.scrollToLocation(opts), 350);
-    },
-    [sections.length, topInset],
   );
 
   const handleScrollToExams = useCallback(() => {
@@ -397,9 +433,8 @@ export const ScheduleView = ({
 
   const handleScrollToSchedule = useCallback(() => {
     if (regularSections.length === 0) return;
-    const targetIndex = upcomingIndex >= 0 && upcomingIndex < regularSections.length
-      ? upcomingIndex
-      : 0;
+    const targetIndex =
+      upcomingIndex >= 0 && upcomingIndex < regularSections.length ? upcomingIndex : 0;
     scrollToSection(targetIndex);
   }, [regularSections.length, upcomingIndex, scrollToSection]);
 
@@ -412,13 +447,19 @@ export const ScheduleView = ({
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [datePickerInitialDate, setDatePickerInitialDate] = useState(today);
 
+  const sectionsRef = useRef(sections);
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
+
   const scrollToDate = useCallback(
     (target: Date) => {
-      if (sections.length === 0) return;
+      const list = sectionsRef.current;
+      if (list.length === 0) return;
       const targetTime = target.getTime();
       let bestIndex = -1;
-      for (let i = 0; i < sections.length; i++) {
-        const s = sections[i];
+      for (let i = 0; i < list.length; i++) {
+        const s = list[i];
         if (!s) continue;
         if (s.date.getTime() >= targetTime) {
           bestIndex = i;
@@ -429,18 +470,16 @@ export const ScheduleView = ({
       if (bestIndex < 0) return;
       scrollToSection(bestIndex);
     },
-    [sections, scrollToSection],
+    [scrollToSection],
   );
 
   // Deep-link: caller passed a specific date via `?scrollDate=dd.MM.yyyy`.
   // Fires once per param value — runs after the default "jump to upcoming"
-  // effect so it overrides it. We keep firing when the string changes so a
-  // second navigation to the same tab with a new date still scrolls.
+  // effect so it overrides it.
   useEffect(() => {
     if (!initialScrollDate || sections.length === 0) return;
     const target = parseBsuirDate(initialScrollDate);
     if (!target) return;
-    // Small delay so the scroll happens after the initial "upcoming" jump.
     const id = setTimeout(() => scrollToDate(target), 250);
     return () => clearTimeout(id);
   }, [initialScrollDate, sections.length, scrollToDate]);
@@ -474,30 +513,20 @@ export const ScheduleView = ({
     [subgroup],
   );
 
-  // Счётчик для принудительной перемерки секций после смены подгруппы
-  // или набора секций (hidePastLessons toggle): карточки меняют высоту /
-  // состав, сдвигая заголовки ниже.
-  const [measureKey, setMeasureKey] = useState(0);
-  const prevSubgroupRef = useRef(subgroup);
-  const prevSectionsLenRef = useRef(sections.length);
-  useEffect(() => {
-    const changed =
-      prevSubgroupRef.current !== subgroup ||
-      prevSectionsLenRef.current !== sections.length;
-    if (changed) {
-      prevSubgroupRef.current = subgroup;
-      prevSectionsLenRef.current = sections.length;
-      sectionOffsetsRef.current.clear();
-      setMeasureKey((k) => k + 1);
-    }
-  }, [subgroup, sections.length]);
-
   // ───── Текущий «топовый» день для шапки ─────
-  // Sticky-заголовок дня выключен (см. SectionList ниже) — вместо него
-  // FloatingTopBar показывает дату секции, чей заголовок сейчас прячется
-  // под панелью, справа от кнопки «назад». Источник истины —
-  // `onScroll` + замеренные y-координаты секций (см. ниже).
+  // Sticky-заголовок дня выключен — вместо него FloatingTopBar показывает дату
+  // самой верхней видимой секции. Источник истины — `onViewableItemsChanged`.
   const [topSection, setTopSection] = useState<ScheduleSection | null>(null);
+
+  const topSectionRef = useRef<ScheduleSection | null>(null);
+  useEffect(() => {
+    topSectionRef.current = topSection;
+  }, [topSection]);
+
+  const rowToSectionRef = useRef(rowToSectionIndex);
+  useEffect(() => {
+    rowToSectionRef.current = rowToSectionIndex;
+  }, [rowToSectionIndex]);
 
   // При смене расписания «активную» секцию ставим на ближайший день в
   // будущем (или первый доступный) — то же, куда мы автоскроллимся.
@@ -510,116 +539,109 @@ export const ScheduleView = ({
     if (initial) setTopSection(initial);
   }, [sections, upcomingIndex]);
 
+  const handleViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { index: number | null; isViewable: boolean }[] }) => {
+      let minIndex = Infinity;
+      for (const token of viewableItems) {
+        if (token.isViewable && typeof token.index === 'number' && token.index < minIndex) {
+          minIndex = token.index;
+        }
+      }
+      if (minIndex === Infinity) return;
+      const sectionIndex = rowToSectionRef.current[minIndex];
+      if (sectionIndex == null || sectionIndex < 0) return;
+      const section = sectionsRef.current[sectionIndex];
+      if (section && section !== topSectionRef.current) setTopSection(section);
+    },
+    [],
+  );
+
   const handleDatePress = useCallback(() => {
     void hapticLight();
     setDatePickerInitialDate(topSection?.date ?? today);
     setDatePickerVisible(true);
   }, [topSection?.date, today]);
 
-  const sectionsRef = useRef(sections);
-  useEffect(() => {
-    sectionsRef.current = sections;
-  }, [sections]);
-
-  // Обновляем функцию скролла к выбранной паре (использует актуальные sections).
+  // Обновляем функцию скролла к выбранной паре (использует актуальные rows).
   scrollToLessonFnRef.current = (lesson: NormalizedLesson) => {
-    for (let si = 0; si < sections.length; si++) {
-      const section = sections[si];
-      if (!section) continue;
-      const ii = section.data.findIndex((l) => l.key === lesson.key);
-      if (ii >= 0) {
-        setTimeout(() => {
-          try {
-            listRef.current?.scrollToLocation({
-              sectionIndex: si,
-              itemIndex: ii,
-              viewPosition: 0.4,
-              animated: true,
-            });
-          } catch { /* unmounted */ }
-        }, 50);
-        return;
-      }
-    }
+    const idx = rowsRef.current.findIndex(
+      (r) => r.type === 'lesson' && r.lesson.key === lesson.key,
+    );
+    if (idx < 0) return;
+    setTimeout(() => {
+      void listRef.current
+        ?.scrollToIndex({ index: idx, viewOffset: topInset, viewPosition: 0.4, animated: true })
+        .catch(() => {
+          /* unmounted */
+        });
+    }, 50);
   };
 
-  // y-координаты заголовков секций в контенте скролла. Нужны, чтобы
-  // переключать лейбл дня в FloatingTopBar ровно в момент, когда заголовок
-  // дня прячется под панелью. `onViewableItemsChanged` не подходит: он
-  // считает «видимым» всё, что попало в viewport, даже перекрытое
-  // absolute-панелью сверху — и лейбл переключался с задержкой.
-  //
-  // Используем `measureInWindow` вместо `measureLayout`: последний на Fabric
-  // ругается «must be called with a ref to a native component», потому что
-  // `findNodeHandle(getScrollableNode())` возвращает null. `measureInWindow`
-  // работает стабильно на обеих архитектурах. Контент-Y вычисляем как
-  // `pageY - scrollViewPageY + currentScrollY`.
-  const sectionOffsetsRef = useRef<Map<string, number>>(new Map());
-  const currentScrollYRef = useRef<number>(isIOS ? -topInset : 0);
-  const scrollViewPageYRef = useRef<number>(0);
-  const topSectionRef = useRef<ScheduleSection | null>(null);
-  useEffect(() => {
-    topSectionRef.current = topSection;
-  }, [topSection]);
-
-  // Разово меряем, где в окне находится верх ScrollView.
-  // У нас экран idet от края до края (headerShown: false, SafeAreaView не
-  // оборачивает ScheduleView), так что почти всегда это 0, но подстрахуемся.
-  useEffect(() => {
-    const list = listRef.current as unknown as {
-      getNativeScrollRef?: () => {
-        measureInWindow?: (cb: (x: number, y: number) => void) => void;
-      } | null;
-      getScrollResponder?: () => {
-        measureInWindow?: (cb: (x: number, y: number) => void) => void;
-      } | null;
-    } | null;
-    const nativeRef = list?.getNativeScrollRef?.() ?? list?.getScrollResponder?.();
-    nativeRef?.measureInWindow?.((_x, y) => {
-      if (typeof y === 'number' && !Number.isNaN(y)) {
-        scrollViewPageYRef.current = y;
+  const renderItem = useCallback(
+    ({ item }: { item: ScheduleRow }) => {
+      switch (item.type) {
+        case 'examsSeparator':
+          return <ExamsSeparator Palette={Palette} />;
+        case 'header': {
+          const s = item.section;
+          return (
+            <DayHeader
+              date={s.date}
+              week={s.week}
+              isToday={isSameDay(s.date, today)}
+              isTomorrow={isSameDay(s.date, addDays(today, 1))}
+              isExam={s.isExam}
+              isPast={s.date.getTime() < today.getTime()}
+              holidayName={findHolidayName(toDateISO(s.date), holidays) ?? undefined}
+            />
+          );
+        }
+        case 'lesson': {
+          const l = item.lesson;
+          return (
+            <LessonCard
+              lesson={l}
+              compact={!isMineSubgroup(l.raw.numSubgroup)}
+              blocked={isLessonBlocked(l)}
+              entityType={entityType}
+              timeStatus={
+                isSameDay(l.date, today)
+                  ? getLessonTimeStatus(l, now)
+                  : l.isPast
+                    ? { kind: 'past' as const }
+                    : null
+              }
+              onPress={() => handleLessonPress(l)}
+            />
+          );
+        }
+        case 'banner':
+          return (
+            <View style={styles.scheduleBannerWrap}>
+              <UnityBanner />
+            </View>
+          );
       }
-    });
-  }, [sections.length]);
-
-  const recomputeTopSection = useCallback(() => {
-    const threshold = currentScrollYRef.current + topInset + 48;
-    const list = sectionsRef.current;
-    let current: ScheduleSection | null = null;
-    for (const s of list) {
-      const y = sectionOffsetsRef.current.get(sectionDateKey(s));
-      if (y == null) continue;
-      if (y <= threshold) current = s;
-      else break;
-    }
-    if (current && current !== topSectionRef.current) {
-      setTopSection(current);
-    }
-  }, [topInset]);
-
-  const measureSection = useCallback(
-    (section: ScheduleSection, node: View | null) => {
-      if (!node) return;
-      node.measureInWindow((_x, pageY) => {
-        if (typeof pageY !== 'number' || Number.isNaN(pageY)) return;
-        const contentY = pageY - scrollViewPageYRef.current + currentScrollYRef.current;
-        sectionOffsetsRef.current.set(sectionDateKey(section), contentY);
-        // Новый замер может поменять ответ «какая секция сейчас под панелью»
-        // даже без нового скролла (например, сразу после автоскролла — когда
-        // секции только-только отрендерились и попали в измерение).
-        recomputeTopSection();
-      });
     },
-    [recomputeTopSection],
+    [
+      Palette,
+      today,
+      holidays,
+      isMineSubgroup,
+      isLessonBlocked,
+      entityType,
+      now,
+      handleLessonPress,
+      styles,
+    ],
   );
 
-  const handleScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      currentScrollYRef.current = e.nativeEvent.contentOffset.y;
-      recomputeTopSection();
-    },
-    [recomputeTopSection],
-  );
+  const keyExtractor = useCallback((item: ScheduleRow) => item.key, []);
+  const getItemType = useCallback((item: ScheduleRow) => item.type, []);
+
+  // extraData: заставляет FlashList перерисовать видимые строки при смене
+  // подгруппы / набора блокировок / тика времени (прогресс идущей пары).
+  const extraData = `${subgroup}:${blockedList.length}:${now.getTime()}`;
 
   if (regularSections.length === 0 && examSections.length === 0) {
     return (
@@ -655,91 +677,20 @@ export const ScheduleView = ({
         return false;
       }}
     >
-      <SectionList
-        ref={listRef as never}
-        sections={sections}
-        keyExtractor={(item) => `${item.key}_${blockedSet.has(buildLessonBlockId(item)) ? 'b' : 'u'}`}
-        extraData={`${subgroup}:${blockedList.length}`}
-        // Native sticky выключен — «текущий день» показываем в FloatingTopBar.
-        stickySectionHeadersEnabled={false}
+      <FlashList
+        ref={listRef}
+        data={rows}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        getItemType={getItemType}
+        extraData={extraData}
         contentContainerStyle={contentStyle}
-        initialNumToRender={20}
-        windowSize={11}
-        // На iOS contentInset сдвигает контент вниз, а RefreshControl-спиннер
-        // показывается ниже FloatingTopBar, а не за ним.
-        // contentInsetAdjustmentBehavior="never" — чтобы iOS НЕ добавлял
-        // safe area поверх нашего contentInset (иначе при переключении табов
-        // adjustedContentInset = contentInset + safeArea = двойной отступ).
         contentInsetAdjustmentBehavior="never"
         automaticallyAdjustsScrollIndicatorInsets={false}
-        contentInset={isIOS ? { top: topInset } : undefined}
-        contentOffset={initialContentOffset}
-        scrollIndicatorInsets={isIOS ? { top: topInset } : undefined}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollIndicatorInsets={scrollIndicatorInsets}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={VIEWABILITY_CONFIG}
         onScrollBeginDrag={handleScrollBeginDrag}
-        renderSectionHeader={({ section }) => {
-          const s = section as ScheduleSection;
-          const isFirstExam = hasExams && s === examSections[0];
-          return (
-            <>
-              {isFirstExam && regularSections.length > 0 && (
-                <ExamsSeparator Palette={Palette} />
-              )}
-              <MeasuredDayHeader
-                section={s}
-                today={today}
-                onMeasure={measureSection}
-                measureKey={measureKey}
-                holidayName={findHolidayName(toDateISO(s.date), holidays) ?? undefined}
-              />
-            </>
-          );
-        }}
-        renderSectionFooter={({ section }) => {
-          const idx = sections.indexOf(section as ScheduleSection);
-          if (!bannerSectionIndices.has(idx)) return null;
-          return (
-            <View style={styles.scheduleBannerWrap}>
-              <UnityBanner />
-            </View>
-          );
-        }}
-        renderItem={({ item }) => (
-          <LessonCard
-            lesson={item}
-            compact={!isMineSubgroup(item.raw.numSubgroup)}
-            blocked={isLessonBlocked(item)}
-            entityType={entityType}
-            timeStatus={
-              isSameDay(item.date, today)
-                ? getLessonTimeStatus(item, now)
-                : item.isPast
-                  ? { kind: 'past' as const }
-                  : null
-            }
-            onPress={() => handleLessonPress(item)}
-          />
-        )}
-        onScrollToIndexFailed={(info) => {
-          // Jump close to the target so it gets rendered, then retry.
-          const approxOffset = info.averageItemLength * info.index;
-          const scrollResponder = (listRef.current as unknown as {
-            getScrollResponder?: () => {
-              scrollTo?: (opts: { y: number; animated: boolean }) => void;
-            } | null;
-          })?.getScrollResponder?.();
-          scrollResponder?.scrollTo?.({ y: approxOffset, animated: false });
-          setTimeout(() => {
-            listRef.current?.scrollToLocation({
-              sectionIndex: Math.min(info.index, sections.length - 1),
-              itemIndex: 0,
-              animated: false,
-              viewPosition: 0,
-              viewOffset: topInset,
-            });
-          }, 100);
-        }}
         refreshControl={
           onRefresh ? (
             <RefreshControl
@@ -760,15 +711,20 @@ export const ScheduleView = ({
         isCurrentDateToday={topSection ? isSameDay(topSection.date, today) : false}
         isCurrentDateTomorrow={topSection ? isSameDay(topSection.date, addDays(today, 1)) : false}
         showTodayButton={
-          !!topSection && upcomingIndex >= 0 && (
-            // В прошлом (старые пары видны только когда hidePastLessons выключен)
-            topSection.date.getTime() < today.getTime() ||
+          !!topSection &&
+          upcomingIndex >= 0 &&
+          // В прошлом (старые пары видны только когда hidePastLessons выключен)
+          (topSection.date.getTime() < today.getTime() ||
             // На экзаменах
-            !!topSection.isExam
-          )
+            !!topSection.isExam)
         }
         onScrollToToday={handleScrollToToday}
-        showExamsButton={hasExams && regularSections.length > 0 && !topSection?.isExam && (topSection?.date.getTime() ?? 0) >= today.getTime()}
+        showExamsButton={
+          hasExams &&
+          regularSections.length > 0 &&
+          !topSection?.isExam &&
+          (topSection?.date.getTime() ?? 0) >= today.getTime()
+        }
         onScrollToExams={handleScrollToExams}
         title={title}
         avatarUri={avatarUri}
@@ -824,9 +780,13 @@ export const ScheduleView = ({
         onDismiss={handleSheetDismiss}
         onChange={handleSheetChange}
         isBlocked={selectedLesson ? isLessonBlocked(selectedLesson) : false}
-        onToggleBlock={selectedLesson ? () => {
-          toggleBlockedLesson(entityKey, buildLessonBlockId(selectedLesson));
-        } : undefined}
+        onToggleBlock={
+          selectedLesson
+            ? () => {
+                toggleBlockedLesson(entityKey, buildLessonBlockId(selectedLesson));
+              }
+            : undefined
+        }
       />
       {avatarUri ? (
         <Modal
@@ -846,49 +806,6 @@ export const ScheduleView = ({
           </Pressable>
         </Modal>
       ) : null}
-    </View>
-  );
-};
-
-/** Стабильный ключ секции по её дате (00:00 локального времени). */
-const sectionDateKey = (s: ScheduleSection): string => String(s.date.getTime());
-
-interface MeasuredDayHeaderProps {
-  section: ScheduleSection;
-  today: Date;
-  onMeasure(section: ScheduleSection, node: View | null): void;
-  /** Changing this value forces a re-measure (e.g. after subgroup switch). */
-  measureKey?: number;
-  /** Holiday name for this day, if any. */
-  holidayName?: string;
-}
-
-/**
- * Обёртка над `DayHeader`, которая сообщает родителю свою y-координату в
- * контенте скролла. `collapsable={false}` — чтобы на Android view не схлопнулся
- * в родителя и `measureLayout` мог его найти.
- */
-const MeasuredDayHeader = ({ section, today, onMeasure, measureKey, holidayName }: MeasuredDayHeaderProps) => {
-  const ref = useRef<View>(null);
-  useEffect(() => {
-    if (measureKey != null && measureKey > 0) {
-      // Subgroup (or other layout-affecting prop) changed — schedule a
-      // re-measure after RN completes the layout pass.
-      const id = setTimeout(() => onMeasure(section, ref.current), 150);
-      return () => clearTimeout(id);
-    }
-  }, [measureKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <View ref={ref} collapsable={false} onLayout={() => onMeasure(section, ref.current)}>
-      <DayHeader
-        date={section.date}
-        week={section.week}
-        isToday={isSameDay(section.date, today)}
-        isTomorrow={isSameDay(section.date, addDays(today, 1))}
-        isExam={section.isExam}
-        isPast={section.date.getTime() < today.getTime()}
-        holidayName={holidayName}
-      />
     </View>
   );
 };
@@ -913,72 +830,73 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: Palette.background },
-  scheduleBannerWrap: {
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-  },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
-  empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
-  examsSeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xxxl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  examsSeparatorLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Palette.separator,
-  },
-  examsSeparatorContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  examsSeparatorText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Palette.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  datePickerBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerSheet: {
-    backgroundColor: Palette.card,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    marginHorizontal: Spacing.screenPadding,
-    width: '90%',
-    maxWidth: 380,
-  },
-  datePickerDone: {
-    alignSelf: 'flex-end',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl,
-    marginTop: Spacing.md,
-  },
-  datePickerDoneText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: Palette.accent,
-  },
-  photoBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoFull: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').width,
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: Palette.background },
+    scheduleBannerWrap: {
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
+    },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
+    empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
+    examsSeparator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.screenPadding,
+      paddingTop: Spacing.xxxl,
+      paddingBottom: Spacing.md,
+      gap: Spacing.md,
+    },
+    examsSeparatorLine: {
+      flex: 1,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: Palette.separator,
+    },
+    examsSeparatorContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    examsSeparatorText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: Palette.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+    },
+    datePickerBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    datePickerSheet: {
+      backgroundColor: Palette.card,
+      borderRadius: Radius.xl,
+      padding: Spacing.xl,
+      marginHorizontal: Spacing.screenPadding,
+      width: '90%',
+      maxWidth: 380,
+    },
+    datePickerDone: {
+      alignSelf: 'flex-end',
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.xl,
+      marginTop: Spacing.md,
+    },
+    datePickerDoneText: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: Palette.accent,
+    },
+    photoBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.9)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    photoFull: {
+      width: Dimensions.get('window').width,
+      height: Dimensions.get('window').width,
+    },
+  });
