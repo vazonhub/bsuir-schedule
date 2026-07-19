@@ -25,6 +25,8 @@ interface DiaryState {
   hidden: Record<string, string[]>;
   /** Ordered planner items per group (top = highest priority). */
   planner: Record<string, PlannerItem[]>;
+  /** ms epoch of the last local mutation — LWW key for cloud sync. */
+  updatedAt: number;
 
   setTaskCount(groupName: string, subject: string, count: number): void;
   toggleTask(groupName: string, subject: string, index: number): void;
@@ -36,6 +38,16 @@ interface DiaryState {
   reorderPlanner(groupName: string, newOrder: PlannerItem[]): void;
   /** Rewrite an existing planner slot's subject/taskIndex, preserving order. */
   replacePlannerItem(groupName: string, id: string, subject: string, taskIndex: number): void;
+
+  /** Stamp the LWW timestamp after a local mutation (driven by DiaryController). */
+  touchUpdatedAt(ts: number): void;
+  /** Overwrite diary fields with a newer cloud snapshot (LWW merge lost locally). */
+  applyRemoteSnapshot(snapshot: {
+    progress: Record<string, Record<string, SubjectProgress>>;
+    hidden: Record<string, string[]>;
+    planner: Record<string, PlannerItem[]>;
+    updatedAt: number;
+  }): void;
 }
 
 const getEntry = (state: DiaryState, group: string, subject: string): SubjectProgress =>
@@ -56,6 +68,7 @@ export const useDiaryStore = create<DiaryState>()(
       progress: {},
       hidden: {},
       planner: {},
+      updatedAt: 0,
 
       toggleHidden: (groupName, subject) => {
         set((s) => {
@@ -196,6 +209,19 @@ export const useDiaryStore = create<DiaryState>()(
           return { planner: { ...s.planner, [groupName]: next } };
         });
       },
+
+      touchUpdatedAt: (ts) => {
+        set((s) => (ts > s.updatedAt ? { updatedAt: ts } : s));
+      },
+
+      applyRemoteSnapshot: (snapshot) => {
+        set({
+          progress: snapshot.progress,
+          hidden: snapshot.hidden,
+          planner: snapshot.planner,
+          updatedAt: snapshot.updatedAt,
+        });
+      },
     }),
     {
       name: 'diary-v1',
@@ -204,6 +230,7 @@ export const useDiaryStore = create<DiaryState>()(
         progress: state.progress,
         hidden: state.hidden,
         planner: state.planner,
+        updatedAt: state.updatedAt,
       }),
     },
   ),
