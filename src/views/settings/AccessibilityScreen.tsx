@@ -14,6 +14,8 @@ import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+const STATUS_ON_GREEN = '#34C759';
+
 export const AccessibilityScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
@@ -158,7 +160,7 @@ export const AccessibilityScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text {...textProps('title')} style={styles.title} numberOfLines={1}>
@@ -275,6 +277,7 @@ export const AccessibilityScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -357,7 +360,7 @@ const makeStyles = (Palette: PaletteType) =>
       borderRadius: Radius.sm,
     },
     statusOn: {
-      backgroundColor: '#34C759' + '1A',
+      backgroundColor: STATUS_ON_GREEN + '1A',
     },
     statusOff: {
       backgroundColor: Palette.background,
@@ -367,7 +370,7 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     statusTextOn: {
-      color: '#34C759',
+      color: STATUS_ON_GREEN,
     },
     statusTextOff: {
       color: Palette.textTertiary,

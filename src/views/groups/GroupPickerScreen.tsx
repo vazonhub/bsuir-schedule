@@ -38,6 +38,14 @@ type PickerTab = 'groups' | 'employees';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const SEGMENT_ACTIVE_FONT_DARK = '#FFFFFF';
+const SEGMENT_ACTIVE_FONT_LIGHT = '#000000';
+
+const segmentFontStyles = StyleSheet.create({
+  activeDark: { color: SEGMENT_ACTIVE_FONT_DARK },
+  activeLight: { color: SEGMENT_ACTIVE_FONT_LIGHT },
+});
+
 /**
  * Schedule picker — allows user to select a default group or employee
  * for the "Моё" tab. Segmented control at the top switches between
@@ -192,7 +200,7 @@ export const GroupPickerScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text {...textProps('title')} style={styles.title} numberOfLines={1}>
@@ -210,7 +218,7 @@ export const GroupPickerScreen = () => {
             switchTab(tab);
           }}
           fontStyle={{ color: Palette.textPrimary }}
-          activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+          activeFontStyle={isDark ? segmentFontStyles.activeDark : segmentFontStyles.activeLight}
           appearance={isDark ? 'dark' : 'light'}
         />
       </View>
@@ -365,6 +373,7 @@ const makeStyles = (Palette: PaletteType) =>
       paddingBottom: Spacing.md,
       gap: Spacing.md,
     },
+    backIcon: { marginLeft: -1 },
     title: {
       flex: 1,
       fontSize: 22,

@@ -21,6 +21,10 @@ import { hapticLight, hapticSuccess } from '@utils/haptics';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+const SHADOW_COLOR = '#000';
+/** Text on the accent-filled sign-in pill — always white, regardless of theme. */
+const SIGN_IN_PILL_TEXT = '#FFFFFF';
+
 export const NetworkDataScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
@@ -156,7 +160,7 @@ export const NetworkDataScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
@@ -189,7 +193,7 @@ export const NetworkDataScreen = () => {
               name="checkmark"
               size={20}
               color="#34C759"
-              style={{ opacity: sourceBsuirApi ? 1 : 0 }}
+              style={sourceBsuirApi ? styles.checkVisible : styles.checkHidden}
             />
           </Pressable>
 
@@ -205,7 +209,7 @@ export const NetworkDataScreen = () => {
                   name="checkmark"
                   size={20}
                   color="#34C759"
-                  style={{ opacity: sourceICloud ? 1 : 0 }}
+                  style={sourceICloud ? styles.checkVisible : styles.checkHidden}
                 />
               </Pressable>
             </>
@@ -224,7 +228,7 @@ export const NetworkDataScreen = () => {
                     name="checkmark"
                     size={20}
                     color="#34C759"
-                    style={{ opacity: sourceGoogleDrive ? 1 : 0 }}
+                    style={sourceGoogleDrive ? styles.checkVisible : styles.checkHidden}
                   />
                 ) : (
                   <View style={styles.signInPill}>
@@ -276,6 +280,9 @@ export const NetworkDataScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
+    checkVisible: { opacity: 1 },
+    checkHidden: { opacity: 0 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -318,7 +325,7 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.card,
       borderRadius: Radius.md,
       padding: Spacing.lg,
-      shadowColor: '#000',
+      shadowColor: SHADOW_COLOR,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
@@ -358,7 +365,7 @@ const makeStyles = (Palette: PaletteType) =>
     signInPillText: {
       fontSize: 13,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: SIGN_IN_PILL_TEXT,
     },
     separator: {
       height: StyleSheet.hairlineWidth,
@@ -389,7 +396,7 @@ const makeStyles = (Palette: PaletteType) =>
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.xl,
       borderRadius: Radius.pill,
-      shadowColor: '#000',
+      shadowColor: SHADOW_COLOR,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 8,

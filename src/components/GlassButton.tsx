@@ -9,6 +9,9 @@ import { Radius } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+/** Fallback fill for the light theme on platforms without native blur. */
+const FALLBACK_FILL_LIGHT = '#FFFFFF';
+
 interface Props {
   children: ReactNode;
   onPress?(): void;
@@ -93,7 +96,10 @@ export const GlassButton = ({
         />
       ) : (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? Palette.card : '#FFFFFF' }]}
+          style={[
+            StyleSheet.absoluteFill,
+            isDark ? styles.fallbackFillDark : styles.fallbackFillLight,
+          ]}
         />
       )}
       <View
@@ -116,6 +122,8 @@ const makeStyles = (Palette: PaletteType, tintBg: string) =>
       justifyContent: 'center',
     },
     pressed: { opacity: 0.7 },
+    fallbackFillDark: { backgroundColor: Palette.card },
+    fallbackFillLight: { backgroundColor: FALLBACK_FILL_LIGHT },
     tint: { backgroundColor: tintBg },
     tintActive: { backgroundColor: Palette.accent + '33' },
     content: {

@@ -86,4 +86,12 @@ module.exports = [
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  {
+    // Примитивы react-native-android-widget (FlexWidget и др.) не поддерживают
+    // StyleSheet — стили передаются только инлайн-объектами.
+    files: ['src/widgets/**/*.tsx'],
+    rules: {
+      'react-native/no-inline-styles': 'off',
+    },
+  },
 ];

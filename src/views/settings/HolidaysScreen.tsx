@@ -26,6 +26,10 @@ import { toDateISO } from '@utils/holidays';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+const MODAL_OVERLAY_BG = 'rgba(0,0,0,0.4)';
+/** Text on the accent-filled save button — always white, regardless of theme. */
+const SAVE_BUTTON_TEXT = '#FFFFFF';
+
 const MONTHS_RU = [
   'января',
   'февраля',
@@ -157,7 +161,7 @@ export const HolidaysScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
@@ -348,6 +352,7 @@ export const HolidaysScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -490,7 +495,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
+      backgroundColor: MODAL_OVERLAY_BG,
       justifyContent: 'center',
       alignItems: 'center',
       padding: Spacing.xxl,
@@ -562,6 +567,6 @@ const makeStyles = (Palette: PaletteType) =>
     modalButtonSaveText: {
       fontSize: 16,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: SAVE_BUTTON_TEXT,
     },
   });

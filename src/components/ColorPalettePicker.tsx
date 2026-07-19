@@ -18,6 +18,7 @@ interface Props {
 
 const SWATCH_SIZE = 32;
 const SWATCH_GAP = 10;
+const SELECTED_BORDER_COLOR = '#FFFFFF';
 
 const Swatch = ({
   color,
@@ -109,6 +110,6 @@ const styles = StyleSheet.create({
   },
   swatchSelected: {
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: SELECTED_BORDER_COLOR,
   },
 });

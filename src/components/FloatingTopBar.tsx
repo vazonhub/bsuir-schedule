@@ -150,7 +150,7 @@ export const FloatingTopBar = React.memo(
                 name="chevron-back"
                 size={22}
                 color={Palette.textPrimary}
-                style={{ marginLeft: -1 }}
+                style={styles.backIcon}
               />
             </GlassButton>
           )}
@@ -284,6 +284,9 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
       gap: Spacing.sm,
       paddingLeft: Spacing.sm,
+    },
+    backIcon: {
+      marginLeft: -1,
     },
     // Stretch-friendly Liquid-Glass обёртка лейбла даты: позволяет ужиматься
     // под доступную ширину, чтобы при длинном «Понедельник, 14 апреля» текст

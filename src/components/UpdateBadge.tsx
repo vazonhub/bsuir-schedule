@@ -21,6 +21,9 @@ interface Props {
 
 const DEV_FORCE_VISIBLE = false; // __DEV__
 
+/** Text on the accent-filled pill — white in both themes. */
+const BADGE_LABEL_COLOR = '#FFFFFF';
+
 export const UpdateBadge = ({ onPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
@@ -106,6 +109,6 @@ const makeStyles = (Palette: PaletteType) =>
     label: {
       fontSize: 14,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: BADGE_LABEL_COLOR,
     },
   });

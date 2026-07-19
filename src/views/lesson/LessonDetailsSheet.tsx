@@ -21,6 +21,8 @@ import { ANNOUNCEMENT_COLOR, FALLBACK_LESSON_COLOR as FALLBACK } from '@theme/co
 
 const AUDITORY_STATUS_FREE_COLOR = '#34C759';
 const AUDITORY_STATUS_BUSY_COLOR = '#FF9500';
+const WEEK_CURRENT_TEXT_COLOR = '#FFFFFF';
+const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -567,7 +569,7 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     weekTextCurrent: {
-      color: '#FFFFFF',
+      color: WEEK_CURRENT_TEXT_COLOR,
     },
     weeksLabel: {
       fontSize: 13,
@@ -643,7 +645,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     photoBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.9)',
+      backgroundColor: PHOTO_BACKDROP_BG,
       justifyContent: 'center',
       alignItems: 'center',
     },

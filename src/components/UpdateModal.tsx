@@ -23,6 +23,9 @@ const FALLBACK_STORE_URL = Platform.select({
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+/** Text on the accent-filled store button — white in both themes. */
+const STORE_BUTTON_TEXT_COLOR = '#FFFFFF';
+
 interface Props {
   visible: boolean;
   version: string | null;
@@ -172,7 +175,7 @@ const makeStyles = (Palette: PaletteType) =>
     storeButtonText: {
       fontSize: 16,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: STORE_BUTTON_TEXT_COLOR,
     },
     closeButton: {
       alignItems: 'center',

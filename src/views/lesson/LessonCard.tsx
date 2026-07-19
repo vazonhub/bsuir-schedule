@@ -61,6 +61,8 @@ const buildGroupAvatarItems = (lesson: NormalizedLesson) => {
 const BLOCKED_BG_LIGHT = 'rgba(255, 59, 48, 0.06)';
 const BLOCKED_BG_DARK = 'rgba(255, 59, 48, 0.07)';
 
+const COMPACT_CARD_BG = 'transparent';
+
 export const LessonCard = React.memo(
   ({
     lesson,
@@ -516,7 +518,7 @@ const makeStyles = (Palette: PaletteType) =>
       borderRadius: Radius.lg,
       borderWidth: 1,
       borderStyle: 'dashed',
-      backgroundColor: 'transparent',
+      backgroundColor: COMPACT_CARD_BG,
     },
     blockedIcon: {
       minHeight: 20,

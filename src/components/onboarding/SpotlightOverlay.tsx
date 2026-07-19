@@ -29,6 +29,8 @@ const SPOTLIGHT_PAD = 6;
 const TOOLTIP_GAP = Spacing.lg;
 /** Грубая оценка высоты тултипа для выбора «сверху/снизу». */
 const TOOLTIP_ESTIMATE = 180;
+/** Текст на акцентной кнопке «Далее» — белый в обеих темах. */
+const NEXT_LABEL_COLOR = '#FFFFFF';
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -321,7 +323,7 @@ const makeStyles = (Palette: PaletteType) =>
       opacity: 0.7,
     },
     nextLabel: {
-      color: '#FFFFFF',
+      color: NEXT_LABEL_COLOR,
       fontWeight: '600',
     },
   });

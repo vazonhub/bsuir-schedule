@@ -212,6 +212,10 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
 AddPlannerSheet.displayName = 'AddPlannerSheet';
 
 const GREEN = LESSON_TYPE_COLORS['ЛК']; // reuse "done" green
+const DONE_CELL_BG_DARK = 'rgba(63,179,111,0.28)';
+const DONE_CELL_BG_LIGHT = 'rgba(63,179,111,0.18)';
+const DONE_TEXT_DARK = '#7FD79E';
+const DONE_TEXT_LIGHT = '#1F7A45';
 
 const makeStyles = (Palette: PaletteType, isDark: boolean) =>
   StyleSheet.create({
@@ -282,7 +286,7 @@ const makeStyles = (Palette: PaletteType, isDark: boolean) =>
     },
     indexCellPressed: { backgroundColor: Palette.cardPressed },
     indexCellDone: {
-      backgroundColor: isDark ? 'rgba(63,179,111,0.28)' : 'rgba(63,179,111,0.18)',
+      backgroundColor: isDark ? DONE_CELL_BG_DARK : DONE_CELL_BG_LIGHT,
     },
     indexCellInPlanner: {
       opacity: 0.45,
@@ -293,7 +297,7 @@ const makeStyles = (Palette: PaletteType, isDark: boolean) =>
       color: Palette.textPrimary,
     },
     indexTextDone: {
-      color: isDark ? '#7FD79E' : '#1F7A45',
+      color: isDark ? DONE_TEXT_DARK : DONE_TEXT_LIGHT,
     },
     indexTextInPlanner: {
       color: Palette.textTertiary,

@@ -210,6 +210,8 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
 
 // ────────────────────────────────────────────────────────────────
 
+const ACCENT_BUTTON_LABEL = '#FFFFFF';
+
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
@@ -240,5 +242,5 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.accent,
     },
     selectBtnPressed: { opacity: 0.7 },
-    selectBtnLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    selectBtnLabel: { color: ACCENT_BUTTON_LABEL, fontSize: 16, fontWeight: '600' },
   });

@@ -24,6 +24,7 @@ type PaletteType = ReturnType<typeof usePalette>;
 
 const COLUMNS = 4;
 const MIN_GAP = 8;
+const BORDER_TRANSPARENT = 'transparent';
 
 const getCurrentIconName = (): string | null => {
   try {
@@ -93,7 +94,7 @@ export const AppIconScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
@@ -130,10 +131,7 @@ export const AppIconScreen = () => {
                       />
                     </View>
                     <Text
-                      style={[
-                        styles.iconLabel,
-                        isSelected && { color: Palette.accent, fontWeight: '600' },
-                      ]}
+                      style={[styles.iconLabel, isSelected && styles.iconLabelSelected]}
                       numberOfLines={1}
                     >
                       {icon.label}
@@ -157,6 +155,7 @@ export const AppIconScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -187,13 +186,17 @@ const makeStyles = (Palette: PaletteType) =>
     iconBorder: {
       borderRadius: Radius.lg,
       borderWidth: 3,
-      borderColor: 'transparent',
+      borderColor: BORDER_TRANSPARENT,
       overflow: 'hidden',
     },
     iconLabel: {
       fontSize: 10,
       color: Palette.textSecondary,
       marginTop: 4,
+    },
+    iconLabelSelected: {
+      color: Palette.accent,
+      fontWeight: '600',
     },
     checkBadge: {
       position: 'absolute',

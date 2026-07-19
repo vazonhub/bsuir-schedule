@@ -48,6 +48,15 @@ type ScheduleTab = 'groups' | 'employees';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
+const SEGMENT_ACTIVE_FONT_DARK = '#FFFFFF';
+const SEGMENT_ACTIVE_FONT_LIGHT = '#000000';
+const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
+
+const segmentFontStyles = StyleSheet.create({
+  activeDark: { color: SEGMENT_ACTIVE_FONT_DARK },
+  activeLight: { color: SEGMENT_ACTIVE_FONT_LIGHT },
+});
+
 /**
  * Combined tab that lets the user browse groups and employees to open a
  * schedule. Segmented control at the top switches between the two lists
@@ -235,7 +244,7 @@ export const ScheduleTabScreen = () => {
             switchTab(tab);
           }}
           fontStyle={{ color: Palette.textPrimary }}
-          activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+          activeFontStyle={isDark ? segmentFontStyles.activeDark : segmentFontStyles.activeLight}
           appearance={isDark ? 'dark' : 'light'}
         />
       </View>
@@ -451,7 +460,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     photoBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.9)',
+      backgroundColor: PHOTO_BACKDROP_BG,
       justifyContent: 'center',
       alignItems: 'center',
     },

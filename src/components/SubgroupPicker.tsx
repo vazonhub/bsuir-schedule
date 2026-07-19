@@ -20,6 +20,9 @@ interface Props {
 
 const ORDER: SubgroupChoice[] = [0, 1, 2];
 
+const BACKDROP_COLOR = 'rgba(0,0,0,0.18)';
+const MENU_SHADOW_COLOR = '#000';
+
 interface OptionLabelProps {
   value: SubgroupChoice;
   active?: boolean;
@@ -167,7 +170,7 @@ const makeStyles = (Palette: PaletteType, glass: { tint: string; webBg: string }
   StyleSheet.create({
     label: { fontSize: 14, fontWeight: '600', color: Palette.textPrimary },
 
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' },
+    backdrop: { flex: 1, backgroundColor: BACKDROP_COLOR },
     menu: {
       position: 'absolute',
       top: 100,
@@ -175,7 +178,7 @@ const makeStyles = (Palette: PaletteType, glass: { tint: string; webBg: string }
       minWidth: 160,
       borderRadius: Radius.lg,
       overflow: 'hidden',
-      shadowColor: '#000',
+      shadowColor: MENU_SHADOW_COLOR,
       shadowOpacity: 0.18,
       shadowRadius: 18,
       shadowOffset: { width: 0, height: 8 },

@@ -26,6 +26,9 @@ const PARTICLE_ANGLES: readonly number[] = [0, 60, 120, 180, 240, 300];
 const HOLD_MS = 1500;
 const HOLD_MS_REDUCED = 1100;
 
+/** Полупрозрачный чёрный скрим под карточкой празднования. */
+const SCRIM_COLOR = '#00000066';
+
 /**
  * Полноэкранный оверлей-празднование. Рендерится, пока в fire-сторе есть
  * `pendingCelebration` (новый рекорд или веха 7/30/100), и сам гасит событие
@@ -148,7 +151,7 @@ const makeStyles = (Palette: PaletteType) =>
       ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#00000066',
+      backgroundColor: SCRIM_COLOR,
     },
     card: {
       alignItems: 'center',

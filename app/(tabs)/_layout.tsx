@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
 
 import { usePalette, useIsDark } from '@hooks/usePalette';
@@ -14,6 +14,10 @@ export const unstable_settings = {
 
 const iosVersion = Platform.OS === 'ios' ? parseInt(String(Platform.Version), 10) : 0;
 const supportsLiquidGlass = iosVersion >= 26;
+
+const styles = StyleSheet.create({
+  androidLabel: { fontSize: 12 },
+});
 
 /**
  * Native tab bar (UITabBarController on iOS, BottomNavigationView on Android).
@@ -42,7 +46,7 @@ export default function TabsLayout() {
       labelVisibilityMode={isAndroid ? 'unlabeled' : 'labeled'}
       tintColor={isAndroid ? palette.accent : undefined}
       indicatorColor={isAndroid ? `${palette.accent}26` : undefined}
-      labelStyle={isAndroid ? { fontSize: 12 } : undefined}
+      labelStyle={isAndroid ? styles.androidLabel : undefined}
     >
       <NativeTabs.Trigger name="(amy)">
         <Icon

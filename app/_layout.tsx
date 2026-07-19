@@ -2,12 +2,12 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
-import { Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput } from 'react-native';
 
 import { FireCelebration } from '@components/fire/FireCelebration';
 import { UpdateBadge } from '@components/UpdateBadge';
@@ -49,6 +49,7 @@ export default function RootLayout() {
   useAppBootstrap();
   const isDark = useIsDark();
   const Palette = usePalette();
+  const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const language = usePreferencesStore((s) => s.language);
   const { i18n } = useTranslation();
   const router = useRouter();
@@ -109,7 +110,7 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: Palette.background }}>
+    <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <BottomSheetModalProvider>
           <Stack
@@ -134,3 +135,11 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const makeStyles = (Palette: ReturnType<typeof usePalette>) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: Palette.background,
+    },
+  });

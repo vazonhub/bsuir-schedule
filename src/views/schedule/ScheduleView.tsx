@@ -921,6 +921,9 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
   );
 };
 
+const DATE_PICKER_BACKDROP_BG = 'rgba(0,0,0,0.4)';
+const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
+
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
@@ -976,7 +979,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     datePickerBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
+      backgroundColor: DATE_PICKER_BACKDROP_BG,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1001,7 +1004,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     photoBackdrop: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.9)',
+      backgroundColor: PHOTO_BACKDROP_BG,
       justifyContent: 'center',
       alignItems: 'center',
     },

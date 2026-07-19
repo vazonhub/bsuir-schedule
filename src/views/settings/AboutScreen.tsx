@@ -21,6 +21,8 @@ const PRIVACY_POLICY_RU =
 const PRIVACY_POLICY_EN =
   'https://dorian-camera-fc6.notion.site/Privacy-Policy-for-Bsuir-Time-344a9d552bd880c79b77cd8a6605e653';
 
+const TOOLTIP_SHADOW_COLOR = '#000';
+
 export const AboutScreen = () => {
   const { t } = useTranslation();
   const Palette = usePalette();
@@ -72,7 +74,7 @@ export const AboutScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
@@ -151,6 +153,7 @@ export const AboutScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -193,7 +196,7 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.card,
       borderRadius: Radius.md,
       padding: Spacing.lg,
-      shadowColor: '#000',
+      shadowColor: TOOLTIP_SHADOW_COLOR,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 12,

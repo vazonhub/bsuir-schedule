@@ -44,6 +44,12 @@ import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+/** Text on a colored chip — always white, regardless of theme. */
+const CHIP_ACTIVE_TEXT = '#FFFFFF';
+/** Android fallback background for the blur-styled apply button. */
+const APPLY_FALLBACK_BG_DARK = '#2C2C2E';
+const APPLY_FALLBACK_BG_LIGHT = '#FFFFFF';
+
 /** Color entries in the picker. */
 const COLOR_ENTRIES: { key: KnownLessonType; labelKey: string }[] = [
   { key: 'ЛР', labelKey: 'settings.colorLR' },
@@ -296,7 +302,7 @@ export const AppearanceScreen = () => {
             name="chevron-back"
             size={22}
             color={Palette.textPrimary}
-            style={{ marginLeft: -1 }}
+            style={styles.backIcon}
           />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
@@ -526,7 +532,7 @@ export const AppearanceScreen = () => {
               <View
                 style={[
                   StyleSheet.absoluteFill,
-                  { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' },
+                  isDark ? styles.applyFallbackDark : styles.applyFallbackLight,
                 ]}
               />
             )}
@@ -547,6 +553,7 @@ export const AppearanceScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    backIcon: { marginLeft: -1 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -600,7 +607,7 @@ const makeStyles = (Palette: PaletteType) =>
       borderWidth: 1.5,
     },
     chipText: { fontSize: 12, fontWeight: '600', color: Palette.textPrimary },
-    chipTextActive: { color: '#FFFFFF' },
+    chipTextActive: { color: CHIP_ACTIVE_TEXT },
 
     /* Card */
     card: { backgroundColor: Palette.card, borderRadius: Radius.lg, overflow: 'hidden' },
@@ -654,6 +661,8 @@ const makeStyles = (Palette: PaletteType) =>
       overflow: 'hidden',
     },
     applyButtonPressed: { opacity: 0.8 },
+    applyFallbackDark: { backgroundColor: APPLY_FALLBACK_BG_DARK },
+    applyFallbackLight: { backgroundColor: APPLY_FALLBACK_BG_LIGHT },
     applyContent: {
       flex: 1,
       flexDirection: 'row',

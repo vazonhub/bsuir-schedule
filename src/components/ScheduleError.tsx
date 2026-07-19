@@ -10,6 +10,9 @@ import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
+/** Text on the accent-filled retry button — white in both themes. */
+const RETRY_LABEL_COLOR = '#FFFFFF';
+
 interface Props {
   kind: ErrorKind | null;
   onRetry(): void;
@@ -101,5 +104,5 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.accent,
     },
     retryPressed: { opacity: 0.7 },
-    retryLabel: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+    retryLabel: { color: RETRY_LABEL_COLOR, fontSize: 15, fontWeight: '600' },
   });

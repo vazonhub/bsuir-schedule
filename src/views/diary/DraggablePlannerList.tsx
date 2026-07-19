@@ -191,9 +191,7 @@ function DraggableRow<T extends Identifiable>({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View
-        style={[styles.row, { height: itemHeight, top: 0, left: 0, right: 0 }, animStyle]}
-      >
+      <Animated.View style={[styles.row, { height: itemHeight }, animStyle]}>
         {renderItem(item)}
       </Animated.View>
     </GestureDetector>
@@ -203,5 +201,8 @@ function DraggableRow<T extends Identifiable>({
 const styles = StyleSheet.create({
   row: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
 });

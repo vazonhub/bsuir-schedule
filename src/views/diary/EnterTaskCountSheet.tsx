@@ -166,6 +166,8 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
 );
 EnterTaskCountSheet.displayName = 'EnterTaskCountSheet';
 
+const ACCENT_BUTTON_LABEL = '#FFFFFF';
+
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     content: {
@@ -211,5 +213,5 @@ const makeStyles = (Palette: PaletteType) =>
     },
     saveBtnDisabled: { opacity: 0.4 },
     saveBtnPressed: { opacity: 0.7 },
-    saveBtnLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    saveBtnLabel: { color: ACCENT_BUTTON_LABEL, fontSize: 16, fontWeight: '600' },
   });

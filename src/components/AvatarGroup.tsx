@@ -71,6 +71,7 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Pr
           key={i}
           style={[
             styles.avatarWrapper,
+            // eslint-disable-next-line react-native/no-inline-styles -- dynamic runtime value
             {
               marginLeft: i === 0 && extra <= 0 ? 0 : -actualOverlap,
               zIndex: i === reversed.length - 1 ? reversed.length + 1 : i,

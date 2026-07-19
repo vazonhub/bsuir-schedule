@@ -37,6 +37,11 @@ const LANG_LABELS = ['Русский', 'Беларуская', 'English'];
 
 const PINK = '#FF2D55';
 
+const SHADOW_COLOR = '#000';
+/** Active segment label colors — tied to the control's appearance, not the palette. */
+const SEGMENT_ACTIVE_TEXT_DARK = '#FFFFFF';
+const SEGMENT_ACTIVE_TEXT_LIGHT = '#000000';
+
 const TIP_PRODUCT_IDS = [
   'by.vazon.bsuirtime.tip.small',
   'by.vazon.bsuirtime.tip.medium',
@@ -241,7 +246,7 @@ export const SettingsScreen = () => {
               if (value) setTheme(value);
             }}
             fontStyle={{ color: Palette.textPrimary }}
-            activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+            activeFontStyle={isDark ? styles.segmentActiveFontDark : styles.segmentActiveFontLight}
             appearance={isDark ? 'dark' : 'light'}
           />
         </View>
@@ -258,7 +263,7 @@ export const SettingsScreen = () => {
               if (value) setLanguage(value);
             }}
             fontStyle={{ color: Palette.textPrimary }}
-            activeFontStyle={{ color: isDark ? '#FFFFFF' : '#000000' }}
+            activeFontStyle={isDark ? styles.segmentActiveFontDark : styles.segmentActiveFontLight}
             appearance={isDark ? 'dark' : 'light'}
           />
         </View>
@@ -550,6 +555,8 @@ export const SettingsScreen = () => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    segmentActiveFontDark: { color: SEGMENT_ACTIVE_TEXT_DARK },
+    segmentActiveFontLight: { color: SEGMENT_ACTIVE_TEXT_LIGHT },
     screenTitle: {
       fontSize: 28,
       fontWeight: '700',
@@ -721,7 +728,7 @@ const makeStyles = (Palette: PaletteType) =>
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.xl,
       borderRadius: Radius.pill,
-      shadowColor: '#000',
+      shadowColor: SHADOW_COLOR,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.15,
       shadowRadius: 8,
