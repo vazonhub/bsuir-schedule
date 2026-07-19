@@ -1,6 +1,6 @@
 import type { Holiday } from '@models/holiday';
 import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
-import type { SubgroupChoice } from '@stores/preferences.store';
+import type { ResolvedScheme, SubgroupChoice } from '@stores/preferences.store';
 import { parseBsuirDate } from '@utils/date';
 import { findHolidayName } from '@utils/holidays';
 import { buildLessonBlockId, getLessonAccentColor, getLessonTimeStatus } from '@utils/lesson';
@@ -71,6 +71,8 @@ export interface WidgetSnapshot {
   groupName: string;
   generatedAt: string;
   currentWeek: WeekNumber;
+  /** Resolved app color scheme (light/dark) so the widget matches the app theme. */
+  theme: ResolvedScheme;
   /** User's selected subgroup for this group (0 = all). */
   subgroup: SubgroupChoice;
   /** Today's lessons (may be empty if no lessons today). */
@@ -147,6 +149,7 @@ export const buildWidgetSnapshot = (
   now: Date,
   groupName: string,
   subgroup: SubgroupChoice,
+  theme: ResolvedScheme,
   strings: WidgetStrings,
   blockedIds?: Set<string>,
   holidays: Holiday[] = [],
@@ -200,6 +203,7 @@ export const buildWidgetSnapshot = (
     groupName,
     generatedAt: now.toISOString(),
     currentWeek,
+    theme,
     subgroup,
     today: toDayBlock(todayStart, todayLessons, subgroup, holidays),
     nextDay: nextDayBlock,

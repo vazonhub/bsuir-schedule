@@ -221,6 +221,11 @@ export const ScheduleTabScreen = () => {
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
+      <View style={styles.header}>
+        <Text {...textProps('title')} style={styles.headerTitle}>
+          {t('tabs.schedule')}
+        </Text>
+      </View>
       <View style={styles.segmentWrapper}>
         <SegmentedControl
           values={[t('groups.pickerTabGroups'), t('groups.pickerTabEmployees')]}
@@ -404,6 +409,15 @@ const makeStyles = (Palette: PaletteType) =>
     },
     emptyContent: { flexGrow: 1 },
     empty: { color: Palette.textSecondary, textAlign: 'center' },
+    header: {
+      paddingHorizontal: Spacing.screenPadding,
+      paddingTop: Spacing.md,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: Palette.textPrimary,
+    },
     segmentWrapper: {
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,

@@ -82,7 +82,7 @@ const reloadWidgetTimelines = (): void => {
  * on preference changes (subgroup, theme, locale), and by background fetch.
  */
 export const updateWidgetSnapshot = async (): Promise<void> => {
-  const { defaultGroup, subgroupByKey, blockedLessons } = usePreferencesStore.getState();
+  const { defaultGroup, subgroupByKey, blockedLessons, resolvedScheme } = usePreferencesStore.getState();
   if (!defaultGroup) return;
 
   const { byKey, currentWeek } = useScheduleStore.getState();
@@ -109,7 +109,7 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
   const { byYear, userAdded, userRemoved, userAddedHidden } = useHolidaysStore.getState();
   const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved, userAddedHidden);
 
-  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, strings, blockedIds, holidays);
+  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, resolvedScheme, strings, blockedIds, holidays);
   await writeSnapshot(snapshot);
   reloadWidgetTimelines();
 };
@@ -121,6 +121,7 @@ let _prev = {
   subgroupByKey: usePreferencesStore.getState().subgroupByKey,
   blockedLessons: usePreferencesStore.getState().blockedLessons,
   theme: usePreferencesStore.getState().theme,
+  resolvedScheme: usePreferencesStore.getState().resolvedScheme,
   language: usePreferencesStore.getState().language,
 };
 
@@ -136,6 +137,7 @@ usePreferencesStore.subscribe((state) => {
     subgroupForDefault !== prevSubgroupForDefault ||
     blockedForDefault !== prevBlockedForDefault ||
     state.theme !== _prev.theme ||
+    state.resolvedScheme !== _prev.resolvedScheme ||
     state.language !== _prev.language;
 
   if (changed) {
@@ -144,6 +146,7 @@ usePreferencesStore.subscribe((state) => {
       subgroupByKey: state.subgroupByKey,
       blockedLessons: state.blockedLessons,
       theme: state.theme,
+      resolvedScheme: state.resolvedScheme,
       language: state.language,
     };
     void updateWidgetSnapshot();

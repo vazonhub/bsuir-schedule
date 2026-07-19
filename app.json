@@ -134,7 +134,7 @@
             "name": "IconBgDark",
             "ios": "./assets/icons/IconBgDark.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgDark.png",
+              "foregroundImage": "./assets/icons/android/IconBgDark.png",
               "backgroundColor": "#2C2C2E"
             }
           },
@@ -142,7 +142,7 @@
             "name": "IconBgRed",
             "ios": "./assets/icons/IconBgRed.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgRed.png",
+              "foregroundImage": "./assets/icons/android/IconBgRed.png",
               "backgroundColor": "#FF3B30"
             }
           },
@@ -150,7 +150,7 @@
             "name": "IconBgOrange",
             "ios": "./assets/icons/IconBgOrange.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgOrange.png",
+              "foregroundImage": "./assets/icons/android/IconBgOrange.png",
               "backgroundColor": "#FF9500"
             }
           },
@@ -158,7 +158,7 @@
             "name": "IconBgGreen",
             "ios": "./assets/icons/IconBgGreen.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgGreen.png",
+              "foregroundImage": "./assets/icons/android/IconBgGreen.png",
               "backgroundColor": "#34C759"
             }
           },
@@ -166,7 +166,7 @@
             "name": "IconBgPurple",
             "ios": "./assets/icons/IconBgPurple.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgPurple.png",
+              "foregroundImage": "./assets/icons/android/IconBgPurple.png",
               "backgroundColor": "#AF52DE"
             }
           },
@@ -174,7 +174,7 @@
             "name": "IconBgBlue",
             "ios": "./assets/icons/IconBgBlue.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgBlue.png",
+              "foregroundImage": "./assets/icons/android/IconBgBlue.png",
               "backgroundColor": "#007AFF"
             }
           },
@@ -182,7 +182,7 @@
             "name": "IconBgPink",
             "ios": "./assets/icons/IconBgPink.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgPink.png",
+              "foregroundImage": "./assets/icons/android/IconBgPink.png",
               "backgroundColor": "#FF2D55"
             }
           },
@@ -190,7 +190,7 @@
             "name": "IconBgTeal",
             "ios": "./assets/icons/IconBgTeal.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconBgTeal.png",
+              "foregroundImage": "./assets/icons/android/IconBgTeal.png",
               "backgroundColor": "#5AC8FA"
             }
           },
@@ -198,7 +198,7 @@
             "name": "IconLightClassicBlue",
             "ios": "./assets/icons/IconLightClassicBlue.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightClassicBlue.png",
+              "foregroundImage": "./assets/icons/android/IconLightClassicBlue.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -206,7 +206,7 @@
             "name": "IconLightBlack",
             "ios": "./assets/icons/IconLightBlack.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightBlack.png",
+              "foregroundImage": "./assets/icons/android/IconLightBlack.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -214,7 +214,7 @@
             "name": "IconLightBlue",
             "ios": "./assets/icons/IconLightBlue.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightBlue.png",
+              "foregroundImage": "./assets/icons/android/IconLightBlue.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -222,7 +222,7 @@
             "name": "IconLightPurple",
             "ios": "./assets/icons/IconLightPurple.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightPurple.png",
+              "foregroundImage": "./assets/icons/android/IconLightPurple.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -230,7 +230,7 @@
             "name": "IconLightRed",
             "ios": "./assets/icons/IconLightRed.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightRed.png",
+              "foregroundImage": "./assets/icons/android/IconLightRed.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -238,7 +238,7 @@
             "name": "IconLightGreen",
             "ios": "./assets/icons/IconLightGreen.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconLightGreen.png",
+              "foregroundImage": "./assets/icons/android/IconLightGreen.png",
               "backgroundColor": "#FFFFFF"
             }
           },
@@ -246,7 +246,7 @@
             "name": "IconDarkBlue",
             "ios": "./assets/icons/IconDarkBlue.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconDarkBlue.png",
+              "foregroundImage": "./assets/icons/android/IconDarkBlue.png",
               "backgroundColor": "#1C1C1E"
             }
           },
@@ -254,7 +254,7 @@
             "name": "IconDarkGreen",
             "ios": "./assets/icons/IconDarkGreen.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconDarkGreen.png",
+              "foregroundImage": "./assets/icons/android/IconDarkGreen.png",
               "backgroundColor": "#1C1C1E"
             }
           },
@@ -262,7 +262,7 @@
             "name": "IconDarkRed",
             "ios": "./assets/icons/IconDarkRed.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconDarkRed.png",
+              "foregroundImage": "./assets/icons/android/IconDarkRed.png",
               "backgroundColor": "#1C1C1E"
             }
           },
@@ -270,7 +270,7 @@
             "name": "IconDarkOrange",
             "ios": "./assets/icons/IconDarkOrange.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconDarkOrange.png",
+              "foregroundImage": "./assets/icons/android/IconDarkOrange.png",
               "backgroundColor": "#1C1C1E"
             }
           },
@@ -278,7 +278,7 @@
             "name": "IconDarkPurple",
             "ios": "./assets/icons/IconDarkPurple.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconDarkPurple.png",
+              "foregroundImage": "./assets/icons/android/IconDarkPurple.png",
               "backgroundColor": "#1C1C1E"
             }
           },
@@ -286,7 +286,7 @@
             "name": "IconGradBluePurple",
             "ios": "./assets/icons/IconGradBluePurple.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconGradBluePurple.png",
+              "foregroundImage": "./assets/icons/android/IconGradBluePurple.png",
               "backgroundColor": "#5856D6"
             }
           },
@@ -294,7 +294,7 @@
             "name": "IconGradRedOrange",
             "ios": "./assets/icons/IconGradRedOrange.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconGradRedOrange.png",
+              "foregroundImage": "./assets/icons/android/IconGradRedOrange.png",
               "backgroundColor": "#FF6B35"
             }
           },
@@ -302,7 +302,7 @@
             "name": "IconGradGreenTeal",
             "ios": "./assets/icons/IconGradGreenTeal.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconGradGreenTeal.png",
+              "foregroundImage": "./assets/icons/android/IconGradGreenTeal.png",
               "backgroundColor": "#30B0A0"
             }
           },
@@ -310,7 +310,7 @@
             "name": "IconGradPinkPurple",
             "ios": "./assets/icons/IconGradPinkPurple.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconGradPinkPurple.png",
+              "foregroundImage": "./assets/icons/android/IconGradPinkPurple.png",
               "backgroundColor": "#DA3287"
             }
           },
@@ -318,7 +318,7 @@
             "name": "IconGradMidnight",
             "ios": "./assets/icons/IconGradMidnight.png",
             "android": {
-              "foregroundImage": "./assets/icons/IconGradMidnight.png",
+              "foregroundImage": "./assets/icons/android/IconGradMidnight.png",
               "backgroundColor": "#191970"
             }
           }

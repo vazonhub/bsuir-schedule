@@ -28,19 +28,33 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
     <View style={styles.wrap}>
       <View style={styles.card}>
         <Text maxFontSizeMultiplier={1}style={styles.icon} importantForAccessibility="no">{'\u2315'}</Text>
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChange}
-          placeholder={resolvedPlaceholder}
-          placeholderTextColor={Palette.searchPlaceholder}
-          autoCorrect={false}
-          autoCapitalize="none"
-          returnKeyType="search"
-          underlineColorAndroid="transparent"
-          maxFontSizeMultiplier={1.5}
-          accessibilityLabel={t('common.search')}
-        />
+        <View style={styles.inputWrap}>
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={onChange}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            underlineColorAndroid="transparent"
+            maxFontSizeMultiplier={1.5}
+            accessibilityLabel={t('common.search')}
+            accessibilityHint={resolvedPlaceholder}
+          />
+          {value.length === 0 && (
+            <View style={styles.placeholderOverlay} pointerEvents="none">
+              <Text
+                style={styles.placeholder}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                maxFontSizeMultiplier={1.5}
+                importantForAccessibility="no"
+              >
+                {resolvedPlaceholder}
+              </Text>
+            </View>
+          )}
+        </View>
         {showClear && (
           <Pressable
             onPress={() => onChange('')}
@@ -77,11 +91,24 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     color: Palette.textTertiary,
     marginRight: Spacing.md,
   },
-  input: {
+  inputWrap: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  input: {
     fontSize: 16,
     color: Palette.textPrimary,
     paddingVertical: 0,
+    includeFontPadding: false,
+  },
+  placeholderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+  },
+  placeholder: {
+    fontSize: 16,
+    color: Palette.searchPlaceholder,
+    includeFontPadding: false,
   },
   clear: {
     fontSize: 22,

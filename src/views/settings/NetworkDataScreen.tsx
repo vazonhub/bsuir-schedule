@@ -127,7 +127,10 @@ export const NetworkDataScreen = () => {
   }, [t, showToast]);
 
   const showICloud = Platform.OS === 'ios' && isICloudAvailable;
-  const showGoogleDrive = isGoogleDriveAvailable;
+  // Google-аккаунт временно убран из UI на Android; код авторизации, синхронизации
+  // и config-plugin сохранены в репозитории. Чтобы вернуть — верните флаг в true.
+  const SHOW_GOOGLE_DRIVE = false;
+  const showGoogleDrive = SHOW_GOOGLE_DRIVE && isGoogleDriveAvailable;
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>

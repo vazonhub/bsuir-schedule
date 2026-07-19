@@ -12,6 +12,7 @@ import { SkeletonDiary } from '@components/Skeleton';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
+import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
 import {
@@ -75,6 +76,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const errorKind = useScheduleStore((s) => s.errorKind);
 
   const subgroup = usePreferencesStore(selectSubgroup(groupName));
+  const subgroupIcon = useIconName('subgroup');
   const blocked = usePreferencesStore(selectBlockedLessons(groupName));
   const setTaskCount = useDiaryStore((s) => s.setTaskCount);
   const toggleHidden = useDiaryStore((s) => s.toggleHidden);
@@ -190,9 +192,23 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
               <Text {...textProps('title')} style={styles.headerTitle}>
                 {t('tabs.diary')}
               </Text>
-              <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
-                {groupName}
-              </Text>
+              <View style={styles.subtitleRow}>
+                <Text {...textProps('subhead')} style={styles.headerSubtitle} numberOfLines={1}>
+                  {groupName}
+                </Text>
+                {subgroup !== 0 && (
+                  <View style={styles.subgroupBadge}>
+                    <Text {...textProps('subhead')} style={styles.subgroupNum}>
+                      {subgroup}
+                    </Text>
+                    <Ionicons
+                      name={subgroupIcon as never}
+                      size={14}
+                      color={Palette.textSecondary}
+                    />
+                  </View>
+                )}
+              </View>
             </View>
             <StreakBadge />
           </View>
@@ -397,9 +413,25 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '700',
       color: Palette.textPrimary,
     },
+    subtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      marginTop: 2,
+    },
     headerSubtitle: {
       color: Palette.textSecondary,
-      marginTop: 2,
+      flexShrink: 1,
+    },
+    subgroupBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      flexShrink: 0,
+    },
+    subgroupNum: {
+      color: Palette.textSecondary,
+      fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
     hiddenHeaderWrap: {
