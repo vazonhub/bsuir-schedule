@@ -19,7 +19,8 @@
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:eas": "eas build --platform android --profile production",
-    "android:build": "npx expo prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android"
+    "android:build": "npx expo prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android",
+    "prepare": "husky"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -86,8 +87,19 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-native": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "expo": {
     "doctor": {
