@@ -67,6 +67,7 @@ export const SubjectCard = ({
     backgroundColor: bg.value > 0.5 ? Palette.cardPressed : Palette.card,
   }));
 
+  /* eslint-disable react-hooks/immutability -- Reanimated shared values мутируются через .value по дизайну API */
   const handlePressIn = useCallback(() => {
     if (reduceMotion) {
       bg.value = 1;
@@ -87,6 +88,7 @@ export const SubjectCard = ({
     bg.value = withTiming(0, { duration: 160, easing: Easing.out(Easing.quad) });
     scale.value = withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) });
   }, [reduceMotion, bg, scale]);
+  /* eslint-enable react-hooks/immutability */
 
   const handleLongPress = () => {
     void hapticMedium();

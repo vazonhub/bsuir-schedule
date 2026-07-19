@@ -32,9 +32,18 @@ const defaults: AccessibilitySettings = {
  * `expo-accessibility-plus`.
  */
 export function useAccessibility(): AccessibilitySettings {
-  const [settings, setSettings] = useState<AccessibilitySettings>({
-    ...defaults,
-    fontScale: PixelRatio.getFontScale(),
+  const [settings, setSettings] = useState<AccessibilitySettings>(() => {
+    const base = { ...defaults, fontScale: PixelRatio.getFontScale() };
+    // iOS-only: boldText + darkerSystemColors + differentiateWithoutColor —
+    // batch read via snapshot(): one native round-trip vs three getters.
+    if (!A11y.isAvailable) return base;
+    const snap = A11y.snapshot();
+    return {
+      ...base,
+      isBoldTextEnabled: snap.boldText,
+      isDarkerSystemColorsEnabled: snap.darkerSystemColors,
+      isDifferentiateWithoutColorEnabled: snap.shouldDifferentiateWithoutColor,
+    };
   });
 
   useEffect(() => {
@@ -54,18 +63,6 @@ export function useAccessibility(): AccessibilitySettings {
         setSettings((s) => ({ ...s, isReduceMotionEnabled: v })),
       ),
     ];
-
-    // ── iOS-only: boldText + darkerSystemColors + differentiateWithoutColor ──
-    // Batch read via snapshot() — one native round-trip vs three getters.
-    if (A11y.isAvailable) {
-      const snap = A11y.snapshot();
-      setSettings((s) => ({
-        ...s,
-        isBoldTextEnabled: snap.boldText,
-        isDarkerSystemColorsEnabled: snap.darkerSystemColors,
-        isDifferentiateWithoutColorEnabled: snap.shouldDifferentiateWithoutColor,
-      }));
-    }
 
     const a11ySub = A11y.addChangeListener(({ flag, value }) => {
       if (typeof value !== 'boolean') return;

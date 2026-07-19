@@ -21,22 +21,23 @@ export function useAuditoryStatus(
   enabled: boolean,
 ): AuditoryStatus | null {
   const currentWeek = useScheduleStore((s) => s.currentWeek);
-  const [status, setStatus] = useState<AuditoryStatus | null>(null);
+  // Статус храним вместе с ключом, для которого он посчитан: при смене
+  // аудитории/выключении хук возвращает null без синхронного setState в эффекте.
+  const [result, setResult] = useState<{ key: string; status: AuditoryStatus | null } | null>(
+    null,
+  );
 
   const key = pickAuditoryKey(auditories);
 
   useEffect(() => {
-    if (!enabled || !key || !currentWeek) {
-      setStatus(null);
-      return;
-    }
+    if (!enabled || !key || !currentWeek) return;
 
     let cancelled = false;
 
     const recompute = () => {
       const idx = AuditoryController.peek();
       const next = computeAuditoryStatus(idx, key, new Date(), currentWeek);
-      if (!cancelled) setStatus(next);
+      if (!cancelled) setResult({ key, status: next });
     };
 
     // Kick off (or reuse) the index fetch, then compute.
@@ -53,5 +54,6 @@ export function useAuditoryStatus(
     };
   }, [key, enabled, currentWeek]);
 
-  return status;
+  if (!enabled || !key || !currentWeek) return null;
+  return result?.key === key ? result.status : null;
 }
