@@ -76,16 +76,21 @@ diary-стор + **debounced** (~1 с) best-effort push в облако. Экш�
 
 ## 5. Файлы
 
-| Слой       | Файл                                       | Что делаем                                                                          |
-| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------- |
-| utils      | `src/utils/diarySync.ts`                   | **новый**: `DiaryCloudSnapshot`, `isDiaryCloudSnapshot`                             |
-| store      | `src/stores/diary.store.ts`                | `updatedAt` (persist), `touchUpdatedAt`, `applyRemoteSnapshot`                      |
-| store      | `src/stores/preferences.store.ts`          | bulk-сеттер `setBlockedLessons(map)`                                                |
-| service    | `src/services/cloud/syncService.ts`        | `DIARY_KEY='diary:state'`, `pushDiaryToCloud`, `pullDiaryFromCloud`                 |
-| controller | `src/controllers/diary.controller.ts`      | **новый**: `init`, `onAppActive`, `onCloudSourceEnabled`, LWW-merge, debounced push |
-| controller | `src/controllers/index.ts`                 | экспорт `DiaryController`                                                           |
-| hook       | `src/hooks/useAppBootstrap.ts`             | `DiaryController.init()` + `onAppActive()` на старте и в foreground                 |
-| view       | `src/views/settings/NetworkDataScreen.tsx` | включение галочки iCloud/Drive → `DiaryController.onCloudSourceEnabled()`           |
+| Слой       | Файл                                  | Что делаем                                                                                                       |
+| ---------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| utils      | `src/utils/diarySync.ts`              | **новый**: `SNAPSHOT_VERSION`, `DiaryCloudSnapshot`, строгий `isDiaryCloudSnapshot`, `sanitizeDiaryFields`       |
+| store      | `src/stores/diary.store.ts`           | `updatedAt` (persist), LWW-штамп внутри `setStamped`, `touchUpdatedAt` (Lamport), `applyRemoteSnapshot`+sanitize |
+| store      | `src/stores/preferences.store.ts`     | bulk-сеттер `setBlockedLessons(map)`                                                                             |
+| service    | `src/services/cloud/syncService.ts`   | generic `pushJsonToCloud`/`pullJsonFromCloud<T>` + `CloudPullResult`; доменные пары — однострочники              |
+| controller | `src/controllers/diary.controller.ts` | **новый**: `init` (initPromise), `onAppActive`, LWW-merge, debounced push, триггер включения источника           |
+| controller | `src/controllers/index.ts`            | экспорт `DiaryController`                                                                                        |
+| hook       | `src/hooks/useAppBootstrap.ts`        | `DiaryController.init()` + `onAppActive()` на старте и в foreground                                              |
+
+Включение галочки iCloud/Drive ловится **подпиской контроллера на preferences-стор**
+(рост `sourceICloud`/`sourceGoogleDrive`), а не колбэками в `NetworkDataScreen` —
+любой будущий код, включающий источник, получает немедленный синк автоматически.
+Там же для паритета дёргается `FireController.onAppActive()` (огонёк тоже
+восстанавливается сразу, а не при следующем foreground).
 
 ## 6. Шаги (каждый — отдельный коммит)
 
@@ -115,3 +120,38 @@ diary-стор + **debounced** (~1 с) best-effort push в облако. Экш�
 - LWW на уровне всего блоба: правка одного поля на устройстве A может перекрыть
   правку другого поля на устройстве B, если A новее, — осознанный компромисс.
 - Debounce push ≈ 1 с.
+- iOS и Android используют разные бэкенды (iCloud KVS / Google Drive) и между
+  платформами дневник **не** синкается — как и огонёк/расписания (паритет).
+
+## 9. Ревью-фиксы (9 находок code-review)
+
+1. **Stamp-before-pull** (CONFIRMED): штамп легаси-метки перенесён ИЗ начала
+   `sync()` в ветку «облако пусто» — свежее/легаси устройство больше не
+   выигрывает LWW у реального облачного снапшота. `hasLocalData` игнорирует
+   остаточные пустые ключи.
+2. **Гонки гидрации** (CONFIRMED): `initialized`-флаг заменён мемоизированным
+   `initPromise`; `onAppActive` ждёт его; отдельный вход `onCloudSourceEnabled`
+   удалён (см. п. 9.7) — `sync()` недостижим до регидрации сторов.
+3. **Инварианты remote-снапшота** (CONFIRMED): `sanitizeDiaryFields` (clamp
+   0..99, prune индексов/планера, dedupe слотов и id) вызывается в
+   `applyRemoteSnapshot`; guard отвергает массивы (`isPlainRecord`) и
+   нецелые числа — битый блоб не завесит TaskGrid и не попадёт в persist.
+4. **Часы/ничьи** (PLAUSIBLE): `updatedAt` двигается Lamport-бампом
+   `max(now, prev + 1)` — правки после применения чужого снапшота при
+   отстающих часах всё равно строго новее и не теряются на «ничьей».
+5. **Replay туториала** (PLAUSIBLE): `diaryOnboardingSeen` мержится только
+   вверх (OR): удалённый `false` не сбрасывает локальный `true`.
+6. **Версия схемы** (PLAUSIBLE): `v: 1` в снапшоте; `invalid`-блоб (мусор или
+   другая версия) отличается от `empty` и НЕ затирается push'ем.
+7. **Триггер включения источника** (PLAUSIBLE): перенесён из трёх колбэков
+   view в подписку контроллера на preferences + паритет огонька.
+8. **Триплетизация push/pull** (CONFIRMED): generic
+   `pushJsonToCloud`/`pullJsonFromCloud<T>`; schedule/fire/diary — однострочники.
+9. **Штамп снаружи стора** (PLAUSIBLE): метка ставится внутри `setStamped`
+   в самом сторе (один persist-цикл на мутацию вместо двух); diary-подписка
+   контроллера следит только за `updatedAt`.
+
+Опровергнуты (не чинились): short-circuit iCloud→Drive (бэкенды взаимоисключающие
+по платформе), кросс-доменный clobber `blockedLessons` (в рамках компромисса §8),
+гонки конкурентных `sync()` (сходимость: снапшоты атомарно собираются из
+текущего состояния).
