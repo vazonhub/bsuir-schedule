@@ -90,6 +90,8 @@ interface PreferencesState {
   /** Заблокированные пары: entityKey → массив block-ID. */
   blockedLessons: Record<string, string[]>;
   toggleBlockedLesson(entityKey: string, blockId: string): void;
+  /** Полная замена карты заблокированных пар (применение облачного снапшота дневника). */
+  setBlockedLessons(map: Record<string, string[]>): void;
 
   /** Appearance customization */
   lessonColorOverrides: LessonColorOverrides;
@@ -191,6 +193,7 @@ export const usePreferencesStore = create<PreferencesState>()(
             : [...current, blockId];
           return { blockedLessons: { ...s.blockedLessons, [entityKey]: next } };
         }),
+      setBlockedLessons: (map) => set({ blockedLessons: map }),
 
       setLessonColor: (type, color) =>
         set((s) => ({ lessonColorOverrides: { ...s.lessonColorOverrides, [type]: color } })),
