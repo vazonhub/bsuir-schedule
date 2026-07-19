@@ -14,14 +14,14 @@
     "prebuild": "expo prebuild",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:eas": "eas build --platform android --profile production",
     "android:build": "npx expo prebuild --clean && export JAVA_HOME=/opt/homebrew/opt/openjdk@17 && npx expo run:android",
     "prepare": "husky",
-    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\""
+    "format:check": "prettier --check \"**/*.{js,ts,tsx,json,md}\""
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

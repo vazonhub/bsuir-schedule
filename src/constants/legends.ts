@@ -5,7 +5,6 @@
 import type { EmployeeDto } from '@models/dto';
 
 // Фото забандлено в assets на случай удаления с сервера.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const onoshkoPhoto = require('../../assets/onoshko.jpg') as number;
 
 /** Resolve bundled asset to a URI string usable by expo-image. */

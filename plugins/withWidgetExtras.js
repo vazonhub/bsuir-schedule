@@ -23,10 +23,7 @@ function withWidgetExtras(config) {
     'android',
     async (c) => {
       const projectRoot = c.modRequest.projectRoot;
-      const resDir = path.join(
-        c.modRequest.platformProjectRoot,
-        'app/src/main/res',
-      );
+      const resDir = path.join(c.modRequest.platformProjectRoot, 'app/src/main/res');
 
       // Ensure layout directory exists
       const layoutDir = path.join(resDir, 'layout');
@@ -35,17 +32,11 @@ function withWidgetExtras(config) {
       // Copy layout files from android/app/src/main/res/layout/
       // (they are kept in-tree and committed; this just ensures they land
       // in the prebuild output even if the layout/ folder was cleaned).
-      const srcLayoutDir = path.join(
-        projectRoot,
-        'android/app/src/main/res/layout',
-      );
+      const srcLayoutDir = path.join(projectRoot, 'android/app/src/main/res/layout');
       if (fs.existsSync(srcLayoutDir)) {
         for (const file of fs.readdirSync(srcLayoutDir)) {
           if (file.endsWith('.xml')) {
-            fs.copyFileSync(
-              path.join(srcLayoutDir, file),
-              path.join(layoutDir, file),
-            );
+            fs.copyFileSync(path.join(srcLayoutDir, file), path.join(layoutDir, file));
           }
         }
       }
@@ -53,10 +44,7 @@ function withWidgetExtras(config) {
       // Patch each widget XML
       const xmlDir = path.join(resDir, 'xml');
       for (const widget of WIDGETS) {
-        const xmlPath = path.join(
-          xmlDir,
-          `widgetprovider_${widget.name}.xml`,
-        );
+        const xmlPath = path.join(xmlDir, `widgetprovider_${widget.name}.xml`);
         if (!fs.existsSync(xmlPath)) continue;
 
         let xml = fs.readFileSync(xmlPath, 'utf8');
@@ -68,10 +56,7 @@ function withWidgetExtras(config) {
         );
 
         // Add previewLayout if not present (insert before updatePeriodMillis)
-        if (
-          !xml.includes('android:previewLayout') &&
-          widget.previewLayout
-        ) {
+        if (!xml.includes('android:previewLayout') && widget.previewLayout) {
           xml = xml.replace(
             'android:updatePeriodMillis',
             `android:previewLayout="@layout/${widget.previewLayout}"\n    android:updatePeriodMillis`,

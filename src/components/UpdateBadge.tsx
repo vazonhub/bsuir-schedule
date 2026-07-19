@@ -11,7 +11,6 @@ import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
 import { TAB_BAR_HEIGHT } from '@theme/spacing';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const appLogo = require('../../assets/splash-logo.png') as number;
 
 type PaletteType = ReturnType<typeof usePalette>;

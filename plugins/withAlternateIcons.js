@@ -15,7 +15,9 @@ function withAlternateIcons(config) {
 
       if (!fs.existsSync(srcDir)) return mod;
 
-      const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.png') && f !== 'icon-bg-default.png');
+      const files = fs
+        .readdirSync(srcDir)
+        .filter((f) => f.endsWith('.png') && f !== 'icon-bg-default.png');
       // Copy directly into the app bundle root — iOS looks for alternate icon files here
       for (const file of files) {
         fs.copyFileSync(path.join(srcDir, file), path.join(iosAppDir, file));
@@ -32,7 +34,9 @@ function withAlternateIcons(config) {
 
     if (!fs.existsSync(srcDir)) return mod;
 
-    const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.png') && f !== 'icon-bg-default.png');
+    const files = fs
+      .readdirSync(srcDir)
+      .filter((f) => f.endsWith('.png') && f !== 'icon-bg-default.png');
 
     const alternateIcons = {};
     for (const file of files) {

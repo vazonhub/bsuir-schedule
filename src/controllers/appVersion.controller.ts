@@ -5,7 +5,6 @@ import { fetchStoreVersion } from '@services/api/appVersion';
 let nativeVersion: string | null = null;
 try {
   // expo-application requires a native rebuild; fall back to Constants if unavailable.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const Application = require('expo-application') as { nativeApplicationVersion: string | null };
   nativeVersion = Application.nativeApplicationVersion;
 } catch {

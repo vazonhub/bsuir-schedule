@@ -47,8 +47,43 @@ module.exports = [
       'react/react-in-jsx-scope': 'off',
       'react-native/no-raw-text': 'off',
       'react-native/sort-styles': 'off',
+      // Ложные срабатывания на фабричном паттерне тем `makeStyles(Palette) => StyleSheet.create(...)`:
+      // плагин не связывает такие стили с использованиями (issue jsx-eslint/eslint-plugin-react-native#276).
+      'react-native/no-unused-styles': 'off',
+      // require() в RN легитимен для ассетов (Metro) и ленивой загрузки нативных модулей.
+      // Whitelist явный — новые произвольные require по-прежнему ошибка.
+      '@typescript-eslint/no-require-imports': [
+        'error',
+        {
+          allow: [
+            '\\.(png|jpe?g|gif|webp)$',
+            '/widgets/ScheduleWidget$',
+            '\\./package\\.json$',
+            '^@mrnitrox/react-native-unity-ads-monetization$',
+            '^@react-native-google-signin/google-signin$',
+            '^@react-native-async-storage/async-storage$',
+            '^expo-alternate-app-icons$',
+            '^expo-application$',
+            '^expo-background-fetch$',
+            '^expo-task-manager$',
+            '^react$',
+            '^react-native$',
+            '^react-native-android-widget$',
+            '^react-native-iap$',
+            '^react-native-shared-group-preferences$',
+            '^@services/api$',
+          ],
+        },
+      ],
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'warn',
     },
   }),
+  {
+    // Expo config plugins и target-конфиги — CommonJS Node-скрипты.
+    files: ['plugins/**/*.js', 'targets/**/*.js'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 ];

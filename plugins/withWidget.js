@@ -1,4 +1,8 @@
-const { withEntitlementsPlist, withXcodeProject, withDangerousMod } = require('expo/config-plugins');
+const {
+  withEntitlementsPlist,
+  withXcodeProject,
+  withDangerousMod,
+} = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -34,7 +38,9 @@ function withWidget(config) {
     }
 
     // Info.plist
-    fs.writeFileSync(path.join(widgetDir, 'Info.plist'), `<?xml version="1.0" encoding="UTF-8"?>
+    fs.writeFileSync(
+      path.join(widgetDir, 'Info.plist'),
+      `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -62,11 +68,14 @@ function withWidget(config) {
     <string>com.apple.widgetkit-extension</string>
   </dict>
 </dict>
-</plist>`);
+</plist>`,
+    );
 
     // Entitlements
     const entFile = `${WIDGET_NAME}.entitlements`;
-    fs.writeFileSync(path.join(widgetDir, entFile), `<?xml version="1.0" encoding="UTF-8"?>
+    fs.writeFileSync(
+      path.join(widgetDir, entFile),
+      `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -75,7 +84,8 @@ function withWidget(config) {
     <string>${APP_GROUP}</string>
   </array>
 </dict>
-</plist>`);
+</plist>`,
+    );
 
     // Source files (Swift/Info.plist/entitlements) are refreshed above on every
     // prebuild. The pbxproj graph below (target/build phases/dependencies) only
@@ -157,7 +167,8 @@ function withWidget(config) {
       INFOPLIST_KEY_CFBundleDisplayName: 'Schedule',
       INFOPLIST_KEY_NSHumanReadableCopyright: '""',
       IPHONEOS_DEPLOYMENT_TARGET: DEPLOYMENT_TARGET,
-      LD_RUNPATH_SEARCH_PATHS: '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"',
+      LD_RUNPATH_SEARCH_PATHS:
+        '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"',
       MARKETING_VERSION: appVersion,
       PRODUCT_BUNDLE_IDENTIFIER: `"${widgetBundleId}"`,
       PRODUCT_NAME: '"$(TARGET_NAME)"',
@@ -165,13 +176,15 @@ function withWidget(config) {
       SWIFT_EMIT_LOC_STRINGS: 'YES',
       SWIFT_VERSION: '5.0',
       TARGETED_DEVICE_FAMILY: '"1,2"',
-      ...(debug ? {
-        DEBUG_INFORMATION_FORMAT: 'dwarf',
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: '"$(inherited) DEBUG"',
-        SWIFT_OPTIMIZATION_LEVEL: '"-Onone"',
-      } : {
-        SWIFT_OPTIMIZATION_LEVEL: '"-Owholemodule"',
-      }),
+      ...(debug
+        ? {
+            DEBUG_INFORMATION_FORMAT: 'dwarf',
+            SWIFT_ACTIVE_COMPILATION_CONDITIONS: '"$(inherited) DEBUG"',
+            SWIFT_OPTIMIZATION_LEVEL: '"-Onone"',
+          }
+        : {
+            SWIFT_OPTIMIZATION_LEVEL: '"-Owholemodule"',
+          }),
     });
 
     // Create build configurations
@@ -203,7 +216,8 @@ function withWidget(config) {
       defaultConfigurationIsVisible: 0,
       defaultConfigurationName: 'Release',
     };
-    configListSection[configListUuid + '_comment'] = `Build configuration list for PBXNativeTarget "${WIDGET_NAME}"`;
+    configListSection[configListUuid + '_comment'] =
+      `Build configuration list for PBXNativeTarget "${WIDGET_NAME}"`;
 
     // Source build phase
     const buildPhaseSection = proj.hash.project.objects['PBXSourcesBuildPhase'] || {};
@@ -330,7 +344,8 @@ function withWidget(config) {
       fileRef_comment: `${WIDGET_NAME}.appex`,
       settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
     };
-    buildFileSection[embedBuildFileUuid + '_comment'] = `${WIDGET_NAME}.appex in Embed App Extensions`;
+    buildFileSection[embedBuildFileUuid + '_comment'] =
+      `${WIDGET_NAME}.appex in Embed App Extensions`;
 
     copySection[embedPhaseUuid] = {
       isa: 'PBXCopyFilesBuildPhase',
@@ -377,7 +392,7 @@ function withWidget(config) {
             // Add before the closing end of post_install
             podfile = podfile.replace(
               /post_install do \|installer\|/,
-              `post_install do |installer|${snippet}`
+              `post_install do |installer|${snippet}`,
             );
           } else {
             podfile += `\npost_install do |installer|${snippet}\nend\n`;

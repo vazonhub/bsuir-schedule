@@ -45,7 +45,8 @@ function withUnityBanner(config) {
   config = withXcodeProject(config, (c) => {
     const proj = c.modResults;
     const projName = c.modRequest.projectName;
-    const groupKey = proj.findPBXGroupKey({ name: projName }) || proj.getFirstProject().firstProject.mainGroup;
+    const groupKey =
+      proj.findPBXGroupKey({ name: projName }) || proj.getFirstProject().firstProject.mainGroup;
 
     const files = ['UnityBannerViewManager.swift', 'UnityBannerViewManager.m'];
     for (const file of files) {
@@ -55,11 +56,7 @@ function withUnityBanner(config) {
       );
       if (existing) continue;
 
-      proj.addSourceFile(
-        `${projName}/${file}`,
-        { target: proj.getFirstTarget().uuid },
-        groupKey,
-      );
+      proj.addSourceFile(`${projName}/${file}`, { target: proj.getFirstTarget().uuid }, groupKey);
     }
     return c;
   });
@@ -77,10 +74,7 @@ function withUnityBanner(config) {
 
       fs.mkdirSync(androidPkg, { recursive: true });
 
-      const files = [
-        'UnityBannerViewManager.kt',
-        'UnityBannerPackage.kt',
-      ];
+      const files = ['UnityBannerViewManager.kt', 'UnityBannerPackage.kt'];
       for (const file of files) {
         const src = path.join(srcDir, file);
         const dst = path.join(androidPkg, file);
@@ -90,22 +84,19 @@ function withUnityBanner(config) {
       }
 
       // Add Unity Ads SDK dependency to build.gradle
-      const buildGradlePath = path.join(
-        c.modRequest.platformProjectRoot,
-        'app/build.gradle',
-      );
+      const buildGradlePath = path.join(c.modRequest.platformProjectRoot, 'app/build.gradle');
       if (fs.existsSync(buildGradlePath)) {
         let gradle = fs.readFileSync(buildGradlePath, 'utf8');
         if (!gradle.includes('com.unity3d.ads:unity-ads')) {
           gradle = gradle.replace(
             'dependencies {',
             '// work-runtime 2.8+ includes KTX extensions — drop the standalone ktx artifact\n' +
-            '// to avoid duplicate class errors with work-runtime-ktx 2.7.x.\n' +
-            'configurations.all {\n' +
-            "    resolutionStrategy.force 'androidx.work:work-runtime-ktx:2.8.1'\n" +
-            '}\n\n' +
-            'dependencies {\n' +
-            '    implementation "com.unity3d.ads:unity-ads:4.12.5"',
+              '// to avoid duplicate class errors with work-runtime-ktx 2.7.x.\n' +
+              'configurations.all {\n' +
+              "    resolutionStrategy.force 'androidx.work:work-runtime-ktx:2.8.1'\n" +
+              '}\n\n' +
+              'dependencies {\n' +
+              '    implementation "com.unity3d.ads:unity-ads:4.12.5"',
           );
           fs.writeFileSync(buildGradlePath, gradle);
         }

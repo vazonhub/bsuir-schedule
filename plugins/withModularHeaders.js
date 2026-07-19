@@ -16,7 +16,10 @@ function withModularHeaders(config) {
       }
 
       const insertion = `  ${MARKER} required for Swift pods (AppCheckCore) with non-modular transitive deps\n  use_modular_headers!\n`;
-      podfile = podfile.replace(/(target 'BsuirTime' do\n)(\s*use_expo_modules!\n)/, `$1$2${insertion}`);
+      podfile = podfile.replace(
+        /(target 'BsuirTime' do\n)(\s*use_expo_modules!\n)/,
+        `$1$2${insertion}`,
+      );
 
       fs.writeFileSync(podfilePath, podfile);
       return c;
