@@ -30,11 +30,13 @@ export const SectionHeader = ({ abbrev, name, pinned }: Props) => {
   return (
     <View style={styles.header} accessibilityRole="header" accessibilityLabel={a11yLabel}>
       {pinned && <Ionicons name="star" size={13} color={Palette.accent} importantForAccessibility="no" />}
-      <Text {...textProps('footnote')} style={styles.abbrev}>{abbrev}</Text>
+      <Text {...textProps('footnote')} style={styles.abbrev} numberOfLines={1} ellipsizeMode="tail">
+        {abbrev}
+      </Text>
       {name ? (
         <>
           <Text {...textProps('footnote')} style={styles.dot}>&middot;</Text>
-          <Text {...textProps('footnote')} style={styles.name} numberOfLines={1}>
+          <Text {...textProps('footnote')} style={styles.name} numberOfLines={1} ellipsizeMode="tail">
             {name}
           </Text>
         </>
@@ -59,6 +61,7 @@ const makeStyles = (Palette: PaletteType) => StyleSheet.create({
     color: Palette.textPrimary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+    flexShrink: 0,
   },
   dot: {
     fontSize: 13,
