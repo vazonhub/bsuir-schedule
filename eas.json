@@ -14,17 +14,41 @@
         "buildType": "apk"
       }
     },
-    "production": {
+    "testing": {
       "autoIncrement": true,
+      "environment": "production",
       "ios": {
         "image": "macos-sequoia-15.6-xcode-26.2"
       },
       "android": {
         "buildType": "app-bundle"
       }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-26.2"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "production-apk": {
+      "autoIncrement": true,
+      "environment": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
+    "testing": {
+      "ios": {},
+      "android": {
+        "track": "internal"
+      }
+    },
     "production": {}
   }
 }
