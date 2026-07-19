@@ -40,3 +40,43 @@ jobs:
       # Тестов пока нет — как только появится скрипт `test`, шаг включится сам.
       - name: Tests
         run: npm run test --if-present
+
+  # PR в testing/master обязан называться с версией (например «Release v2.4.0»),
+  # совпадающей с package.json. Для master дополнительно: тега ещё не существует.
+  version-check:
+    name: Version matches PR title
+    if: github.event_name == 'pull_request' && contains(fromJSON('["testing", "master"]'), github.base_ref)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare PR title version with package.json
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TITLE_VERSION=$(printf '%s' "$PR_TITLE" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | sed 's/^v//' || true)
+
+          if [ -z "$TITLE_VERSION" ]; then
+            echo "::error::В заголовке PR не найдена версия формата vX.Y.Z (заголовок: «$PR_TITLE»)."
+            exit 1
+          fi
+
+          if [ "$TITLE_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Версия в заголовке PR (v$TITLE_VERSION) не совпадает с package.json (v$PKG_VERSION). Забыл npm run bump:*?"
+            exit 1
+          fi
+
+          echo "OK: v$PKG_VERSION"
+
+      - name: Ensure release tag does not exist yet (master only)
+        if: github.base_ref == 'master'
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          git fetch --tags --quiet origin
+          if git rev-parse -q --verify "refs/tags/v$PKG_VERSION" >/dev/null; then
+            echo "::error::Тег v$PKG_VERSION уже существует — эта версия уже релизилась. Нужен новый бамп."
+            exit 1
+          fi
+          echo "OK: тег v$PKG_VERSION свободен"
