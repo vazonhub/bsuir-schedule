@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Animated, Dimensions, FlatList, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,7 +52,7 @@ export const GroupPickerScreen = () => {
   const isDark = useIsDark();
   const reduceMotion = useReduceMotion();
   const [activeTab, setActiveTab] = useState<PickerTab>('groups');
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(0));
 
   const switchTab = useCallback(
     (tab: PickerTab) => {

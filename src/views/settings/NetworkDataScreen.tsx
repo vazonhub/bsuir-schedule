@@ -37,7 +37,7 @@ export const NetworkDataScreen = () => {
 
   // ── Toast ──
   const [toast, setToast] = useState<string | null>(null);
-  const toastOpacity = useRef(new Animated.Value(0)).current;
+  const [toastOpacity] = useState(() => new Animated.Value(0));
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback(
@@ -69,7 +69,7 @@ export const NetworkDataScreen = () => {
 
   // ── Tooltip (availability hint) ──
   const [hintVisible, setHintVisible] = useState(false);
-  const tooltipOpacity = useRef(new Animated.Value(0)).current;
+  const [tooltipOpacity] = useState(() => new Animated.Value(0));
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {

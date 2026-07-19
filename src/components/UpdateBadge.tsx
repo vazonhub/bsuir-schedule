@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Image, Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,7 +38,7 @@ export const UpdateBadge = ({ onPress }: Props) => {
   const label = hasUpdate ? `v${latestVersion}` : t('update.new');
 
   // Slide-in animation
-  const translateX = useRef(new Animated.Value(120)).current;
+  const [translateX] = useState(() => new Animated.Value(120));
 
   useEffect(() => {
     Animated.timing(translateX, {

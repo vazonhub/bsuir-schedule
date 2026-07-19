@@ -130,7 +130,7 @@ export const AppearanceScreen = () => {
   ]);
 
   const reduceMotion = useReduceMotion();
-  const applyScale = useRef(new Animated.Value(1)).current;
+  const [applyScale] = useState(() => new Animated.Value(1));
   const scrollRef = useRef<ScrollView>(null);
   const rowYRef = useRef<Record<string, number>>({});
 

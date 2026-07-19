@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Animated, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,7 +36,7 @@ export const AboutScreen = () => {
 
   // ── Tooltip ──
   const [hintVisible, setHintVisible] = useState(false);
-  const tooltipOpacity = useRef(new Animated.Value(0)).current;
+  const [tooltipOpacity] = useState(() => new Animated.Value(0));
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {

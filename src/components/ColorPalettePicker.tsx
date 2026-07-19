@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,7 +31,7 @@ const Swatch = ({
   label: string;
 }) => {
   const reduceMotion = useReduceMotion();
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
   const checkColor = luminance(color) > 0.4 ? '#000000' : '#FFFFFF';
 
   const handlePress = useCallback(() => {

@@ -17,7 +17,7 @@ interface Props {
  */
 export const Collapsible = ({ expanded, children, duration = 300, style }: Props) => {
   const reduceMotion = useReduceMotion();
-  const animValue = useRef(new Animated.Value(expanded ? 1 : 0)).current;
+  const [animValue] = useState(() => new Animated.Value(expanded ? 1 : 0));
   const [contentHeight, setContentHeight] = useState(0);
   const measured = useRef(false);
 
