@@ -47,21 +47,6 @@ export const DAY_NAME_TO_DOW: Readonly<Record<DayNameRu, number>> = {
   Суббота: 6,
 };
 
-const MONTHS_GENITIVE_RU = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-] as const;
-
 /** Get localized day names (Sun=0..Sat=6) from i18n. */
 export const getDayNames = (): string[] => i18n.t('date.days', { returnObjects: true }) as string[];
 

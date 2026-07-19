@@ -108,7 +108,7 @@ export const useHolidaysStore = create<HolidaysState>()(
         userAddedHidden: state.userAddedHidden,
       }),
       // Migrate old format: userAdded was Record<string, string>, now Record<string, string[]>
-      migrate: (persisted: unknown, version: number) => {
+      migrate: (persisted: unknown, _version: number) => {
         const state = persisted as Record<string, unknown>;
         if (state.userAdded && typeof state.userAdded === 'object') {
           const old = state.userAdded as Record<string, unknown>;

@@ -12,7 +12,7 @@ const resolveAsset = (asset: number): string => {
   // expo-image и RN Image принимают require()-результат напрямую,
   // но наш Avatar ожидает string URI. Image.resolveAssetSource
   // конвертирует require()-число в { uri: '...' }.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+
   const { uri } = require('react-native').Image.resolveAssetSource(asset) as { uri: string };
   return uri;
 };

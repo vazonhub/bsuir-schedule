@@ -75,8 +75,18 @@ module.exports = [
           ],
         },
       ],
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/consistent-type-imports': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          // `const { [key]: _removed, ...rest } = obj` — идиома удаления ключа.
+          ignoreRestSiblings: true,
+        },
+      ],
+      // disallowTypeAnnotations: false — разрешает `as typeof import('...')`
+      // в местах ленивой загрузки нативных модулей.
+      '@typescript-eslint/consistent-type-imports': ['warn', { disallowTypeAnnotations: false }],
     },
   }),
   {

@@ -23,9 +23,7 @@ export function useAuditoryStatus(
   const currentWeek = useScheduleStore((s) => s.currentWeek);
   // Статус храним вместе с ключом, для которого он посчитан: при смене
   // аудитории/выключении хук возвращает null без синхронного setState в эффекте.
-  const [result, setResult] = useState<{ key: string; status: AuditoryStatus | null } | null>(
-    null,
-  );
+  const [result, setResult] = useState<{ key: string; status: AuditoryStatus | null } | null>(null);
 
   const key = pickAuditoryKey(auditories);
 

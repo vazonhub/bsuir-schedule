@@ -482,13 +482,6 @@ export const ScheduleView = ({
     scrollToSection(firstExamSectionIndex);
   }, [hasExams, firstExamSectionIndex, scrollToSection]);
 
-  const handleScrollToSchedule = useCallback(() => {
-    if (regularSections.length === 0) return;
-    const targetIndex =
-      upcomingIndex >= 0 && upcomingIndex < regularSections.length ? upcomingIndex : 0;
-    scrollToSection(targetIndex);
-  }, [regularSections.length, upcomingIndex, scrollToSection]);
-
   const handleScrollToToday = useCallback(() => {
     if (upcomingIndex < 0) return;
     scrollToSection(upcomingIndex);

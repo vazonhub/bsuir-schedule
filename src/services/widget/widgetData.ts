@@ -1,5 +1,5 @@
 import type { Holiday } from '@models/holiday';
-import type { EmployeeDto, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
+import type { EmployeeDto, ScheduleDto, WeekNumber } from '@models/dto';
 import type { ResolvedScheme, SubgroupChoice } from '@stores/preferences.store';
 import { parseBsuirDate } from '@utils/date';
 import { findHolidayName } from '@utils/holidays';

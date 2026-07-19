@@ -131,7 +131,6 @@ function withWidget(config) {
     const containerItemProxy = proj.generateUuid();
     const targetDependency = proj.generateUuid();
     const embedPhaseUuid = proj.generateUuid();
-    const embedFileUuid = proj.generateUuid();
 
     // Find the Swift file reference from the group
     let swiftFileRef = null;

@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { useCallback, useMemo, useRef } from 'react';
-import { GestureResponderEvent, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import type { GestureResponderEvent } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useIsScreenReader } from '@hooks/useAccessibility';

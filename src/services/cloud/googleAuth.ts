@@ -33,7 +33,7 @@ export const configureGoogleSignIn = (): void => {
 export const signInWithGoogle = async (): Promise<boolean> => {
   if (!isAndroid) return false;
   try {
-    const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
+    const { GoogleSignin } = require('@react-native-google-signin/google-signin');
     await GoogleSignin.hasPlayServices();
     await GoogleSignin.signIn();
     return true;

@@ -14,8 +14,6 @@ import { usePalette } from '@hooks/usePalette';
 import { Radius, Spacing } from '@theme';
 import { FALLBACK_LESSON_COLOR } from '@theme/colors';
 
-type PaletteType = ReturnType<typeof usePalette>;
-
 /** Height of GlassButton used in FloatingTopBar. */
 const TOP_BAR_BUTTON_SIZE = 38;
 

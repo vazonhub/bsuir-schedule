@@ -40,6 +40,9 @@ export const usePalette = () => {
           : PaletteLight;
     // Spread creates a new object reference so downstream useMemo deps fire.
     return { ...base };
+    // fontScale/isBoldTextEnabled намеренно в deps: смена a11y-настроек должна
+    // выдать новую ссылку палитры, чтобы пересчитались makeStyles-мемоизации.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolved, highContrast, fontScale, isBoldTextEnabled]);
 };
 

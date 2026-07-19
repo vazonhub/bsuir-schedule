@@ -100,13 +100,6 @@ export const LessonCard = React.memo(
         ? getLessonBreakRange(lesson)
         : null;
 
-    // Подпись с временем начала перерыва (вертикально внутри синего блока).
-    // Показываем только для уже идущей пары, у которой перерыв ещё не наступил.
-    const showBreakLabel =
-      !!breakRange &&
-      timeStatus?.kind === 'ongoing' &&
-      timeStatus.progress < breakRange.startFraction;
-
     if (blocked) {
       const blockedBg = isDark ? BLOCKED_BG_DARK : BLOCKED_BG_LIGHT;
       return (
