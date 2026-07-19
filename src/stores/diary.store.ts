@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
+import { sanitizeDiaryFields } from '@utils/diarySync';
+import type { DiaryRemoteFields } from '@utils/diarySync';
 
 export interface SubjectProgress {
   /** Total task count for this subject. `null` means the user hasn't entered one yet. */
@@ -25,6 +27,8 @@ interface DiaryState {
   hidden: Record<string, string[]>;
   /** Ordered planner items per group (top = highest priority). */
   planner: Record<string, PlannerItem[]>;
+  /** ms epoch of the last local mutation — LWW key for cloud sync. */
+  updatedAt: number;
 
   setTaskCount(groupName: string, subject: string, count: number): void;
   toggleTask(groupName: string, subject: string, index: number): void;
@@ -36,6 +40,19 @@ interface DiaryState {
   reorderPlanner(groupName: string, newOrder: PlannerItem[]): void;
   /** Rewrite an existing planner slot's subject/taskIndex, preserving order. */
   replacePlannerItem(groupName: string, id: string, subject: string, taskIndex: number): void;
+
+  /**
+   * Stamp the LWW timestamp for a mutation made OUTSIDE this store
+   * (synced preferences fields). Always strictly advances the stamp
+   * (Lamport bump), even if the wall clock lags behind an applied
+   * remote snapshot — otherwise the edit would tie and be dropped.
+   */
+  touchUpdatedAt(ts: number): void;
+  /**
+   * Overwrite diary fields with a newer cloud snapshot (LWW merge lost
+   * locally). Fields are sanitized to the store's invariants first.
+   */
+  applyRemoteSnapshot(snapshot: DiaryRemoteFields): void;
 }
 
 const getEntry = (state: DiaryState, group: string, subject: string): SubjectProgress =>
@@ -52,151 +69,179 @@ const prunePlanner = (
 
 export const useDiaryStore = create<DiaryState>()(
   persist(
-    (set) => ({
-      progress: {},
-      hidden: {},
-      planner: {},
-
-      toggleHidden: (groupName, subject) => {
+    (set) => {
+      /**
+       * set + LWW-штамп: каждая локальная мутация данных дневника двигает
+       * `updatedAt` в том же самом set (один persist-цикл, одно оповещение
+       * подписчиков). Lamport-бамп (`max(now, prev + 1)`) гарантирует строгий
+       * рост метки даже при отстающих часах после применения чужого снапшота.
+       * No-op мутации (updater вернул state или пустой patch) не штампуются.
+       */
+      const setStamped = (updater: (s: DiaryState) => Partial<DiaryState> | DiaryState): void => {
         set((s) => {
-          const current = s.hidden[groupName] ?? [];
-          const next = current.includes(subject)
-            ? current.filter((v) => v !== subject)
-            : [...current, subject];
-          return { hidden: { ...s.hidden, [groupName]: next } };
+          const patch = updater(s);
+          if (patch === s || Object.keys(patch).length === 0) return patch;
+          return { ...patch, updatedAt: Math.max(Date.now(), s.updatedAt + 1) };
         });
-      },
+      };
 
-      setTaskCount: (groupName, subject, count) => {
-        const clamped = Math.max(0, Math.min(99, Math.floor(count)));
-        set((s) => {
-          const prev = getEntry(s, groupName, subject);
-          const nextCompleted = prev.completed.filter((i) => i >= 1 && i <= clamped);
-          const groupPlanner = s.planner[groupName] ?? [];
-          const nextPlanner = prunePlanner(
-            groupPlanner,
-            (it) => it.subject !== subject || it.taskIndex <= clamped,
-          );
-          return {
-            progress: {
-              ...s.progress,
-              [groupName]: {
-                ...(s.progress[groupName] ?? {}),
-                [subject]: { taskCount: clamped, completed: nextCompleted },
-              },
-            },
-            planner:
-              nextPlanner === groupPlanner ? s.planner : { ...s.planner, [groupName]: nextPlanner },
-          };
-        });
-      },
+      return {
+        progress: {},
+        hidden: {},
+        planner: {},
+        updatedAt: 0,
 
-      toggleTask: (groupName, subject, index) => {
-        set((s) => {
-          const prev = getEntry(s, groupName, subject);
-          if (prev.taskCount == null || index < 1 || index > prev.taskCount) return s;
-          const has = prev.completed.includes(index);
-          const nextCompleted = has
-            ? prev.completed.filter((i) => i !== index)
-            : [...prev.completed, index];
+        toggleHidden: (groupName, subject) => {
+          setStamped((s) => {
+            const current = s.hidden[groupName] ?? [];
+            const next = current.includes(subject)
+              ? current.filter((v) => v !== subject)
+              : [...current, subject];
+            return { hidden: { ...s.hidden, [groupName]: next } };
+          });
+        },
 
-          // If we just marked (subject, index) as done, drop any planner
-          // entry pointing to it. Do NOT re-add on un-check — the planner
-          // is a manual backlog, not a mirror of the grid.
-          let nextPlanner = s.planner;
-          if (!has) {
+        setTaskCount: (groupName, subject, count) => {
+          const clamped = Math.max(0, Math.min(99, Math.floor(count)));
+          setStamped((s) => {
+            const prev = getEntry(s, groupName, subject);
+            const nextCompleted = prev.completed.filter((i) => i >= 1 && i <= clamped);
             const groupPlanner = s.planner[groupName] ?? [];
-            const filtered = prunePlanner(
+            const nextPlanner = prunePlanner(
               groupPlanner,
-              (it) => !(it.subject === subject && it.taskIndex === index),
+              (it) => it.subject !== subject || it.taskIndex <= clamped,
             );
-            if (filtered.length !== groupPlanner.length) {
-              nextPlanner = { ...s.planner, [groupName]: filtered };
-            }
-          }
-
-          return {
-            progress: {
-              ...s.progress,
-              [groupName]: {
-                ...(s.progress[groupName] ?? {}),
-                [subject]: { ...prev, completed: nextCompleted },
-              },
-            },
-            planner: nextPlanner,
-          };
-        });
-      },
-
-      resetSubject: (groupName, subject) => {
-        set((s) => {
-          const group = s.progress[groupName];
-          const groupPlanner = s.planner[groupName] ?? [];
-          const filteredPlanner = prunePlanner(groupPlanner, (it) => it.subject !== subject);
-
-          const patch: Partial<DiaryState> = {};
-          if (group && subject in group) {
-            const { [subject]: _removed, ...rest } = group;
-            patch.progress = { ...s.progress, [groupName]: rest };
-          }
-          if (filteredPlanner.length !== groupPlanner.length) {
-            patch.planner = { ...s.planner, [groupName]: filteredPlanner };
-          }
-          return patch;
-        });
-      },
-
-      addPlannerItem: (groupName, subject, taskIndex) => {
-        set((s) => {
-          const groupPlanner = s.planner[groupName] ?? [];
-          // Ignore duplicates (same subject + index).
-          if (groupPlanner.some((it) => it.subject === subject && it.taskIndex === taskIndex)) {
-            return s;
-          }
-          const next: PlannerItem = { id: genId(), subject, taskIndex };
-          return {
-            planner: { ...s.planner, [groupName]: [...groupPlanner, next] },
-          };
-        });
-      },
-
-      removePlannerItem: (groupName, id) => {
-        set((s) => {
-          const groupPlanner = s.planner[groupName] ?? [];
-          const filtered = groupPlanner.filter((it) => it.id !== id);
-          if (filtered.length === groupPlanner.length) return s;
-          return { planner: { ...s.planner, [groupName]: filtered } };
-        });
-      },
-
-      reorderPlanner: (groupName, newOrder) => {
-        set((s) => ({ planner: { ...s.planner, [groupName]: newOrder } }));
-      },
-
-      replacePlannerItem: (groupName, id, subject, taskIndex) => {
-        set((s) => {
-          const groupPlanner = s.planner[groupName] ?? [];
-          const idx = groupPlanner.findIndex((it) => it.id === id);
-          if (idx < 0) return s;
-          // If the new (subject, taskIndex) matches a DIFFERENT existing slot,
-          // drop this one to avoid duplicates.
-          const collision = groupPlanner.findIndex(
-            (it) => it.id !== id && it.subject === subject && it.taskIndex === taskIndex,
-          );
-          if (collision >= 0) {
             return {
-              planner: {
-                ...s.planner,
-                [groupName]: groupPlanner.filter((it) => it.id !== id),
+              progress: {
+                ...s.progress,
+                [groupName]: {
+                  ...(s.progress[groupName] ?? {}),
+                  [subject]: { taskCount: clamped, completed: nextCompleted },
+                },
               },
+              planner:
+                nextPlanner === groupPlanner
+                  ? s.planner
+                  : { ...s.planner, [groupName]: nextPlanner },
             };
-          }
-          const next = [...groupPlanner];
-          next[idx] = { id, subject, taskIndex };
-          return { planner: { ...s.planner, [groupName]: next } };
-        });
-      },
-    }),
+          });
+        },
+
+        toggleTask: (groupName, subject, index) => {
+          setStamped((s) => {
+            const prev = getEntry(s, groupName, subject);
+            if (prev.taskCount == null || index < 1 || index > prev.taskCount) return s;
+            const has = prev.completed.includes(index);
+            const nextCompleted = has
+              ? prev.completed.filter((i) => i !== index)
+              : [...prev.completed, index];
+
+            // If we just marked (subject, index) as done, drop any planner
+            // entry pointing to it. Do NOT re-add on un-check — the planner
+            // is a manual backlog, not a mirror of the grid.
+            let nextPlanner = s.planner;
+            if (!has) {
+              const groupPlanner = s.planner[groupName] ?? [];
+              const filtered = prunePlanner(
+                groupPlanner,
+                (it) => !(it.subject === subject && it.taskIndex === index),
+              );
+              if (filtered.length !== groupPlanner.length) {
+                nextPlanner = { ...s.planner, [groupName]: filtered };
+              }
+            }
+
+            return {
+              progress: {
+                ...s.progress,
+                [groupName]: {
+                  ...(s.progress[groupName] ?? {}),
+                  [subject]: { ...prev, completed: nextCompleted },
+                },
+              },
+              planner: nextPlanner,
+            };
+          });
+        },
+
+        resetSubject: (groupName, subject) => {
+          setStamped((s) => {
+            const group = s.progress[groupName];
+            const groupPlanner = s.planner[groupName] ?? [];
+            const filteredPlanner = prunePlanner(groupPlanner, (it) => it.subject !== subject);
+
+            const patch: Partial<DiaryState> = {};
+            if (group && subject in group) {
+              const { [subject]: _removed, ...rest } = group;
+              patch.progress = { ...s.progress, [groupName]: rest };
+            }
+            if (filteredPlanner.length !== groupPlanner.length) {
+              patch.planner = { ...s.planner, [groupName]: filteredPlanner };
+            }
+            return patch;
+          });
+        },
+
+        addPlannerItem: (groupName, subject, taskIndex) => {
+          setStamped((s) => {
+            const groupPlanner = s.planner[groupName] ?? [];
+            // Ignore duplicates (same subject + index).
+            if (groupPlanner.some((it) => it.subject === subject && it.taskIndex === taskIndex)) {
+              return s;
+            }
+            const next: PlannerItem = { id: genId(), subject, taskIndex };
+            return {
+              planner: { ...s.planner, [groupName]: [...groupPlanner, next] },
+            };
+          });
+        },
+
+        removePlannerItem: (groupName, id) => {
+          setStamped((s) => {
+            const groupPlanner = s.planner[groupName] ?? [];
+            const filtered = groupPlanner.filter((it) => it.id !== id);
+            if (filtered.length === groupPlanner.length) return s;
+            return { planner: { ...s.planner, [groupName]: filtered } };
+          });
+        },
+
+        reorderPlanner: (groupName, newOrder) => {
+          setStamped((s) => ({ planner: { ...s.planner, [groupName]: newOrder } }));
+        },
+
+        replacePlannerItem: (groupName, id, subject, taskIndex) => {
+          setStamped((s) => {
+            const groupPlanner = s.planner[groupName] ?? [];
+            const idx = groupPlanner.findIndex((it) => it.id === id);
+            if (idx < 0) return s;
+            // If the new (subject, taskIndex) matches a DIFFERENT existing slot,
+            // drop this one to avoid duplicates.
+            const collision = groupPlanner.findIndex(
+              (it) => it.id !== id && it.subject === subject && it.taskIndex === taskIndex,
+            );
+            if (collision >= 0) {
+              return {
+                planner: {
+                  ...s.planner,
+                  [groupName]: groupPlanner.filter((it) => it.id !== id),
+                },
+              };
+            }
+            const next = [...groupPlanner];
+            next[idx] = { id, subject, taskIndex };
+            return { planner: { ...s.planner, [groupName]: next } };
+          });
+        },
+
+        touchUpdatedAt: (ts) => {
+          set((s) => ({ updatedAt: Math.max(ts, s.updatedAt + 1) }));
+        },
+
+        applyRemoteSnapshot: (snapshot) => {
+          set(sanitizeDiaryFields(snapshot));
+        },
+      };
+    },
     {
       name: 'diary-v1',
       storage: createJSONStorage(() => asyncStorageAdapter),
@@ -204,6 +249,7 @@ export const useDiaryStore = create<DiaryState>()(
         progress: state.progress,
         hidden: state.hidden,
         planner: state.planner,
+        updatedAt: state.updatedAt,
       }),
     },
   ),

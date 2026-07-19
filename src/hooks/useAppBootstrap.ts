@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Appearance, AppState } from 'react-native';
 
 import { AppVersionController } from '@controllers/appVersion.controller';
+import { DiaryController } from '@controllers/diary.controller';
 import { EmployeesController } from '@controllers/employees.controller';
 import { FireController } from '@controllers/fire.controller';
 import { GroupsController } from '@controllers/groups.controller';
@@ -37,6 +38,10 @@ export const useAppBootstrap = () => {
     void AppVersionController.checkForUpdate();
     void restoreGoogleSession();
     void initAds();
+    // Дневник: дождаться регидрации сторов, подписаться на изменения,
+    // выполнить первый pull+merge из облака. Расписание ему не нужно —
+    // не привязываем к prefetchPinned.
+    void DiaryController.init();
   }, []);
 
   useEffect(() => {
@@ -55,6 +60,7 @@ export const useAppBootstrap = () => {
         // огонёк может корректно определить учебный день.
         void FireController.onAppActive();
       });
+      void DiaryController.onAppActive();
       void AppVersionController.checkForUpdate();
     });
     return () => sub.remove();
