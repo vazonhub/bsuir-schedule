@@ -34,6 +34,29 @@ interface Options {
 
 const emptyCounts = (): LessonTypeCounts => ({ ЛК: 0, ПЗ: 0, ЛР: 0 });
 
+/** "HH:mm" → minutes since midnight, or null if unparseable. */
+const parseHmToMinutes = (hm: string): number | null => {
+  const parts = hm.split(':');
+  const hh = Number(parts[0]);
+  const mm = Number(parts[1]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  return hh * 60 + mm;
+};
+
+/**
+ * True if the lesson is over relative to `now`: on a past day, or dated today
+ * but its end time has already passed. Time-of-day granularity so the diary
+ * counts and the "upcoming" list agree.
+ */
+const isLessonFinished = (lesson: NormalizedLesson, now: Date): boolean => {
+  if (lesson.isPast) return true;
+  if (isSameDay(lesson.date, now)) {
+    const end = parseHmToMinutes(lesson.endTime);
+    if (end !== null && end <= now.getHours() * 60 + now.getMinutes()) return true;
+  }
+  return false;
+};
+
 /**
  * Extract per-subject lesson counters from a group schedule. Filters by user's
  * chosen subgroup (0 = all, 1|2 = specific) and excludes blocked lessons from
@@ -77,7 +100,7 @@ export const extractDiarySubjects = (
 
     entry.total[type] += 1;
 
-    if (!lesson.isPast && !blockedIds.has(buildLessonBlockId(lesson))) {
+    if (!isLessonFinished(lesson, today) && !blockedIds.has(buildLessonBlockId(lesson))) {
       entry.remaining[type] += 1;
     }
   }
@@ -111,7 +134,8 @@ export const extractUpcomingSubmissions = (
   const all = flattenSchedule(schedule, currentWeek, today, { showAll: true });
   const out: NormalizedLesson[] = [];
   for (const lesson of all) {
-    if (lesson.isPast) continue;
+    // Прошлые дни и уже завершившиеся сегодня пары не показываем.
+    if (isLessonFinished(lesson, today)) continue;
     const type = lesson.raw.lessonTypeAbbrev;
     if (!type || !SUBMISSION_TYPES.has(type)) continue;
     if (subgroup !== 0 && lesson.raw.numSubgroup !== 0 && lesson.raw.numSubgroup !== subgroup) {
