@@ -84,13 +84,39 @@ function resolveDisplay(snapshot: WidgetSnapshot): {
 
 // ─── Colors ──────────────────────────────────────────────────
 
-const BG_COLOR = '#FFFFFF';
-const TEXT_PRIMARY = '#000000';
-const TEXT_SECONDARY = '#8E8E93';
+/** Theme-aware palette so the widget matches the app's light/dark scheme. */
+interface WidgetPalette {
+  bg: string;
+  textPrimary: string;
+  textSecondary: string;
+  separator: string;
+  /** Placeholder background for avatar / group circles. */
+  avatarBg: string;
+}
+
+const LIGHT_PALETTE: WidgetPalette = {
+  bg: '#FFFFFF',
+  textPrimary: '#000000',
+  textSecondary: '#8E8E93',
+  separator: '#E5E5EA',
+  avatarBg: '#E5E5EA',
+};
+
+const DARK_PALETTE: WidgetPalette = {
+  bg: '#1C1C1E',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#98989F',
+  separator: '#38383A',
+  avatarBg: '#3A3A3C',
+};
+
+function getPalette(theme: 'light' | 'dark' | undefined): WidgetPalette {
+  return theme === 'dark' ? DARK_PALETTE : LIGHT_PALETTE;
+}
+
 const BLUE = '#0A84FF';
 const RED = '#FF3B30';
 const ORANGE = '#FF9500';
-const SEPARATOR = '#E5E5EA';
 const FULL = 'match_parent' as const;
 
 /** Returns color for date label: today=blue, tomorrow=red, future=orange. */
@@ -121,12 +147,13 @@ function getTodayISO(): string {
 
 interface LessonRowProps {
   lesson: WidgetLesson;
+  pal: WidgetPalette;
   compact?: boolean;
   showNote?: boolean;
   showPhoto?: boolean;
 }
 
-function LessonRow({ lesson, compact = false, showNote = false, showPhoto = false }: LessonRowProps) {
+function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto = false }: LessonRowProps) {
   if (!lesson.isMine) {
     return (
       <FlexWidget
@@ -144,7 +171,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center' }}>
           <TextWidget
             text={lesson.subject}
-            style={{ fontSize: 12, fontWeight: '500', color: TEXT_SECONDARY }}
+            style={{ fontSize: 12, fontWeight: '500', color: c(pal.textSecondary) }}
             maxLines={1}
           />
           {(lesson.numSubgroup === 1 || lesson.numSubgroup === 2) ? (
@@ -156,7 +183,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         </FlexWidget>
         <TextWidget
           text={`${lesson.startTime}–${lesson.endTime}`}
-          style={{ fontSize: 10, color: TEXT_SECONDARY }}
+          style={{ fontSize: 10, color: c(pal.textSecondary) }}
         />
       </FlexWidget>
     );
@@ -184,7 +211,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
         <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center' }}>
           <TextWidget
             text={lesson.subject}
-            style={{ fontSize: compact ? 12 : 13, fontWeight: '600', color: TEXT_PRIMARY }}
+            style={{ fontSize: compact ? 12 : 13, fontWeight: '600', color: c(pal.textPrimary) }}
             maxLines={1}
           />
           {(lesson.numSubgroup === 1 || lesson.numSubgroup === 2) ? (
@@ -197,14 +224,14 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
 
         <TextWidget
           text={`${lesson.startTime}–${lesson.endTime}${auditoryText}`}
-          style={{ fontSize: compact ? 10 : 11, color: TEXT_SECONDARY }}
+          style={{ fontSize: compact ? 10 : 11, color: c(pal.textSecondary) }}
           maxLines={1}
         />
 
         {showNote && lesson.note ? (
           <TextWidget
             text={lesson.note}
-            style={{ fontSize: 10, color: TEXT_SECONDARY, fontStyle: 'italic' }}
+            style={{ fontSize: 10, color: c(pal.textSecondary), fontStyle: 'italic' }}
             maxLines={1}
           />
         ) : null}
@@ -219,16 +246,16 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
                 width: 28,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: '#E5E5EA',
+                backgroundColor: c(pal.avatarBg),
                 borderWidth: 1,
-                borderColor: c(BG_COLOR),
+                borderColor: c(pal.bg),
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
               <TextWidget
                 text={`${lesson.teacherPhotos.length - 2}+`}
-                style={{ fontSize: 10, fontWeight: '700', color: TEXT_SECONDARY }}
+                style={{ fontSize: 10, fontWeight: '700', color: c(pal.textSecondary) }}
               />
             </FlexWidget>
           ) : null}
@@ -239,7 +266,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
                 marginLeft: (i === 0 && lesson.teacherPhotos.length <= 2) ? 0 : -10,
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: c(BG_COLOR),
+                borderColor: c(pal.bg),
               }}
             >
               <ImageWidget
@@ -259,16 +286,16 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
                 width: 28,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: '#E5E5EA',
+                backgroundColor: c(pal.avatarBg),
                 borderWidth: 1,
-                borderColor: c(BG_COLOR),
+                borderColor: c(pal.bg),
                 justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
               <TextWidget
                 text={`${lesson.studentGroups.length - 2}+`}
-                style={{ fontSize: 10, fontWeight: '700', color: TEXT_SECONDARY }}
+                style={{ fontSize: 10, fontWeight: '700', color: c(pal.textSecondary) }}
               />
             </FlexWidget>
           ) : null}
@@ -279,9 +306,9 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
                 width: 30,
                 height: 30,
                 borderRadius: 15,
-                backgroundColor: '#E5E5EA',
+                backgroundColor: c(pal.avatarBg),
                 borderWidth: 1,
-                borderColor: c(BG_COLOR),
+                borderColor: c(pal.bg),
                 justifyContent: 'center',
                 alignItems: 'center',
                 marginLeft: (i === 0 && lesson.studentGroups.length <= 2) ? 0 : -10,
@@ -289,7 +316,7 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
             >
               <TextWidget
                 text={name}
-                style={{ fontSize: 7, fontWeight: '700', color: TEXT_SECONDARY }}
+                style={{ fontSize: 7, fontWeight: '700', color: c(pal.textSecondary) }}
               />
             </FlexWidget>
           ))}
@@ -302,25 +329,26 @@ function LessonRow({ lesson, compact = false, showNote = false, showPhoto = fals
 // ─── Empty state ─────────────────────────────────────────────
 
 interface EmptyStateProps {
+  pal: WidgetPalette;
   allDone?: boolean;
   holidayName?: string | null;
   displayBlock?: WidgetDayBlock | null;
   strings: { noClasses: string; allDone: string };
 }
 
-function EmptyState({ allDone = false, holidayName, displayBlock, strings }: EmptyStateProps) {
+function EmptyState({ pal, allDone = false, holidayName, displayBlock, strings }: EmptyStateProps) {
   if (holidayName) {
     return (
       <FlexWidget style={{ width: FULL, height: FULL, justifyContent: 'center', alignItems: 'center' }}>
         <TextWidget text="⭐" style={{ fontSize: 24 }} />
         <TextWidget
           text={holidayName}
-          style={{ fontSize: 12, fontWeight: '500', color: TEXT_PRIMARY, textAlign: 'center' }}
+          style={{ fontSize: 12, fontWeight: '500', color: c(pal.textPrimary), textAlign: 'center' }}
         />
         {displayBlock ? (
           <TextWidget
             text={formatDayLabel(displayBlock)}
-            style={{ fontSize: 11, color: TEXT_SECONDARY }}
+            style={{ fontSize: 11, color: c(pal.textSecondary) }}
           />
         ) : null}
       </FlexWidget>
@@ -335,7 +363,7 @@ function EmptyState({ allDone = false, holidayName, displayBlock, strings }: Emp
       />
       <TextWidget
         text={allDone ? strings.allDone : strings.noClasses}
-        style={{ fontSize: 12, color: TEXT_SECONDARY, textAlign: 'center' }}
+        style={{ fontSize: 12, color: c(pal.textSecondary), textAlign: 'center' }}
       />
     </FlexWidget>
   );
@@ -343,13 +371,13 @@ function EmptyState({ allDone = false, holidayName, displayBlock, strings }: Emp
 
 // ─── Separator ──────────────────────────────────────────────
 
-function Separator() {
+function Separator({ pal }: { pal: WidgetPalette }) {
   return (
     <FlexWidget
       style={{
         width: FULL,
         height: 0.5,
-        backgroundColor: c(SEPARATOR),
+        backgroundColor: c(pal.separator),
         marginVertical: 2,
       }}
     />
@@ -359,6 +387,7 @@ function Separator() {
 // ─── Header ──────────────────────────────────────────────────
 
 interface HeaderProps {
+  pal: WidgetPalette;
   groupName: string;
   currentWeek: number;
   dateLabel?: string;
@@ -368,13 +397,13 @@ interface HeaderProps {
   strings: { weekLabel: string };
 }
 
-function WidgetHeader({ groupName, currentWeek, dateLabel, dateLabelColor = ORANGE, showWeek = true, showRefresh = false, strings }: HeaderProps) {
+function WidgetHeader({ pal, groupName, currentWeek, dateLabel, dateLabelColor = ORANGE, showWeek = true, showRefresh = false, strings }: HeaderProps) {
   return (
     <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1, width: 0 }}>
         <TextWidget
           text={groupName}
-          style={{ fontSize: 12, fontWeight: '600', color: TEXT_PRIMARY }}
+          style={{ fontSize: 12, fontWeight: '600', color: c(pal.textPrimary) }}
         />
         {dateLabel ? (
           <TextWidget
@@ -387,7 +416,7 @@ function WidgetHeader({ groupName, currentWeek, dateLabel, dateLabelColor = ORAN
         {showWeek ? (
           <TextWidget
             text={`${strings.weekLabel} ${currentWeek}`}
-            style={{ fontSize: 11, color: TEXT_SECONDARY }}
+            style={{ fontSize: 11, color: c(pal.textSecondary) }}
           />
         ) : null}
         {showRefresh ? (
@@ -426,17 +455,19 @@ interface ScheduleWidgetProps {
 
 export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetProps) {
   if (!snapshot) {
+    const pal = getPalette(undefined);
     return (
       <FlexWidget
-        style={{ width: FULL, height: FULL, padding: 14, backgroundColor: BG_COLOR, borderRadius: 20 }}
+        style={{ width: FULL, height: FULL, padding: 14, backgroundColor: c(pal.bg), borderRadius: 20 }}
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'bsuirtime://' }}
       >
-        <EmptyState strings={{ noClasses: 'Нет данных', allDone: '' }} />
+        <EmptyState pal={pal} strings={{ noClasses: 'Нет данных', allDone: '' }} />
       </FlexWidget>
     );
   }
 
+  const pal = getPalette(snapshot.theme);
   const { lessons, displayBlock } = resolveDisplay(snapshot);
   const strings = snapshot.strings;
   const holiday = displayBlock?.holidayName;
@@ -466,7 +497,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
         flexDirection: 'column',
         justifyContent: 'flex-start',
         padding: 14,
-        backgroundColor: BG_COLOR,
+        backgroundColor: c(pal.bg),
         borderRadius: 20,
       }}
       clickAction="OPEN_URI"
@@ -477,7 +508,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
         <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <TextWidget
             text={snapshot.groupName}
-            style={{ fontSize: 12, fontWeight: '600', color: TEXT_PRIMARY }}
+            style={{ fontSize: 12, fontWeight: '600', color: c(pal.textPrimary) }}
           />
           {dateLabelText ? (
             <TextWidget
@@ -488,6 +519,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
         </FlexWidget>
       ) : (
         <WidgetHeader
+          pal={pal}
           groupName={snapshot.groupName}
           currentWeek={snapshot.currentWeek}
           dateLabel={dateLabelText}
@@ -500,6 +532,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
       {/* Content */}
       {holiday ? (
         <EmptyState
+          pal={pal}
           holidayName={holiday}
           displayBlock={displayBlock}
           strings={strings}
@@ -508,9 +541,10 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
         <ListWidget style={{ width: FULL, height: FULL }}>
           {visibleLessons.map((lesson, idx) => (
             <FlexWidget key={`l${idx}`} style={{ width: FULL, flexDirection: 'column' }}>
-              {idx > 0 ? <Separator /> : null}
+              {idx > 0 ? <Separator pal={pal} /> : null}
               <LessonRow
                 lesson={lesson}
+                pal={pal}
                 compact={compact}
                 showNote={showNote}
                 showPhoto={showPhoto}
@@ -520,6 +554,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
         </ListWidget>
       ) : (
         <EmptyState
+          pal={pal}
           allDone={snapshot.today.lessons.length > 0}
           strings={strings}
         />
