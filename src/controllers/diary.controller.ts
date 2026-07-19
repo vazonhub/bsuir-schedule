@@ -4,13 +4,17 @@ import { usePreferencesStore, waitForHydration } from '@stores/preferences.store
 import { SNAPSHOT_VERSION } from '@utils/diarySync';
 import type { DiaryCloudSnapshot } from '@utils/diarySync';
 
+import { FireController } from './fire.controller';
+
 /**
  * Оркестрация облачной синхронизации дневника (iCloud / Google Drive).
  *
  * Merge — LWW по `updatedAt`: весь снапшот (progress/hidden/planner +
  * blockedLessons + diaryOnboardingSeen) единое целое, более свежая запись
- * побеждает целиком. Push — best-effort с debounce после любого локального
- * изменения; pull — на старте и при возврате в foreground.
+ * побеждает целиком. Метка штампуется в самом diary-сторе (Lamport-бамп);
+ * push — best-effort с debounce после любого локального изменения;
+ * pull — на старте, при возврате в foreground и при включении облачного
+ * источника в настройках (подписка на preferences).
  *
  * View-слой контроллер не дёргает: экраны продолжают мутировать сторы
  * напрямую, контроллер ловит изменения подписками.
@@ -18,7 +22,8 @@ import type { DiaryCloudSnapshot } from '@utils/diarySync';
 
 const PUSH_DEBOUNCE_MS = 1_000;
 
-let initialized = false;
+/** Мемоизированный промис init — все входы ждут его (гидрация сторов). */
+let initPromise: Promise<void> | null = null;
 /** Глушит push-подписки, пока применяется удалённый снапшот (защита от петли). */
 let applyingRemote = false;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -38,12 +43,15 @@ const buildLocalSnapshot = (): DiaryCloudSnapshot => {
   };
 };
 
-/** Есть ли в снапшоте хоть какие-то пользовательские данные. */
+/**
+ * Есть ли в снапшоте непустые пользовательские данные. Остаточные пустые
+ * ключи (после un-hide / удаления всех элементов) данными не считаются.
+ */
 const hasLocalData = (s: DiaryCloudSnapshot): boolean =>
-  Object.keys(s.progress).length > 0 ||
-  Object.keys(s.hidden).length > 0 ||
-  Object.keys(s.planner).length > 0 ||
-  Object.keys(s.blockedLessons).length > 0 ||
+  Object.values(s.progress).some((group) => Object.keys(group).length > 0) ||
+  Object.values(s.hidden).some((list) => list.length > 0) ||
+  Object.values(s.planner).some((items) => items.length > 0) ||
+  Object.values(s.blockedLessons).some((ids) => ids.length > 0) ||
   s.diaryOnboardingSeen;
 
 /** Отложенный best-effort push (склеивает серии быстрых правок в одну запись). */
@@ -67,29 +75,40 @@ const applyRemote = (remote: DiaryCloudSnapshot): void => {
     });
     const prefs = usePreferencesStore.getState();
     prefs.setBlockedLessons(remote.blockedLessons);
-    prefs.setDiaryOnboardingSeen(remote.diaryOnboardingSeen);
+    // «Туториал показан» — только вверх (OR-merge): удалённый false не
+    // сбрасывает локальный true, иначе replay туториала на одном устройстве
+    // самопроизвольно запускал бы его на остальных.
+    if (remote.diaryOnboardingSeen) prefs.setDiaryOnboardingSeen(true);
   } finally {
     applyingRemote = false;
   }
 };
 
-/** Pull + LWW-merge + push. Best-effort: офлайн не мешает локальной работе. */
-const sync = async (now: number = Date.now()): Promise<void> => {
+/**
+ * Pull + LWW-merge + push. Best-effort: офлайн не мешает локальной работе.
+ * Метка легаси-данных (updatedAt = 0, накоплены до появления синка)
+ * штампуется только когда облако ПУСТО — если там уже есть снапшот,
+ * он считается новее безметочных данных и принимается (LWW).
+ */
+const sync = async (): Promise<void> => {
   try {
-    // Данные, накопленные до появления синка, не имеют метки (updatedAt = 0) —
-    // стемпим, чтобы они не проигрывали LWW любому облачному снапшоту.
-    const diary = useDiaryStore.getState();
-    if (diary.updatedAt === 0 && hasLocalData(buildLocalSnapshot())) {
-      diary.touchUpdatedAt(now);
-    }
+    const res = await pullDiaryFromCloud();
+    // Битый или другой версии блоб: не принимаем и не затираем push'ем —
+    // с ним разберётся та версия приложения, которая его понимает.
+    if (res.status === 'invalid') return;
 
-    const remote = await pullDiaryFromCloud();
-    const local = buildLocalSnapshot();
-
-    if (!remote) {
+    if (res.status === 'empty') {
+      const diary = useDiaryStore.getState();
+      if (diary.updatedAt === 0 && hasLocalData(buildLocalSnapshot())) {
+        diary.touchUpdatedAt(Date.now());
+      }
+      const local = buildLocalSnapshot();
       if (local.updatedAt > 0) void pushDiaryToCloud(local);
       return;
     }
+
+    const remote = res.data;
+    const local = buildLocalSnapshot();
     if (remote.updatedAt > local.updatedAt) {
       applyRemote(remote);
     } else if (local.updatedAt > remote.updatedAt) {
@@ -113,62 +132,57 @@ const waitForDiaryHydration = (): Promise<void> => {
 };
 
 /**
- * Подписки на локальные изменения. Сравниваем только синкаемые срезы —
- * `touchUpdatedAt` внутри подписчика меняет лишь `updatedAt` и повторного
- * срабатывания не вызывает.
+ * Подписки на локальные изменения. Diary-стор сам штампует `updatedAt`
+ * на каждой мутации данных, поэтому diary-подписка следит только за меткой.
  */
 const subscribeStores = (): void => {
   useDiaryStore.subscribe((state, prev) => {
     if (applyingRemote) return;
-    if (
-      state.progress === prev.progress &&
-      state.hidden === prev.hidden &&
-      state.planner === prev.planner
-    ) {
-      return;
-    }
-    state.touchUpdatedAt(Date.now());
+    if (state.updatedAt === prev.updatedAt) return;
     schedulePush();
   });
 
   usePreferencesStore.subscribe((state, prev) => {
     if (applyingRemote) return;
+    // Кросс-сторные синкаемые поля: штампуем метку дневника — push уедет
+    // по diary-подписке выше.
     if (
-      state.blockedLessons === prev.blockedLessons &&
-      state.diaryOnboardingSeen === prev.diaryOnboardingSeen
+      state.blockedLessons !== prev.blockedLessons ||
+      state.diaryOnboardingSeen !== prev.diaryOnboardingSeen
     ) {
-      return;
+      useDiaryStore.getState().touchUpdatedAt(Date.now());
     }
-    useDiaryStore.getState().touchUpdatedAt(Date.now());
-    schedulePush();
+    // Облачный источник только что включили (из настроек или любого будущего
+    // кода) — сразу подтянуть дневник и огонёк, не дожидаясь foreground.
+    const icloudEnabled = state.sourceICloud && !prev.sourceICloud;
+    const driveEnabled = state.sourceGoogleDrive && !prev.sourceGoogleDrive;
+    if (icloudEnabled || driveEnabled) {
+      void sync();
+      void FireController.onAppActive();
+    }
   });
+};
+
+const doInit = async (): Promise<void> => {
+  // Дождаться регидрации ОБОИХ сторов до подписок и первого sync — иначе
+  // регидрация выглядела бы как «правка», а sync работал бы с пустым стором.
+  await Promise.all([waitForDiaryHydration(), waitForHydration()]);
+  subscribeStores();
+  await sync();
 };
 
 export const DiaryController = {
   /**
-   * Одноразовая инициализация на старте приложения: дождаться регидрации
-   * обоих сторов (иначе регидрация выглядела бы как «правка» и стемпила
-   * updatedAt), подписаться на изменения и выполнить первый sync.
+   * Инициализация на старте приложения. Идемпотентна: повторные вызовы
+   * (и любые входы ниже) ждут один и тот же промис.
    */
-  async init(): Promise<void> {
-    if (initialized) return;
-    initialized = true;
-    await Promise.all([waitForDiaryHydration(), waitForHydration()]);
-    subscribeStores();
-    await sync();
-  },
+  init: (): Promise<void> => (initPromise ??= doInit()),
 
   /** Возврат в foreground — подтянуть возможные правки с другого устройства. */
   async onAppActive(): Promise<void> {
-    if (!initialized) {
-      await DiaryController.init();
-      return;
-    }
-    await sync();
-  },
-
-  /** Пользователь включил облачный источник в настройках — синкнуться сразу. */
-  onCloudSourceEnabled(): void {
-    void sync();
+    const alreadyStarted = initPromise != null;
+    await DiaryController.init();
+    // init уже был запущен ранее — его sync мог отработать давно, нужен свежий.
+    if (alreadyStarted) await sync();
   },
 };

@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
 import { UnityBanner } from '@components/UnityBanner';
-import { DiaryController } from '@controllers/diary.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { clearLocalCache } from '@services/cache/cache';
@@ -77,8 +76,6 @@ export const NetworkDataScreen = () => {
   const toggleICloud = useCallback(() => {
     void hapticLight();
     setSourceICloud(!sourceICloud);
-    // Источник только что включили — сразу подтянуть/залить дневник.
-    if (!sourceICloud) DiaryController.onCloudSourceEnabled();
   }, [sourceICloud, setSourceICloud]);
 
   const [googleSignedIn, setGoogleSignedIn] = useState(() => isGoogleSignedIn());
@@ -98,11 +95,9 @@ export const NetworkDataScreen = () => {
       if (!ok) return;
       setGoogleSignedIn(true);
       setSourceGoogleDrive(true);
-      DiaryController.onCloudSourceEnabled();
       return;
     }
     setSourceGoogleDrive(!sourceGoogleDrive);
-    if (!sourceGoogleDrive) DiaryController.onCloudSourceEnabled();
   }, [sourceGoogleDrive, setSourceGoogleDrive, googleSignedIn]);
 
   const handleClearCache = useCallback(() => {
