@@ -7,11 +7,11 @@
 
 [English](README.md) · **Русский**
 
-[![Expo SDK](https://img.shields.io/badge/Expo%20SDK-54-000020?logo=expo&logoColor=white)](https://expo.dev)
+![Expo](https://img.shields.io/badge/Expo_SDK-54%2B-000020)
 [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react&logoColor=white)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Платформы](https://img.shields.io/badge/платформы-iOS%2015.1%2B%20%7C%20Android-8E8E93)](#быстрый-старт)
-[![Лицензия: MIT](https://img.shields.io/badge/лицензия-MIT-34C759)](LICENSE)
+[![Платформы](https://img.shields.io/badge/platforms-iOS%2015.1%2B%20%7C%20Android-8E8E93)](#getting-started)
+![Лицензия: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
 [<img src="https://img.shields.io/badge/App%20Store-Bsuir%20Time-0D96F6?logo=apple&logoColor=white" alt="Скачать в App Store" />](https://apps.apple.com/by/app/bsuir-time/id6762343557)
 [<img src="https://img.shields.io/badge/Google%20Play-Bsuir%20Time-34A853?logo=googleplay&logoColor=white" alt="Скачать в Google Play" />](https://play.google.com/store/apps/details?id=by.vazon.bsuirtime)
