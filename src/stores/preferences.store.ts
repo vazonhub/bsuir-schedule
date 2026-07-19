@@ -151,8 +151,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           // Remove the forced override so the system scheme becomes visible
           // again, then read the real value.
           Appearance.setColorScheme(null);
-          const resolved =
-            (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
+          const resolved = (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
           set({ theme, resolvedScheme: resolved });
         } else {
           set({ theme, resolvedScheme: theme });
@@ -181,7 +180,8 @@ export const usePreferencesStore = create<PreferencesState>()(
         if (!value && !sourceBsuirApi && !sourceICloud) return;
         set({ sourceGoogleDrive: value });
       },
-      setAndroidDifferentiateWithoutColor: (value) => set({ androidDifferentiateWithoutColor: value }),
+      setAndroidDifferentiateWithoutColor: (value) =>
+        set({ androidDifferentiateWithoutColor: value }),
       setAndroidHighContrast: (value) => set({ androidHighContrast: value }),
       setLastSeenVersion: (version) => set({ lastSeenVersion: version }),
       setDiaryOnboardingSeen: (value) => set({ diaryOnboardingSeen: value }),
@@ -251,8 +251,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           if (state.theme === 'auto') {
             // Remove any stale override so the system scheme is visible.
             Appearance.setColorScheme(null);
-            const resolved =
-              (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
+            const resolved = (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
             if (state.resolvedScheme !== resolved) {
               usePreferencesStore.setState({ resolvedScheme: resolved });
             }
@@ -284,8 +283,7 @@ export const waitForHydration = (): Promise<void> => {
 };
 
 /** Selector helper: has the diary tutorial already been shown? */
-export const selectDiaryOnboardingSeen = (s: PreferencesState): boolean =>
-  s.diaryOnboardingSeen;
+export const selectDiaryOnboardingSeen = (s: PreferencesState): boolean => s.diaryOnboardingSeen;
 
 /** Selector helper: is `name` pinned in `pinnedGroups`? */
 export const selectIsGroupPinned = (name: string) => (s: PreferencesState) =>
@@ -296,11 +294,15 @@ export const selectIsEmployeePinned = (urlId: string) => (s: PreferencesState) =
   s.pinnedEmployees.includes(urlId);
 
 /** Selector helper: subgroup chosen for `key` (default `0` = all). */
-export const selectSubgroup = (key: string) => (s: PreferencesState): SubgroupChoice =>
-  s.subgroupByKey[key] ?? 0;
+export const selectSubgroup =
+  (key: string) =>
+  (s: PreferencesState): SubgroupChoice =>
+    s.subgroupByKey[key] ?? 0;
 
 const EMPTY_BLOCKED: string[] = [];
 
 /** Selector helper: blocked lesson IDs for `entityKey`. */
-export const selectBlockedLessons = (entityKey: string) => (s: PreferencesState): string[] =>
-  s.blockedLessons[entityKey] ?? EMPTY_BLOCKED;
+export const selectBlockedLessons =
+  (entityKey: string) =>
+  (s: PreferencesState): string[] =>
+    s.blockedLessons[entityKey] ?? EMPTY_BLOCKED;

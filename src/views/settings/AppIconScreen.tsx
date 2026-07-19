@@ -57,13 +57,11 @@ export const AppIconScreen = () => {
 
   const [currentIcon, setCurrentIcon] = useState<string | null>(() => getCurrentIconName());
 
-  const handleSelect = useCallback((key: string | null) => {
-    if (key === currentIcon) return;
+  const handleSelect = useCallback(
+    (key: string | null) => {
+      if (key === currentIcon) return;
 
-    Alert.alert(
-      t('settings.appIconApplyTitle'),
-      t('settings.appIconApplyMessage'),
-      [
+      Alert.alert(t('settings.appIconApplyTitle'), t('settings.appIconApplyMessage'), [
         {
           text: t('settings.appIconApplyButton'),
           isPreferred: true,
@@ -82,17 +80,25 @@ export const AppIconScreen = () => {
           text: t('common.cancel'),
           style: 'destructive',
         },
-      ],
-    );
-  }, [currentIcon, t]);
+      ]);
+    },
+    [currentIcon, t],
+  );
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
-        <Text style={styles.title} numberOfLines={1}>{t('settings.appIconSection')}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {t('settings.appIconSection')}
+        </Text>
       </View>
 
       <ScrollView
@@ -114,7 +120,9 @@ export const AppIconScreen = () => {
                     onPress={() => handleSelect(icon.key)}
                     style={[styles.iconWrap, { width: iconSize + 8 }]}
                   >
-                    <View style={[styles.iconBorder, isSelected && { borderColor: Palette.accent }]}>
+                    <View
+                      style={[styles.iconBorder, isSelected && { borderColor: Palette.accent }]}
+                    >
                       <Image
                         source={icon.preview}
                         style={{ width: iconSize, height: iconSize, borderRadius: Radius.lg - 3 }}
@@ -122,7 +130,10 @@ export const AppIconScreen = () => {
                       />
                     </View>
                     <Text
-                      style={[styles.iconLabel, isSelected && { color: Palette.accent, fontWeight: '600' }]}
+                      style={[
+                        styles.iconLabel,
+                        isSelected && { color: Palette.accent, fontWeight: '600' },
+                      ]}
                       numberOfLines={1}
                     >
                       {icon.label}

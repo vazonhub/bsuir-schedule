@@ -40,12 +40,18 @@ export const AboutScreen = () => {
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {
-      Animated.timing(tooltipOpacity, { toValue: 0, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start(
-        () => setHintVisible(false),
-      );
+      Animated.timing(tooltipOpacity, {
+        toValue: 0,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start(() => setHintVisible(false));
     } else {
       setHintVisible(true);
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, {
+        toValue: 1,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start();
     }
   }, [hintVisible, tooltipOpacity, reduceMotion]);
 
@@ -62,7 +68,12 @@ export const AboutScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
           {t('settings.aboutSection')}

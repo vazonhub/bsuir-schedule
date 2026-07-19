@@ -5,20 +5,20 @@
 
 ## 0. Зафиксированные продуктовые решения (итог 4 волн вопросов)
 
-| Тема | Решение |
-|---|---|
-| Область | **Один общий** огонёк на пользователя (не per-group) |
-| Что растит | В учебный день **любое из**: вход в приложение / просмотр расписания / отметка домашки → `+1` |
-| Ритм / учебные дни | Дни, когда по расписанию **закреплённой группы** (`defaultGroup`) есть пары |
-| Пропуск | В учебный день без активности → `−1` (не ниже 0). **Заморозка отменяет `−1`** |
-| Долгое отсутствие | `−1` за **каждый** пропущенный учебный день, заморозки гасят часть |
-| Заморозки | **2 в неделю**, пул обновляется каждый понедельник |
-| Бейдж | Остаётся в **хедере дневника** |
-| Тап по бейджу | **Нижний шит**: статистика + календарь активности + заморозки |
-| Уведомления | Локальный пуш **только когда серия под угрозой** (заморозки кончились и день ещё не закрыт) |
-| Визуал | Пламя меняется с длиной серии; анимация вех **7 / 30 / 100**; целебрейшн нового рекорда |
-| Миграция | Свернуть per-group серии в одну: `current = max`, `longest = max` |
-| Синк | Синкать огонёк через существующий cloud sync (iCloud / Google Drive) |
+| Тема               | Решение                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| Область            | **Один общий** огонёк на пользователя (не per-group)                                          |
+| Что растит         | В учебный день **любое из**: вход в приложение / просмотр расписания / отметка домашки → `+1` |
+| Ритм / учебные дни | Дни, когда по расписанию **закреплённой группы** (`defaultGroup`) есть пары                   |
+| Пропуск            | В учебный день без активности → `−1` (не ниже 0). **Заморозка отменяет `−1`**                 |
+| Долгое отсутствие  | `−1` за **каждый** пропущенный учебный день, заморозки гасят часть                            |
+| Заморозки          | **2 в неделю**, пул обновляется каждый понедельник                                            |
+| Бейдж              | Остаётся в **хедере дневника**                                                                |
+| Тап по бейджу      | **Нижний шит**: статистика + календарь активности + заморозки                                 |
+| Уведомления        | Локальный пуш **только когда серия под угрозой** (заморозки кончились и день ещё не закрыт)   |
+| Визуал             | Пламя меняется с длиной серии; анимация вех **7 / 30 / 100**; целебрейшн нового рекорда       |
+| Миграция           | Свернуть per-group серии в одну: `current = max`, `longest = max`                             |
+| Синк               | Синкать огонёк через существующий cloud sync (iCloud / Google Drive)                          |
 
 ## 1. Механика (точная спецификация)
 
@@ -27,11 +27,13 @@
 применяется **ретроактивно** при следующем открытии.
 
 ### Инвариант
+
 `lastEvalDate` двигается вперёд только двумя путями: `evaluate()` (доводит до вчера)
 и `markActivity()` (ставит в сегодня). ⇒ любой день строго между `lastEvalDate` и
 `today` — это день **без активности**. Поэтому per-day хранилище активности не нужно.
 
 ### `evaluate(now)` — только штрафы, догоняет прошлые дни
+
 ```
 today = localISO(now)
 if lastEvalDate == null:                 // первый запуск
@@ -50,6 +52,7 @@ refillFreezesFor(today)
 ```
 
 ### `markActivity(now)` — начисляет +1
+
 ```
 evaluate(now)                             // сперва догнать прошлое
 today = localISO(now)
@@ -63,6 +66,7 @@ lastEvalDate  = today                     // сегодня полностью �
 ```
 
 ### `refillFreezesFor(dateISO)`
+
 ```
 wk = mondayOf(dateISO)
 if freezeWeekStart != wk:
@@ -71,7 +75,9 @@ if freezeWeekStart != wk:
 ```
 
 ### `isLessonDay(dateISO)`
+
 Считает по расписанию `defaultGroup`:
+
 1. Нет `defaultGroup` или расписание не загружено → **`false`** (нейтрально, чтобы не
    штрафовать несправедливо).
 2. Вычислить номер недели (1..4) для даты и русское имя дня недели.
@@ -81,6 +87,7 @@ if freezeWeekStart != wk:
    логику вычисления недели/дня из `ScheduleView` (авто-скролл «к ближайшей паре»).
 
 ### Крайние случаи
+
 - Учебный день, активность есть → `+1`.
 - Учебный день, активности нет → `−1` (или заморозка).
 - НЕ учебный день (выходной/пусто/каникулы) → нейтрально, серия не меняется.
@@ -95,12 +102,12 @@ if freezeWeekStart != wk:
 ```ts
 // src/stores/fire.store.ts
 interface FireState {
-  current: number;               // текущая серия, >= 0
-  longest: number;               // рекорд
+  current: number; // текущая серия, >= 0
+  longest: number; // рекорд
   lastActiveDate: string | null; // ISO последнего дня с +1
-  lastEvalDate: string | null;   // ISO дня, до которого досчитаны штрафы
-  freezes: number;               // остаток заморозок в текущей неделе
-  freezeWeekStart: string | null;// ISO понедельника недели пула
+  lastEvalDate: string | null; // ISO дня, до которого досчитаны штрафы
+  freezes: number; // остаток заморозок в текущей неделе
+  freezeWeekStart: string | null; // ISO понедельника недели пула
   // действия:
   markActivity(now: Date, isLessonDay: (iso: string) => boolean): void;
   evaluate(now: Date, isLessonDay: (iso: string) => boolean): void;
@@ -113,19 +120,19 @@ const WEEKLY_FREEZES = 2;
 
 ## 3. Архитектура и файлы (по слоям MVC)
 
-| Слой | Файл | Роль |
-|---|---|---|
-| utils | `src/utils/fire.ts` | Чистые функции: `localISO`, `mondayOf`, `nextDay`, `prevDay`, `weekNumberFor(date, currentWeek)`, `isLessonDayFor(schedule, date)`, чистый редьюсер оценки (для юнит-тестов) |
-| store | `src/stores/fire.store.ts` | `FireState` + `markActivity`/`evaluate`, persist |
-| controller | `src/controllers/fire.controller.ts` | Единственное место связи с schedule-store: собирает `isLessonDay` по `defaultGroup`, дёргает `markActivity`/`evaluate`; вызывает push в cloud |
+| Слой         | Файл                                                                                                 | Роль                                                                                                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| utils        | `src/utils/fire.ts`                                                                                  | Чистые функции: `localISO`, `mondayOf`, `nextDay`, `prevDay`, `weekNumberFor(date, currentWeek)`, `isLessonDayFor(schedule, date)`, чистый редьюсер оценки (для юнит-тестов) |
+| store        | `src/stores/fire.store.ts`                                                                           | `FireState` + `markActivity`/`evaluate`, persist                                                                                                                             |
+| controller   | `src/controllers/fire.controller.ts`                                                                 | Единственное место связи с schedule-store: собирает `isLessonDay` по `defaultGroup`, дёргает `markActivity`/`evaluate`; вызывает push в cloud                                |
 | view (badge) | `src/views/diary/StreakBadge.tsx` → переработать (читает `fire.store`, открывает шит вместо `Alert`) |
-| view (sheet) | `src/views/fire/FireSheet.tsx` | Нижний шит на `@gorhom/bottom-sheet`: current/longest, заморозки, календарь активности |
-| component | `src/components/fire/FlameIcon.tsx` | Пламя, меняющее цвет/размер по «тиру» серии |
-| component | `src/components/fire/FireCelebration.tsx` | Анимация вех/рекорда на `reanimated` + `expo-haptics` |
-| component | `src/views/fire/ActivityCalendar.tsx` | Мини-календарь последних недель (горело/потухло/заморозка/выходной) |
-| service | `src/services/notifications/fireReminder.ts` | (Фаза 5) локальный пуш «серия под угрозой» |
-| sync | `src/services/cloud/syncService.ts` | Расширить: `pushFireToCloud` / `pullFireFromCloud` + merge |
-| i18n | `src/i18n/{ru,en,be}.ts` | Ключи `fire.*` (переезд со `streak.*`) |
+| view (sheet) | `src/views/fire/FireSheet.tsx`                                                                       | Нижний шит на `@gorhom/bottom-sheet`: current/longest, заморозки, календарь активности                                                                                       |
+| component    | `src/components/fire/FlameIcon.tsx`                                                                  | Пламя, меняющее цвет/размер по «тиру» серии                                                                                                                                  |
+| component    | `src/components/fire/FireCelebration.tsx`                                                            | Анимация вех/рекорда на `reanimated` + `expo-haptics`                                                                                                                        |
+| component    | `src/views/fire/ActivityCalendar.tsx`                                                                | Мини-календарь последних недель (горело/потухло/заморозка/выходной)                                                                                                          |
+| service      | `src/services/notifications/fireReminder.ts`                                                         | (Фаза 5) локальный пуш «серия под угрозой»                                                                                                                                   |
+| sync         | `src/services/cloud/syncService.ts`                                                                  | Расширить: `pushFireToCloud` / `pullFireFromCloud` + merge                                                                                                                   |
+| i18n         | `src/i18n/{ru,en,be}.ts`                                                                             | Ключи `fire.*` (переезд со `streak.*`)                                                                                                                                       |
 
 ## 4. Точки интеграции (где дёргается контроллер)
 
@@ -142,6 +149,7 @@ const WEEKLY_FREEZES = 2;
 
 `diary-v1` → удалить поле `streak` из partialize и стора.
 Одноразовая миграция при инициализации `fire.store`:
+
 1. Прочитать старый persisted `diary-v1.streak` (если есть).
 2. `current = max(current по всем группам)`, `longest = max(longest по всем группам)`.
 3. `lastActiveDate = самый свежий` из групп; `lastEvalDate = prevDay(lastActiveDate)`.
@@ -153,6 +161,7 @@ const WEEKLY_FREEZES = 2;
 Ключ `fire:state`. Пуш — best-effort после каждого изменения (как `pushScheduleToCloud`).
 Пул — на старте (в `FireController.onAppActive`, до локального `evaluate`).
 **Merge локального и облачного:**
+
 ```
 current  = max(local.current, remote.current)
 longest  = max(local.longest, remote.longest)
@@ -160,6 +169,7 @@ lastActiveDate = max(local, remote)         // самый свежий
 lastEvalDate   = max(local, remote)
 freezes / freezeWeekStart = у чьей записи свежее freezeWeekStart
 ```
+
 Затем один `evaluate(now)` поверх слитого состояния.
 
 ## 7. Уведомления (Фаза 5, отдельно — новая native-зависимость)

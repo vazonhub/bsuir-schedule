@@ -11,9 +11,7 @@ import { usePreferencesStore } from '@stores/preferences.store';
 export const prefetchPinned = async (): Promise<void> => {
   const { pinnedGroups, pinnedEmployees, defaultGroup } = usePreferencesStore.getState();
 
-  const tasks: Promise<void>[] = [
-    ScheduleController.loadCurrentWeek(),
-  ];
+  const tasks: Promise<void>[] = [ScheduleController.loadCurrentWeek()];
 
   // Default group first (highest priority).
   if (defaultGroup) {

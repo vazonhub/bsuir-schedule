@@ -48,7 +48,9 @@ export const Collapsible = ({ expanded, children, duration = 300, style }: Props
   });
 
   return (
-    <Animated.View style={[styles.container, { height: contentHeight ? height : undefined, opacity }, style]}>
+    <Animated.View
+      style={[styles.container, { height: contentHeight ? height : undefined, opacity }, style]}
+    >
       <View onLayout={onLayout} style={styles.inner}>
         {children}
       </View>

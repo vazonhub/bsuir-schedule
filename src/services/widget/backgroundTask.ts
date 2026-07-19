@@ -20,7 +20,8 @@ export const registerWidgetBackgroundFetch = async (): Promise<void> => {
   if (!NativeModules.ExpoTaskManager) return;
 
   const TaskManager = require('expo-task-manager') as typeof import('expo-task-manager');
-  const BackgroundFetch = require('expo-background-fetch') as typeof import('expo-background-fetch');
+  const BackgroundFetch =
+    require('expo-background-fetch') as typeof import('expo-background-fetch');
 
   try {
     TaskManager.defineTask(TASK_NAME, async () => {

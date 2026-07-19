@@ -24,44 +24,161 @@ interface LessonTemplate {
 }
 
 /** One template row per (day, time) — generator expands into concrete lessons. */
-const DEMO: Record<
-  'Понедельник' | 'Вторник' | 'Среда' | 'Четверг' | 'Пятница',
-  LessonTemplate[]
-> = {
-  Понедельник: [
-    { subject: 'МСиСвИТ', subjectFullName: 'Метрология, стандартизация и сертификация в ИТ', startTime: '09:00', endTime: '10:35', type: 'ЛК', auditory: '512-4' },
-    { subject: 'МСиСвИТ', subjectFullName: 'Метрология, стандартизация и сертификация в ИТ', startTime: '10:50', endTime: '12:25', type: 'ПЗ', auditory: '414-4' },
-    { subject: 'ООП', subjectFullName: 'Объектно-ориентированное программирование', startTime: '13:00', endTime: '14:35', type: 'ЛК', auditory: '203-4' },
-    { subject: 'ООП', subjectFullName: 'Объектно-ориентированное программирование', startTime: '14:50', endTime: '16:25', type: 'ЛР', auditory: '607-4', numSubgroup: 1 },
-    { subject: 'ООП', subjectFullName: 'Объектно-ориентированное программирование', startTime: '14:50', endTime: '16:25', type: 'ЛР', auditory: '608-4', numSubgroup: 2 },
-  ],
-  Вторник: [
-    { subject: 'БД', subjectFullName: 'Базы данных', startTime: '09:00', endTime: '10:35', type: 'ЛК', auditory: '505-4' },
-    { subject: 'БД', subjectFullName: 'Базы данных', startTime: '10:50', endTime: '12:25', type: 'ЛР', auditory: '610-4' },
-    { subject: 'ТиМП', subjectFullName: 'Теория и методология программирования', startTime: '13:00', endTime: '14:35', type: 'ПЗ', auditory: '408-4', weekNumber: [1, 3] },
-    { subject: 'ТиМП', subjectFullName: 'Теория и методология программирования', startTime: '13:00', endTime: '14:35', type: 'ПЗ', auditory: '408-4', weekNumber: [2, 4] },
-  ],
-  Среда: [
-    { subject: 'ВМ', subjectFullName: 'Высшая математика', startTime: '09:00', endTime: '10:35', type: 'ЛК', auditory: '312-1' },
-    { subject: 'ВМ', subjectFullName: 'Высшая математика', startTime: '10:50', endTime: '12:25', type: 'ПЗ', auditory: '218-1' },
-    { subject: 'ФИЛ', subjectFullName: 'Философия', startTime: '13:00', endTime: '14:35', type: 'ЛК', auditory: '101-3' },
-  ],
-  Четверг: [
-    { subject: 'ООП', subjectFullName: 'Объектно-ориентированное программирование', startTime: '09:00', endTime: '10:35', type: 'ПЗ', auditory: '414-4' },
-    { subject: 'МСиСвИТ', subjectFullName: 'Метрология, стандартизация и сертификация в ИТ', startTime: '10:50', endTime: '12:25', type: 'ЛР', auditory: '605-4' },
-    { subject: 'БД', subjectFullName: 'Базы данных', startTime: '13:00', endTime: '14:35', type: 'ПЗ', auditory: '505-4' },
-  ],
-  Пятница: [
-    { subject: 'ВМ', subjectFullName: 'Высшая математика', startTime: '09:00', endTime: '10:35', type: 'ЛР', auditory: '218-1' },
-    { subject: 'ТиМП', subjectFullName: 'Теория и методология программирования', startTime: '10:50', endTime: '12:25', type: 'ЛК', auditory: '203-4' },
-  ],
-};
+const DEMO: Record<'Понедельник' | 'Вторник' | 'Среда' | 'Четверг' | 'Пятница', LessonTemplate[]> =
+  {
+    Понедельник: [
+      {
+        subject: 'МСиСвИТ',
+        subjectFullName: 'Метрология, стандартизация и сертификация в ИТ',
+        startTime: '09:00',
+        endTime: '10:35',
+        type: 'ЛК',
+        auditory: '512-4',
+      },
+      {
+        subject: 'МСиСвИТ',
+        subjectFullName: 'Метрология, стандартизация и сертификация в ИТ',
+        startTime: '10:50',
+        endTime: '12:25',
+        type: 'ПЗ',
+        auditory: '414-4',
+      },
+      {
+        subject: 'ООП',
+        subjectFullName: 'Объектно-ориентированное программирование',
+        startTime: '13:00',
+        endTime: '14:35',
+        type: 'ЛК',
+        auditory: '203-4',
+      },
+      {
+        subject: 'ООП',
+        subjectFullName: 'Объектно-ориентированное программирование',
+        startTime: '14:50',
+        endTime: '16:25',
+        type: 'ЛР',
+        auditory: '607-4',
+        numSubgroup: 1,
+      },
+      {
+        subject: 'ООП',
+        subjectFullName: 'Объектно-ориентированное программирование',
+        startTime: '14:50',
+        endTime: '16:25',
+        type: 'ЛР',
+        auditory: '608-4',
+        numSubgroup: 2,
+      },
+    ],
+    Вторник: [
+      {
+        subject: 'БД',
+        subjectFullName: 'Базы данных',
+        startTime: '09:00',
+        endTime: '10:35',
+        type: 'ЛК',
+        auditory: '505-4',
+      },
+      {
+        subject: 'БД',
+        subjectFullName: 'Базы данных',
+        startTime: '10:50',
+        endTime: '12:25',
+        type: 'ЛР',
+        auditory: '610-4',
+      },
+      {
+        subject: 'ТиМП',
+        subjectFullName: 'Теория и методология программирования',
+        startTime: '13:00',
+        endTime: '14:35',
+        type: 'ПЗ',
+        auditory: '408-4',
+        weekNumber: [1, 3],
+      },
+      {
+        subject: 'ТиМП',
+        subjectFullName: 'Теория и методология программирования',
+        startTime: '13:00',
+        endTime: '14:35',
+        type: 'ПЗ',
+        auditory: '408-4',
+        weekNumber: [2, 4],
+      },
+    ],
+    Среда: [
+      {
+        subject: 'ВМ',
+        subjectFullName: 'Высшая математика',
+        startTime: '09:00',
+        endTime: '10:35',
+        type: 'ЛК',
+        auditory: '312-1',
+      },
+      {
+        subject: 'ВМ',
+        subjectFullName: 'Высшая математика',
+        startTime: '10:50',
+        endTime: '12:25',
+        type: 'ПЗ',
+        auditory: '218-1',
+      },
+      {
+        subject: 'ФИЛ',
+        subjectFullName: 'Философия',
+        startTime: '13:00',
+        endTime: '14:35',
+        type: 'ЛК',
+        auditory: '101-3',
+      },
+    ],
+    Четверг: [
+      {
+        subject: 'ООП',
+        subjectFullName: 'Объектно-ориентированное программирование',
+        startTime: '09:00',
+        endTime: '10:35',
+        type: 'ПЗ',
+        auditory: '414-4',
+      },
+      {
+        subject: 'МСиСвИТ',
+        subjectFullName: 'Метрология, стандартизация и сертификация в ИТ',
+        startTime: '10:50',
+        endTime: '12:25',
+        type: 'ЛР',
+        auditory: '605-4',
+      },
+      {
+        subject: 'БД',
+        subjectFullName: 'Базы данных',
+        startTime: '13:00',
+        endTime: '14:35',
+        type: 'ПЗ',
+        auditory: '505-4',
+      },
+    ],
+    Пятница: [
+      {
+        subject: 'ВМ',
+        subjectFullName: 'Высшая математика',
+        startTime: '09:00',
+        endTime: '10:35',
+        type: 'ЛР',
+        auditory: '218-1',
+      },
+      {
+        subject: 'ТиМП',
+        subjectFullName: 'Теория и методология программирования',
+        startTime: '10:50',
+        endTime: '12:25',
+        type: 'ЛК',
+        auditory: '203-4',
+      },
+    ],
+  };
 
-const toLesson = (
-  tpl: LessonTemplate,
-  startDate: Date,
-  endDate: Date,
-): LessonDto => ({
+const toLesson = (tpl: LessonTemplate, startDate: Date, endDate: Date): LessonDto => ({
   auditories: [tpl.auditory],
   startLessonTime: tpl.startTime,
   endLessonTime: tpl.endTime,

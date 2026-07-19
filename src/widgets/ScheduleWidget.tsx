@@ -16,8 +16,18 @@ const img = (url: string): ImageWidgetSource => url as ImageWidgetSource;
 
 const dayNamesShort = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const monthNames = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
 ];
 
 function formatDayLabel(block: WidgetDayBlock): string {
@@ -153,7 +163,13 @@ interface LessonRowProps {
   showPhoto?: boolean;
 }
 
-function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto = false }: LessonRowProps) {
+function LessonRow({
+  lesson,
+  pal,
+  compact = false,
+  showNote = false,
+  showPhoto = false,
+}: LessonRowProps) {
   if (!lesson.isMine) {
     return (
       <FlexWidget
@@ -174,7 +190,7 @@ function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto =
             style={{ fontSize: 12, fontWeight: '500', color: c(pal.textSecondary) }}
             maxLines={1}
           />
-          {(lesson.numSubgroup === 1 || lesson.numSubgroup === 2) ? (
+          {lesson.numSubgroup === 1 || lesson.numSubgroup === 2 ? (
             <TextWidget
               text={` ${lesson.numSubgroup} п/г`}
               style={{ fontSize: 9, fontWeight: '500', color: c(lesson.typeColorHex) }}
@@ -189,12 +205,12 @@ function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto =
     );
   }
 
-  const auditoryText = lesson.auditories.length > 0
-    ? ` · ${lesson.auditories.join(', ')}`
-    : '';
+  const auditoryText = lesson.auditories.length > 0 ? ` · ${lesson.auditories.join(', ')}` : '';
 
   return (
-    <FlexWidget style={{ width: FULL, flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}>
+    <FlexWidget
+      style={{ width: FULL, flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}
+    >
       {/* Color bar */}
       <FlexWidget
         style={{
@@ -214,10 +230,14 @@ function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto =
             style={{ fontSize: compact ? 12 : 13, fontWeight: '600', color: c(pal.textPrimary) }}
             maxLines={1}
           />
-          {(lesson.numSubgroup === 1 || lesson.numSubgroup === 2) ? (
+          {lesson.numSubgroup === 1 || lesson.numSubgroup === 2 ? (
             <TextWidget
               text={` ${lesson.numSubgroup} п/г`}
-              style={{ fontSize: compact ? 9 : 10, fontWeight: '500', color: c(lesson.typeColorHex) }}
+              style={{
+                fontSize: compact ? 9 : 10,
+                fontWeight: '500',
+                color: c(lesson.typeColorHex),
+              }}
             />
           ) : null}
         </FlexWidget>
@@ -263,18 +283,13 @@ function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto =
             <FlexWidget
               key={`ph${i}`}
               style={{
-                marginLeft: (i === 0 && lesson.teacherPhotos.length <= 2) ? 0 : -10,
+                marginLeft: i === 0 && lesson.teacherPhotos.length <= 2 ? 0 : -10,
                 borderRadius: 16,
                 borderWidth: 1,
                 borderColor: c(pal.bg),
               }}
             >
-              <ImageWidget
-                image={img(url)}
-                imageWidth={28}
-                imageHeight={28}
-                radius={14}
-              />
+              <ImageWidget image={img(url)} imageWidth={28} imageHeight={28} radius={14} />
             </FlexWidget>
           ))}
         </FlexWidget>
@@ -311,7 +326,7 @@ function LessonRow({ lesson, pal, compact = false, showNote = false, showPhoto =
                 borderColor: c(pal.bg),
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginLeft: (i === 0 && lesson.studentGroups.length <= 2) ? 0 : -10,
+                marginLeft: i === 0 && lesson.studentGroups.length <= 2 ? 0 : -10,
               }}
             >
               <TextWidget
@@ -339,11 +354,18 @@ interface EmptyStateProps {
 function EmptyState({ pal, allDone = false, holidayName, displayBlock, strings }: EmptyStateProps) {
   if (holidayName) {
     return (
-      <FlexWidget style={{ width: FULL, height: FULL, justifyContent: 'center', alignItems: 'center' }}>
+      <FlexWidget
+        style={{ width: FULL, height: FULL, justifyContent: 'center', alignItems: 'center' }}
+      >
         <TextWidget text="⭐" style={{ fontSize: 24 }} />
         <TextWidget
           text={holidayName}
-          style={{ fontSize: 12, fontWeight: '500', color: c(pal.textPrimary), textAlign: 'center' }}
+          style={{
+            fontSize: 12,
+            fontWeight: '500',
+            color: c(pal.textPrimary),
+            textAlign: 'center',
+          }}
         />
         {displayBlock ? (
           <TextWidget
@@ -356,11 +378,10 @@ function EmptyState({ pal, allDone = false, holidayName, displayBlock, strings }
   }
 
   return (
-    <FlexWidget style={{ width: FULL, height: FULL, justifyContent: 'center', alignItems: 'center' }}>
-      <TextWidget
-        text={allDone ? '✓' : '📅'}
-        style={{ fontSize: 24 }}
-      />
+    <FlexWidget
+      style={{ width: FULL, height: FULL, justifyContent: 'center', alignItems: 'center' }}
+    >
+      <TextWidget text={allDone ? '✓' : '📅'} style={{ fontSize: 24 }} />
       <TextWidget
         text={allDone ? strings.allDone : strings.noClasses}
         style={{ fontSize: 12, color: c(pal.textSecondary), textAlign: 'center' }}
@@ -397,9 +418,26 @@ interface HeaderProps {
   strings: { weekLabel: string };
 }
 
-function WidgetHeader({ pal, groupName, currentWeek, dateLabel, dateLabelColor = ORANGE, showWeek = true, showRefresh = false, strings }: HeaderProps) {
+function WidgetHeader({
+  pal,
+  groupName,
+  currentWeek,
+  dateLabel,
+  dateLabelColor = ORANGE,
+  showWeek = true,
+  showRefresh = false,
+  strings,
+}: HeaderProps) {
   return (
-    <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+    <FlexWidget
+      style={{
+        width: FULL,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+      }}
+    >
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1, width: 0 }}>
         <TextWidget
           text={groupName}
@@ -431,10 +469,7 @@ function WidgetHeader({ pal, groupName, currentWeek, dateLabel, dateLabelColor =
             }}
             clickAction="REFRESH"
           >
-            <TextWidget
-              text="↻"
-              style={{ fontSize: 16, fontWeight: '600', color: c(BLUE) }}
-            />
+            <TextWidget text="↻" style={{ fontSize: 16, fontWeight: '600', color: c(BLUE) }} />
           </FlexWidget>
         ) : null}
       </FlexWidget>
@@ -458,7 +493,13 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
     const pal = getPalette(undefined);
     return (
       <FlexWidget
-        style={{ width: FULL, height: FULL, padding: 14, backgroundColor: c(pal.bg), borderRadius: 20 }}
+        style={{
+          width: FULL,
+          height: FULL,
+          padding: 14,
+          backgroundColor: c(pal.bg),
+          borderRadius: 20,
+        }}
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'bsuirtime://' }}
       >
@@ -505,7 +546,15 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
     >
       {/* Header */}
       {size === 'small' && !dynamicMax ? (
-        <FlexWidget style={{ width: FULL, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <FlexWidget
+          style={{
+            width: FULL,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 6,
+          }}
+        >
           <TextWidget
             text={snapshot.groupName}
             style={{ fontSize: 12, fontWeight: '600', color: c(pal.textPrimary) }}
@@ -531,12 +580,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
 
       {/* Content */}
       {holiday ? (
-        <EmptyState
-          pal={pal}
-          holidayName={holiday}
-          displayBlock={displayBlock}
-          strings={strings}
-        />
+        <EmptyState pal={pal} holidayName={holiday} displayBlock={displayBlock} strings={strings} />
       ) : visibleLessons.length > 0 ? (
         <ListWidget style={{ width: FULL, height: FULL }}>
           {visibleLessons.map((lesson, idx) => (
@@ -553,11 +597,7 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
           ))}
         </ListWidget>
       ) : (
-        <EmptyState
-          pal={pal}
-          allDone={snapshot.today.lessons.length > 0}
-          strings={strings}
-        />
+        <EmptyState pal={pal} allDone={snapshot.today.lessons.length > 0} strings={strings} />
       )}
     </FlexWidget>
   );

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View, requireNativeComponent } from 'react-native';
 
 const BANNER_PLACEMENT_IOS = process.env.EXPO_PUBLIC_UNITY_BANNER_PLACEMENT_IOS ?? 'ios_banner';
-const BANNER_PLACEMENT_ANDROID = process.env.EXPO_PUBLIC_UNITY_BANNER_PLACEMENT_ANDROID ?? 'android_banner';
+const BANNER_PLACEMENT_ANDROID =
+  process.env.EXPO_PUBLIC_UNITY_BANNER_PLACEMENT_ANDROID ?? 'android_banner';
 
 const placementId = Platform.OS === 'ios' ? BANNER_PLACEMENT_IOS : BANNER_PLACEMENT_ANDROID;
 
@@ -40,10 +41,7 @@ export const UnityBanner = ({ marginHorizontal = 0 }: Props) => {
 
   return (
     <View style={[styles.container, { marginHorizontal }]}>
-      <NativeBannerView
-        placementId={placementId}
-        style={styles.banner}
-      />
+      <NativeBannerView placementId={placementId} style={styles.banner} />
     </View>
   );
 };

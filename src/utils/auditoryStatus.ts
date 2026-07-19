@@ -1,9 +1,4 @@
-import type {
-  AuditoryIndexDto,
-  AuditorySlotDto,
-  DayNameRu,
-  WeekNumber,
-} from '@models/dto';
+import type { AuditoryIndexDto, AuditorySlotDto, DayNameRu, WeekNumber } from '@models/dto';
 
 import { DAY_NAMES_RU } from './date';
 
@@ -51,9 +46,7 @@ const sameCalendarDay = (iso: string, ref: Date): boolean => {
   const parsed = parseIsoDayOfMonth(iso);
   if (!parsed) return false;
   return (
-    parsed.y === ref.getFullYear() &&
-    parsed.m === ref.getMonth() + 1 &&
-    parsed.d === ref.getDate()
+    parsed.y === ref.getFullYear() && parsed.m === ref.getMonth() + 1 && parsed.d === ref.getDate()
   );
 };
 

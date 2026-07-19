@@ -50,11 +50,7 @@ export const HiddenSubjectStrip = ({ subject, subjectFullName, onUnhide }: Props
       <Text {...textProps('subhead')} style={styles.code} numberOfLines={1}>
         {subject}
       </Text>
-      <Text
-        {...textProps('footnote')}
-        style={styles.full}
-        numberOfLines={1}
-      >
+      <Text {...textProps('footnote')} style={styles.full} numberOfLines={1}>
         {subjectFullName}
       </Text>
     </Pressable>

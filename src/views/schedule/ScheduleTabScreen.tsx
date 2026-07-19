@@ -231,8 +231,7 @@ export const ScheduleTabScreen = () => {
           values={[t('groups.pickerTabGroups'), t('groups.pickerTabEmployees')]}
           selectedIndex={activeTab === 'groups' ? 0 : 1}
           onChange={(e) => {
-            const tab =
-              e.nativeEvent.selectedSegmentIndex === 0 ? 'groups' : 'employees';
+            const tab = e.nativeEvent.selectedSegmentIndex === 0 ? 'groups' : 'employees';
             switchTab(tab);
           }}
           fontStyle={{ color: Palette.textPrimary }}

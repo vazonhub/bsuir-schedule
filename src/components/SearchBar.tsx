@@ -27,7 +27,9 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
   return (
     <View style={styles.wrap}>
       <View style={styles.card}>
-        <Text maxFontSizeMultiplier={1}style={styles.icon} importantForAccessibility="no">{'\u2315'}</Text>
+        <Text maxFontSizeMultiplier={1} style={styles.icon} importantForAccessibility="no">
+          {'\u2315'}
+        </Text>
         <View style={styles.inputWrap}>
           <TextInput
             style={styles.input}
@@ -63,7 +65,9 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
             accessibilityLabel={t('common.clear')}
             accessibilityHint={t('a11y.clearSearch')}
           >
-            <Text maxFontSizeMultiplier={1}style={styles.clear}>{'\u00D7'}</Text>
+            <Text maxFontSizeMultiplier={1} style={styles.clear}>
+              {'\u00D7'}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -71,49 +75,50 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  wrap: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.cardGap,
-    backgroundColor: Palette.background,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Palette.card,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.lg,
-    minHeight: 44,
-  },
-  icon: {
-    fontSize: 22,
-    color: Palette.textTertiary,
-    marginRight: Spacing.md,
-  },
-  inputWrap: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  input: {
-    fontSize: 16,
-    color: Palette.textPrimary,
-    paddingVertical: 0,
-    includeFontPadding: false,
-  },
-  placeholderOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-  },
-  placeholder: {
-    fontSize: 16,
-    color: Palette.searchPlaceholder,
-    includeFontPadding: false,
-  },
-  clear: {
-    fontSize: 22,
-    lineHeight: 22,
-    color: Palette.textTertiary,
-    paddingHorizontal: Spacing.xs,
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    wrap: {
+      paddingHorizontal: Spacing.screenPadding,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.cardGap,
+      backgroundColor: Palette.background,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Palette.card,
+      borderRadius: Radius.lg,
+      paddingHorizontal: Spacing.lg,
+      minHeight: 44,
+    },
+    icon: {
+      fontSize: 22,
+      color: Palette.textTertiary,
+      marginRight: Spacing.md,
+    },
+    inputWrap: {
+      flex: 1,
+      justifyContent: 'center',
+    },
+    input: {
+      fontSize: 16,
+      color: Palette.textPrimary,
+      paddingVertical: 0,
+      includeFontPadding: false,
+    },
+    placeholderOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+    },
+    placeholder: {
+      fontSize: 16,
+      color: Palette.searchPlaceholder,
+      includeFontPadding: false,
+    },
+    clear: {
+      fontSize: 22,
+      lineHeight: 22,
+      color: Palette.textTertiary,
+      paddingHorizontal: Spacing.xs,
+    },
+  });

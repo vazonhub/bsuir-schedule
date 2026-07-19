@@ -53,11 +53,7 @@ export const AppVersionController = {
     const info = await fetchStoreVersion(locale);
     if (!info) return;
 
-    useAppVersionStore.getState().setVersionInfo(
-      info.version,
-      info.releaseNotes,
-      info.storeUrl,
-    );
+    useAppVersionStore.getState().setVersionInfo(info.version, info.releaseNotes, info.storeUrl);
 
     await cache.set(key, true);
   },

@@ -48,10 +48,7 @@ const Bone = ({ width, height, borderRadius = Radius.sm }: BoneProps) => {
 
   return (
     <Animated.View
-      style={[
-        { width, height, borderRadius, backgroundColor: Palette.separator },
-        animStyle,
-      ]}
+      style={[{ width, height, borderRadius, backgroundColor: Palette.separator }, animStyle]}
     />
   );
 };
@@ -61,12 +58,7 @@ const Bone = ({ width, height, borderRadius = Radius.sm }: BoneProps) => {
 export const SkeletonGroupRow = () => {
   const Palette = usePalette();
   return (
-    <View
-      style={[
-        styles.groupCard,
-        { backgroundColor: Palette.card },
-      ]}
-    >
+    <View style={[styles.groupCard, { backgroundColor: Palette.card }]}>
       <View style={styles.groupMain}>
         <Bone width={120} height={18} />
         <Bone width={180} height={14} />
@@ -80,12 +72,7 @@ export const SkeletonGroupRow = () => {
 export const SkeletonEmployeeRow = () => {
   const Palette = usePalette();
   return (
-    <View
-      style={[
-        styles.employeeCard,
-        { backgroundColor: Palette.card },
-      ]}
-    >
+    <View style={[styles.employeeCard, { backgroundColor: Palette.card }]}>
       <Bone width={44} height={44} borderRadius={22} />
       <View style={styles.employeeMain}>
         <Bone width={160} height={18} />
@@ -100,12 +87,7 @@ export const SkeletonEmployeeRow = () => {
 export const SkeletonLessonCard = () => {
   const Palette = usePalette();
   return (
-    <View
-      style={[
-        styles.lessonCard,
-        { backgroundColor: Palette.card },
-      ]}
-    >
+    <View style={[styles.lessonCard, { backgroundColor: Palette.card }]}>
       <View style={[styles.stripe, { backgroundColor: FALLBACK_LESSON_COLOR }]} />
       <View style={styles.lessonBody}>
         <Bone width={80} height={14} />
@@ -224,9 +206,17 @@ export const SkeletonSchedule = () => {
     <View style={styles.scheduleContainer} importantForAccessibility="no-hide-descendants">
       {/* Floating top bar placeholder */}
       <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
-        <Bone width={TOP_BAR_BUTTON_SIZE} height={TOP_BAR_BUTTON_SIZE} borderRadius={TOP_BAR_BUTTON_SIZE / 2} />
+        <Bone
+          width={TOP_BAR_BUTTON_SIZE}
+          height={TOP_BAR_BUTTON_SIZE}
+          borderRadius={TOP_BAR_BUTTON_SIZE / 2}
+        />
         <View style={styles.topBarRight}>
-          <Bone width={TOP_BAR_BUTTON_SIZE} height={TOP_BAR_BUTTON_SIZE} borderRadius={TOP_BAR_BUTTON_SIZE / 2} />
+          <Bone
+            width={TOP_BAR_BUTTON_SIZE}
+            height={TOP_BAR_BUTTON_SIZE}
+            borderRadius={TOP_BAR_BUTTON_SIZE / 2}
+          />
           <Bone width={100} height={TOP_BAR_BUTTON_SIZE} borderRadius={TOP_BAR_BUTTON_SIZE / 2} />
         </View>
       </View>

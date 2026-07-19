@@ -29,14 +29,23 @@ export const SectionHeader = ({ abbrev, name, pinned }: Props) => {
 
   return (
     <View style={styles.header} accessibilityRole="header" accessibilityLabel={a11yLabel}>
-      {pinned && <Ionicons name="star" size={13} color={Palette.accent} importantForAccessibility="no" />}
+      {pinned && (
+        <Ionicons name="star" size={13} color={Palette.accent} importantForAccessibility="no" />
+      )}
       <Text {...textProps('footnote')} style={styles.abbrev} numberOfLines={1} ellipsizeMode="tail">
         {abbrev}
       </Text>
       {name ? (
         <>
-          <Text {...textProps('footnote')} style={styles.dot}>&middot;</Text>
-          <Text {...textProps('footnote')} style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+          <Text {...textProps('footnote')} style={styles.dot}>
+            &middot;
+          </Text>
+          <Text
+            {...textProps('footnote')}
+            style={styles.name}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {name}
           </Text>
         </>
@@ -45,31 +54,32 @@ export const SectionHeader = ({ abbrev, name, pinned }: Props) => {
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8, // визуально выровнено с текстом карточки
-    paddingTop: Spacing.sectionTop,
-    paddingBottom: Spacing.sectionBottom,
-    backgroundColor: Palette.background,
-    gap: Spacing.sm,
-  },
-  abbrev: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Palette.textPrimary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    flexShrink: 0,
-  },
-  dot: {
-    fontSize: 13,
-    color: Palette.textTertiary,
-  },
-  name: {
-    flex: 1,
-    fontSize: 13,
-    color: Palette.textSecondary,
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.cardPaddingX + Spacing.screenPadding - 8, // визуально выровнено с текстом карточки
+      paddingTop: Spacing.sectionTop,
+      paddingBottom: Spacing.sectionBottom,
+      backgroundColor: Palette.background,
+      gap: Spacing.sm,
+    },
+    abbrev: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: Palette.textPrimary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
+      flexShrink: 0,
+    },
+    dot: {
+      fontSize: 13,
+      color: Palette.textTertiary,
+    },
+    name: {
+      flex: 1,
+      fontSize: 13,
+      color: Palette.textSecondary,
+    },
+  });

@@ -6,12 +6,7 @@ import {
   parseBsuirDate,
   startOfLocalDay,
 } from './date';
-import type {
-  DayNameRu,
-  LessonDto,
-  ScheduleDto,
-  WeekNumber,
-} from '@models/dto';
+import type { DayNameRu, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 
 /**
  * Single concrete occurrence of a lesson. The raw `LessonDto` carries
@@ -70,12 +65,11 @@ export const computeWeekForDate = (
   const dateMon = getStartOfMondayWeek(date);
   // Count whole days between the two Mondays, then convert to weeks.
   // Using UTC noon avoids any residual DST ambiguity in the division.
-  const daysDiff =
-    Math.round(
-      (Date.UTC(dateMon.getFullYear(), dateMon.getMonth(), dateMon.getDate()) -
-        Date.UTC(todayMon.getFullYear(), todayMon.getMonth(), todayMon.getDate())) /
-        86_400_000,
-    );
+  const daysDiff = Math.round(
+    (Date.UTC(dateMon.getFullYear(), dateMon.getMonth(), dateMon.getDate()) -
+      Date.UTC(todayMon.getFullYear(), todayMon.getMonth(), todayMon.getDate())) /
+      86_400_000,
+  );
   const weeksDiff = daysDiff / 7;
   // ((currentWeek - 1) + weeksDiff) mod 4 → 0..3, then +1 → 1..4
   const idx = (((currentWeek - 1 + weeksDiff) % 4) + 4) % 4;
@@ -138,9 +132,7 @@ export const flattenSchedule = (
   if (!startDate || !endDate) return [];
 
   const todayStart = startOfLocalDay(today);
-  const earliest = options.showAll
-    ? startDate
-    : addDays(todayStart, -(options.daysInPast ?? 0));
+  const earliest = options.showAll ? startDate : addDays(todayStart, -(options.daysInPast ?? 0));
 
   const out: NormalizedLesson[] = [];
 
@@ -268,10 +260,7 @@ export const groupLessonsByDay = (lessons: NormalizedLesson[]): ScheduleSection[
  * `ScheduleView` to auto-scroll on first render. Returns -1 if all sections
  * are in the past.
  */
-export const findUpcomingSectionIndex = (
-  sections: ScheduleSection[],
-  now: Date,
-): number => {
+export const findUpcomingSectionIndex = (sections: ScheduleSection[], now: Date): number => {
   const todayStart = startOfLocalDay(now);
   for (let i = 0; i < sections.length; i++) {
     const s = sections[i];

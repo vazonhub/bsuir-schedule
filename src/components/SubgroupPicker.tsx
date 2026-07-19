@@ -29,7 +29,14 @@ interface OptionLabelProps {
   subgroupIcon: string;
 }
 
-const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles, subgroupIcon }: OptionLabelProps) => {
+const OptionLabel = ({
+  value,
+  active = false,
+  size = 'sm',
+  Palette,
+  styles,
+  subgroupIcon,
+}: OptionLabelProps) => {
   const { t } = useTranslation();
   const color = active ? Palette.accent : Palette.textPrimary;
   const iconSize = size === 'sm' ? 16 : 18;
@@ -41,14 +48,18 @@ const OptionLabel = ({ value, active = false, size = 'sm', Palette, styles, subg
     return (
       <View style={styles.optionInline}>
         <Ionicons name="people" size={iconSize + 2} color={color} />
-        <Text maxFontSizeMultiplier={1}style={textStyle}>{t('subgroup.all')}</Text>
+        <Text maxFontSizeMultiplier={1} style={textStyle}>
+          {t('subgroup.all')}
+        </Text>
       </View>
     );
   }
   return (
     <View style={styles.optionInline}>
       <Ionicons name={subgroupIcon as never} size={iconSize} color={color} />
-      <Text maxFontSizeMultiplier={1}style={textStyle}>{value}</Text>
+      <Text maxFontSizeMultiplier={1} style={textStyle}>
+        {value}
+      </Text>
     </View>
   );
 };
@@ -88,7 +99,14 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
         accessibilityLabel={t('subgroup.label', { value: t(A11Y_LABELS[value]) })}
         accessibilityState={{ expanded: open }}
       >
-        <OptionLabel value={value} active={open} size="sm" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
+        <OptionLabel
+          value={value}
+          active={open}
+          size="sm"
+          Palette={Palette}
+          styles={styles}
+          subgroupIcon={subgroupIcon}
+        />
       </GlassButton>
 
       <Modal
@@ -122,8 +140,19 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
                   accessibilityLabel={t(A11Y_LABELS[opt])}
                   accessibilityState={{ selected: active }}
                 >
-                  <OptionLabel value={opt} active={active} size="md" Palette={Palette} styles={styles} subgroupIcon={subgroupIcon} />
-                  {active && <Text maxFontSizeMultiplier={1}style={[styles.check, styles.activeText]}>{'\u2713'}</Text>}
+                  <OptionLabel
+                    value={opt}
+                    active={active}
+                    size="md"
+                    Palette={Palette}
+                    styles={styles}
+                    subgroupIcon={subgroupIcon}
+                  />
+                  {active && (
+                    <Text maxFontSizeMultiplier={1} style={[styles.check, styles.activeText]}>
+                      {'\u2713'}
+                    </Text>
+                  )}
                 </Pressable>
               );
             })}
@@ -134,40 +163,41 @@ export const SubgroupPicker = ({ value, onChange }: Props) => {
   );
 };
 
-const makeStyles = (Palette: PaletteType, glass: { tint: string; webBg: string }) => StyleSheet.create({
-  label: { fontSize: 14, fontWeight: '600', color: Palette.textPrimary },
+const makeStyles = (Palette: PaletteType, glass: { tint: string; webBg: string }) =>
+  StyleSheet.create({
+    label: { fontSize: 14, fontWeight: '600', color: Palette.textPrimary },
 
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' },
-  menu: {
-    position: 'absolute',
-    top: 100,
-    right: Spacing.screenPadding,
-    minWidth: 160,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  menuTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.tint },
-  webBg: { backgroundColor: glass.webBg },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.18)' },
+    menu: {
+      position: 'absolute',
+      top: 100,
+      right: Spacing.screenPadding,
+      minWidth: 160,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOpacity: 0.18,
+      shadowRadius: 18,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+    menuTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.tint },
+    webBg: { backgroundColor: glass.webBg },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  rowPressed: { backgroundColor: Palette.cardPressed },
-  rowText: { fontSize: 16, color: Palette.textPrimary },
-  activeText: { color: Palette.accent, fontWeight: '600' },
-  check: { fontSize: 16 },
-  optionInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-});
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.lg,
+    },
+    rowPressed: { backgroundColor: Palette.cardPressed },
+    rowText: { fontSize: 16, color: Palette.textPrimary },
+    activeText: { color: Palette.accent, fontWeight: '600' },
+    check: { fontSize: 16 },
+    optionInline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+  });

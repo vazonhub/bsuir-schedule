@@ -35,7 +35,11 @@ import { showRewardedAd } from '@services/ads';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import { usePreferencesStore } from '@stores/preferences.store';
-import type { IconColorOverrides, IconOverrides, LessonColorOverrides } from '@stores/preferences.store';
+import type {
+  IconColorOverrides,
+  IconOverrides,
+  LessonColorOverrides,
+} from '@stores/preferences.store';
 import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -55,15 +59,16 @@ const COLOR_ENTRIES: { key: KnownLessonType; labelKey: string }[] = [
 const ICON_COLOR_SLOTS = new Set<string>(['exam', 'today']);
 
 /** Icon entries in the picker. */
-const ICON_ENTRIES: { slot: keyof IconOverrides; labelKey: string; choices: readonly string[] }[] = [
-  { slot: 'exam', labelKey: 'settings.iconExam', choices: EXAM_ICON_CHOICES },
-  { slot: 'today', labelKey: 'settings.iconToday', choices: TODAY_ICON_CHOICES },
-  { slot: 'subgroup', labelKey: 'settings.iconSubgroup', choices: SUBGROUP_ICON_CHOICES },
-  { slot: 'favorites', labelKey: 'settings.iconFavorites', choices: FAVORITES_ICON_CHOICES },
-  { slot: 'location', labelKey: 'settings.iconLocation', choices: LOCATION_ICON_CHOICES },
-  { slot: 'clock', labelKey: 'settings.iconClock', choices: CLOCK_ICON_CHOICES },
-  { slot: 'block', labelKey: 'settings.iconBlock', choices: BLOCK_ICON_CHOICES },
-];
+const ICON_ENTRIES: { slot: keyof IconOverrides; labelKey: string; choices: readonly string[] }[] =
+  [
+    { slot: 'exam', labelKey: 'settings.iconExam', choices: EXAM_ICON_CHOICES },
+    { slot: 'today', labelKey: 'settings.iconToday', choices: TODAY_ICON_CHOICES },
+    { slot: 'subgroup', labelKey: 'settings.iconSubgroup', choices: SUBGROUP_ICON_CHOICES },
+    { slot: 'favorites', labelKey: 'settings.iconFavorites', choices: FAVORITES_ICON_CHOICES },
+    { slot: 'location', labelKey: 'settings.iconLocation', choices: LOCATION_ICON_CHOICES },
+    { slot: 'clock', labelKey: 'settings.iconClock', choices: CLOCK_ICON_CHOICES },
+    { slot: 'block', labelKey: 'settings.iconBlock', choices: BLOCK_ICON_CHOICES },
+  ];
 
 /** Preview chips — short labels. */
 const PREVIEW_TYPES: { type: KnownLessonType; label: string }[] = [
@@ -99,7 +104,9 @@ export const AppearanceScreen = () => {
 
   const [draftColors, setDraftColors] = useState<LessonColorOverrides>({ ...committedColors });
   const [draftIcons, setDraftIcons] = useState<IconOverrides>({ ...committedIcons });
-  const [draftIconColors, setDraftIconColors] = useState<IconColorOverrides>({ ...committedIconColors });
+  const [draftIconColors, setDraftIconColors] = useState<IconColorOverrides>({
+    ...committedIconColors,
+  });
 
   const [expandedColor, setExpandedColor] = useState<KnownLessonType | null>(null);
   const [expandedIcon, setExpandedIcon] = useState<keyof IconOverrides | null>(null);
@@ -108,10 +115,19 @@ export const AppearanceScreen = () => {
   const current = PREVIEW_TYPES[previewIdx % PREVIEW_TYPES.length]!;
 
   const hasChanges = useMemo(() => {
-    return JSON.stringify(draftColors) !== JSON.stringify(committedColors) ||
+    return (
+      JSON.stringify(draftColors) !== JSON.stringify(committedColors) ||
       JSON.stringify(draftIcons) !== JSON.stringify(committedIcons) ||
-      JSON.stringify(draftIconColors) !== JSON.stringify(committedIconColors);
-  }, [draftColors, draftIcons, draftIconColors, committedColors, committedIcons, committedIconColors]);
+      JSON.stringify(draftIconColors) !== JSON.stringify(committedIconColors)
+    );
+  }, [
+    draftColors,
+    draftIcons,
+    draftIconColors,
+    committedColors,
+    committedIcons,
+    committedIconColors,
+  ]);
 
   const reduceMotion = useReduceMotion();
   const applyScale = useRef(new Animated.Value(1)).current;
@@ -127,21 +143,27 @@ export const AppearanceScreen = () => {
     }, 250);
   }, []);
 
-  const handleColorRowPress = useCallback((key: KnownLessonType) => {
-    const isOpening = expandedColor !== key;
-    setExpandedColor((prev) => (prev === key ? null : key));
-    setExpandedIcon(null);
-    if (isOpening) scrollToRow(`color-${key}`);
-    const idx = PREVIEW_TYPES.findIndex((p) => p.type === key);
-    if (idx >= 0) setPreviewIdx(idx);
-  }, [expandedColor, scrollToRow]);
+  const handleColorRowPress = useCallback(
+    (key: KnownLessonType) => {
+      const isOpening = expandedColor !== key;
+      setExpandedColor((prev) => (prev === key ? null : key));
+      setExpandedIcon(null);
+      if (isOpening) scrollToRow(`color-${key}`);
+      const idx = PREVIEW_TYPES.findIndex((p) => p.type === key);
+      if (idx >= 0) setPreviewIdx(idx);
+    },
+    [expandedColor, scrollToRow],
+  );
 
-  const handleIconRowPress = useCallback((slot: keyof IconOverrides) => {
-    const isOpening = expandedIcon !== slot;
-    setExpandedIcon((prev) => (prev === slot ? null : slot));
-    setExpandedColor(null);
-    if (isOpening) scrollToRow(`icon-${slot}`);
-  }, [expandedIcon, scrollToRow]);
+  const handleIconRowPress = useCallback(
+    (slot: keyof IconOverrides) => {
+      const isOpening = expandedIcon !== slot;
+      setExpandedIcon((prev) => (prev === slot ? null : slot));
+      setExpandedColor(null);
+      if (isOpening) scrollToRow(`icon-${slot}`);
+    },
+    [expandedIcon, scrollToRow],
+  );
 
   const handleDraftColor = useCallback((type: KnownLessonType, color: string) => {
     setDraftColors((prev) => {
@@ -215,22 +237,18 @@ export const AppearanceScreen = () => {
 
   /** Show reward-ad confirmation, then commit. */
   const applyChanges = useCallback(() => {
-    Alert.alert(
-      t('settings.appearanceApplyTitle'),
-      t('settings.appearanceApplyMessage'),
-      [
-        {
-          text: t('settings.appearanceApplyButton'),
-          isPreferred: true,
-          onPress: async () => {
-            const rewarded = await showRewardedAd();
-            if (!rewarded) return;
-            commitDraft();
-          },
+    Alert.alert(t('settings.appearanceApplyTitle'), t('settings.appearanceApplyMessage'), [
+      {
+        text: t('settings.appearanceApplyButton'),
+        isPreferred: true,
+        onPress: async () => {
+          const rewarded = await showRewardedAd();
+          if (!rewarded) return;
+          commitDraft();
         },
-        { text: t('common.cancel'), style: 'destructive' },
-      ],
-    );
+      },
+      { text: t('common.cancel'), style: 'destructive' },
+    ]);
   }, [t, commitDraft]);
 
   /** Back with unsaved-changes guard. */
@@ -239,52 +257,51 @@ export const AppearanceScreen = () => {
       router.back();
       return;
     }
-    Alert.alert(
-      t('settings.unsavedTitle'),
-      t('settings.unsavedMessageAd'),
-      [
-        {
-          text: t('settings.unsavedSaveAd'),
-          isPreferred: true,
-          onPress: async () => {
-            const rewarded = await showRewardedAd();
-            if (!rewarded) return;
-            commitDraft();
-            router.back();
-          },
+    Alert.alert(t('settings.unsavedTitle'), t('settings.unsavedMessageAd'), [
+      {
+        text: t('settings.unsavedSaveAd'),
+        isPreferred: true,
+        onPress: async () => {
+          const rewarded = await showRewardedAd();
+          if (!rewarded) return;
+          commitDraft();
+          router.back();
         },
-        { text: t('settings.unsavedDiscard'), style: 'destructive', onPress: () => router.back() },
-      ],
-    );
+      },
+      { text: t('settings.unsavedDiscard'), style: 'destructive', onPress: () => router.back() },
+    ]);
   }, [hasChanges, t, router, commitDraft]);
 
   const handleReset = useCallback(() => {
-    Alert.alert(
-      t('settings.resetAppearance'),
-      t('settings.resetAppearanceConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('settings.resetAppearance'),
-          style: 'destructive',
-          onPress: () => {
-            usePreferencesStore.getState().resetAllAppearance();
-            setDraftColors({});
-            setDraftIcons({});
-            setDraftIconColors({});
-          },
+    Alert.alert(t('settings.resetAppearance'), t('settings.resetAppearanceConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('settings.resetAppearance'),
+        style: 'destructive',
+        onPress: () => {
+          usePreferencesStore.getState().resetAllAppearance();
+          setDraftColors({});
+          setDraftIcons({});
+          setDraftIconColors({});
         },
-      ],
-    );
+      },
+    ]);
   }, [t]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={handleBack} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
-        <Text style={styles.title} numberOfLines={1}>{t('settings.appearanceSection')}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {t('settings.appearanceSection')}
+        </Text>
       </View>
 
       <ScrollView
@@ -298,7 +315,12 @@ export const AppearanceScreen = () => {
         {/* ── Preview ── */}
         <Text style={styles.sectionTitle}>{t('settings.previewTitle')}</Text>
         <View style={styles.previewCard}>
-          <View style={[styles.previewStripe, { backgroundColor: resolveColor(current.type, draftColors) }]} />
+          <View
+            style={[
+              styles.previewStripe,
+              { backgroundColor: resolveColor(current.type, draftColors) },
+            ]}
+          />
           <View style={styles.previewBody}>
             <Text style={styles.previewTime}>09:00–10:25</Text>
             <Text style={styles.previewSubject}>{t(`lessonType.${current.type}`)}</Text>
@@ -322,9 +344,15 @@ export const AppearanceScreen = () => {
               <Pressable
                 key={entry.type}
                 onPress={() => setPreviewIdx(i)}
-                style={[styles.chip, { borderColor: color }, isActive && { backgroundColor: color }]}
+                style={[
+                  styles.chip,
+                  { borderColor: color },
+                  isActive && { backgroundColor: color },
+                ]}
               >
-                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>{entry.label}</Text>
+                <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                  {entry.label}
+                </Text>
               </Pressable>
             );
           })}
@@ -332,13 +360,24 @@ export const AppearanceScreen = () => {
 
         {/* ── Colors ── */}
         <Text style={styles.sectionTitle}>{t('settings.lessonColors')}</Text>
-        <View style={styles.card} onLayout={(e) => { rowYRef.current['_colorCard'] = e.nativeEvent.layout.y; }}>
+        <View
+          style={styles.card}
+          onLayout={(e) => {
+            rowYRef.current['_colorCard'] = e.nativeEvent.layout.y;
+          }}
+        >
           {COLOR_ENTRIES.map(({ key, labelKey }, i) => {
             const color = resolveColor(key, draftColors);
             const isExpanded = expandedColor === key;
             const isCustom = key in draftColors;
             return (
-              <View key={key} onLayout={(e) => { rowYRef.current[`color-${key}`] = (rowYRef.current['_colorCard'] ?? 0) + e.nativeEvent.layout.y; }}>
+              <View
+                key={key}
+                onLayout={(e) => {
+                  rowYRef.current[`color-${key}`] =
+                    (rowYRef.current['_colorCard'] ?? 0) + e.nativeEvent.layout.y;
+                }}
+              >
                 {i > 0 && <View style={styles.separator} />}
                 <Pressable
                   style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -355,9 +394,16 @@ export const AppearanceScreen = () => {
                 </Pressable>
                 <Collapsible expanded={isExpanded}>
                   <View style={styles.pickerContainer}>
-                    <ColorPalettePicker selected={color} defaultColor={LESSON_TYPE_COLORS[key]} onSelect={(c) => handleDraftColor(key, c)} />
+                    <ColorPalettePicker
+                      selected={color}
+                      defaultColor={LESSON_TYPE_COLORS[key]}
+                      onSelect={(c) => handleDraftColor(key, c)}
+                    />
                     <Collapsible expanded={isCustom} duration={200}>
-                      <Pressable onPress={() => handleResetDraftColor(key)} style={styles.resetLink}>
+                      <Pressable
+                        onPress={() => handleResetDraftColor(key)}
+                        style={styles.resetLink}
+                      >
                         <Text style={[styles.resetLinkText, { color: Palette.accent }]}>
                           {t('settings.resetToDefault')}
                         </Text>
@@ -372,17 +418,30 @@ export const AppearanceScreen = () => {
 
         {/* ── Icons ── */}
         <Text style={styles.sectionTitle}>{t('settings.icons')}</Text>
-        <View style={styles.card} onLayout={(e) => { rowYRef.current['_iconCard'] = e.nativeEvent.layout.y; }}>
+        <View
+          style={styles.card}
+          onLayout={(e) => {
+            rowYRef.current['_iconCard'] = e.nativeEvent.layout.y;
+          }}
+        >
           {ICON_ENTRIES.map(({ slot, labelKey, choices }, i) => {
             const iconName = resolveIcon(slot, draftIcons);
             const hasColorSlot = ICON_COLOR_SLOTS.has(slot);
-            const iconColor = hasColorSlot ? resolveIconColor(slot, draftIconColors) : Palette.textPrimary;
+            const iconColor = hasColorSlot
+              ? resolveIconColor(slot, draftIconColors)
+              : Palette.textPrimary;
             const isExpanded = expandedIcon === slot;
             const isCustomIcon = iconName !== ICON_DEFAULTS[slot];
             const isCustomColor = hasColorSlot && draftIconColors[slot] !== undefined;
             const isCustom = isCustomIcon || isCustomColor;
             return (
-              <View key={slot} onLayout={(e) => { rowYRef.current[`icon-${slot}`] = (rowYRef.current['_iconCard'] ?? 0) + e.nativeEvent.layout.y; }}>
+              <View
+                key={slot}
+                onLayout={(e) => {
+                  rowYRef.current[`icon-${slot}`] =
+                    (rowYRef.current['_iconCard'] ?? 0) + e.nativeEvent.layout.y;
+                }}
+              >
                 {i > 0 && <View style={styles.separator} />}
                 <Pressable
                   style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -416,7 +475,10 @@ export const AppearanceScreen = () => {
                       </>
                     )}
                     <Collapsible expanded={isCustom} duration={200}>
-                      <Pressable onPress={() => handleResetDraftIcon(slot)} style={styles.resetLink}>
+                      <Pressable
+                        onPress={() => handleResetDraftIcon(slot)}
+                        style={styles.resetLink}
+                      >
                         <Text style={[styles.resetLinkText, { color: Palette.accent }]}>
                           {t('settings.resetToDefault')}
                         </Text>
@@ -438,14 +500,16 @@ export const AppearanceScreen = () => {
             {t('settings.resetAppearance')}
           </Text>
         </Pressable>
-
       </ScrollView>
 
       {hasChanges && (
         <Animated.View
           style={[
             styles.applyWrap,
-            { bottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md, transform: [{ scale: applyScale }] },
+            {
+              bottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+              transform: [{ scale: applyScale }],
+            },
           ]}
         >
           <Pressable
@@ -459,12 +523,19 @@ export const AppearanceScreen = () => {
                 style={StyleSheet.absoluteFill}
               />
             ) : (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' }]} />
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF' },
+                ]}
+              />
             )}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: Palette.accent + '30' }]} />
             <View style={styles.applyContent}>
               <Ionicons name="videocam" size={18} color={Palette.accent} />
-              <Text style={[styles.applyButtonText, { color: Palette.accent }]}>{t('settings.applyChanges')}</Text>
+              <Text style={[styles.applyButtonText, { color: Palette.accent }]}>
+                {t('settings.applyChanges')}
+              </Text>
             </View>
           </Pressable>
         </Animated.View>
@@ -509,16 +580,35 @@ const makeStyles = (Palette: PaletteType) =>
     previewTime: { fontSize: 13, fontWeight: '600', color: Palette.textPrimary },
     previewSubject: { fontSize: 16, fontWeight: '600', color: Palette.textPrimary },
     previewMeta: { fontSize: 13, color: Palette.textSecondary },
-    previewSubgroup: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingRight: Spacing.lg },
+    previewSubgroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingRight: Spacing.lg,
+    },
     previewSubgroupNum: { fontSize: 16, fontWeight: '600', color: Palette.textSecondary },
-    previewChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.md },
-    chip: { paddingHorizontal: Spacing.md, paddingVertical: 4, borderRadius: Radius.pill, borderWidth: 1.5 },
+    previewChips: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+    },
+    chip: {
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 4,
+      borderRadius: Radius.pill,
+      borderWidth: 1.5,
+    },
     chipText: { fontSize: 12, fontWeight: '600', color: Palette.textPrimary },
     chipTextActive: { color: '#FFFFFF' },
 
     /* Card */
     card: { backgroundColor: Palette.card, borderRadius: Radius.lg, overflow: 'hidden' },
-    separator: { height: StyleSheet.hairlineWidth, backgroundColor: Palette.separator, marginLeft: Spacing.cardPaddingX },
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: Palette.separator,
+      marginLeft: Spacing.cardPaddingX,
+    },
 
     /* Rows */
     row: {
@@ -531,7 +621,12 @@ const makeStyles = (Palette: PaletteType) =>
     rowPressed: { backgroundColor: Palette.cardPressed },
     colorDot: { width: 24, height: 24, borderRadius: 12 },
     rowLabel: { flex: 1, fontSize: 16, color: Palette.textPrimary },
-    customBadge: { fontSize: 11, fontWeight: '600', color: Palette.accent, textTransform: 'uppercase' },
+    customBadge: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: Palette.accent,
+      textTransform: 'uppercase',
+    },
 
     /* Picker */
     pickerContainer: { paddingHorizontal: Spacing.cardPaddingX, paddingBottom: Spacing.md },

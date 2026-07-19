@@ -37,11 +37,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       const snapshot = await loadSnapshot();
       const size = sizeFromName(widgetInfo.widgetName);
       renderWidget(
-        <ScheduleWidget
-          snapshot={snapshot}
-          size={size}
-          widgetHeight={widgetInfo.height}
-        />,
+        <ScheduleWidget snapshot={snapshot} size={size} widgetHeight={widgetInfo.height} />,
       );
       break;
     }
@@ -52,11 +48,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       const snapshot = await loadSnapshot();
       const size = sizeFromName(widgetInfo.widgetName);
       renderWidget(
-        <ScheduleWidget
-          snapshot={snapshot}
-          size={size}
-          widgetHeight={widgetInfo.height}
-        />,
+        <ScheduleWidget snapshot={snapshot} size={size} widgetHeight={widgetInfo.height} />,
       );
       break;
     }

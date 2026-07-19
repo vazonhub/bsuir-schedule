@@ -44,9 +44,11 @@ const reloadWidgetTimelines = (): void => {
     if (Platform.OS === 'ios') {
       reloadAllTimelines();
     } else if (Platform.OS === 'android') {
-      const { requestWidgetUpdate } = require('react-native-android-widget') as typeof import('react-native-android-widget');
+      const { requestWidgetUpdate } =
+        require('react-native-android-widget') as typeof import('react-native-android-widget');
       const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      const { ScheduleWidget } = require('../../widgets/ScheduleWidget') as typeof import('../../widgets/ScheduleWidget');
+      const { ScheduleWidget } =
+        require('../../widgets/ScheduleWidget') as typeof import('../../widgets/ScheduleWidget');
       const React = require('react');
 
       const render = async (size: 'small' | 'medium' | 'large') => {
@@ -82,7 +84,8 @@ const reloadWidgetTimelines = (): void => {
  * on preference changes (subgroup, theme, locale), and by background fetch.
  */
 export const updateWidgetSnapshot = async (): Promise<void> => {
-  const { defaultGroup, subgroupByKey, blockedLessons, resolvedScheme } = usePreferencesStore.getState();
+  const { defaultGroup, subgroupByKey, blockedLessons, resolvedScheme } =
+    usePreferencesStore.getState();
   if (!defaultGroup) return;
 
   const { byKey, currentWeek } = useScheduleStore.getState();
@@ -107,9 +110,24 @@ export const updateWidgetSnapshot = async (): Promise<void> => {
 
   const year = new Date().getFullYear();
   const { byYear, userAdded, userRemoved, userAddedHidden } = useHolidaysStore.getState();
-  const holidays = getMergedHolidays(byYear[String(year)] ?? [], userAdded, userRemoved, userAddedHidden);
+  const holidays = getMergedHolidays(
+    byYear[String(year)] ?? [],
+    userAdded,
+    userRemoved,
+    userAddedHidden,
+  );
 
-  const snapshot = buildWidgetSnapshot(schedule, currentWeek, new Date(), defaultGroup, subgroup, resolvedScheme, strings, blockedIds, holidays);
+  const snapshot = buildWidgetSnapshot(
+    schedule,
+    currentWeek,
+    new Date(),
+    defaultGroup,
+    subgroup,
+    resolvedScheme,
+    strings,
+    blockedIds,
+    holidays,
+  );
   await writeSnapshot(snapshot);
   reloadWidgetTimelines();
 };
@@ -128,9 +146,13 @@ let _prev = {
 usePreferencesStore.subscribe((state) => {
   const defaultGroup = state.defaultGroup;
   const subgroupForDefault = defaultGroup ? state.subgroupByKey[defaultGroup] : undefined;
-  const prevSubgroupForDefault = _prev.defaultGroup ? _prev.subgroupByKey[_prev.defaultGroup] : undefined;
+  const prevSubgroupForDefault = _prev.defaultGroup
+    ? _prev.subgroupByKey[_prev.defaultGroup]
+    : undefined;
   const blockedForDefault = defaultGroup ? state.blockedLessons[defaultGroup] : undefined;
-  const prevBlockedForDefault = _prev.defaultGroup ? _prev.blockedLessons[_prev.defaultGroup] : undefined;
+  const prevBlockedForDefault = _prev.defaultGroup
+    ? _prev.blockedLessons[_prev.defaultGroup]
+    : undefined;
 
   const changed =
     defaultGroup !== _prev.defaultGroup ||

@@ -16,8 +16,7 @@ const afterInteractions = () =>
     InteractionManager.runAfterInteractions(() => resolve());
   });
 
-const isNotFound = (e: unknown): boolean =>
-  (e as AxiosError)?.response?.status === 404;
+const isNotFound = (e: unknown): boolean => (e as AxiosError)?.response?.status === 404;
 
 /** Определяет тип ошибки: сервер лёг (5xx/timeout) или проблема с сетью. */
 const classifyError = (e: unknown): ErrorKind => {
@@ -60,7 +59,10 @@ export const ScheduleController = {
       }
       store.setCurrentWeek(week as 1 | 2 | 3 | 4);
     } catch (e) {
-      store.setError(e instanceof Error ? e.message : 'Не удалось получить текущую неделю', classifyError(e));
+      store.setError(
+        e instanceof Error ? e.message : 'Не удалось получить текущую неделю',
+        classifyError(e),
+      );
     }
   },
 

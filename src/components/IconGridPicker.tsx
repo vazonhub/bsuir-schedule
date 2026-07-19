@@ -37,10 +37,7 @@ export const IconGridPicker = ({ icons, selected, color, onSelect }: Props) => {
           <Pressable
             key={name}
             onPress={() => onSelect(name)}
-            style={[
-              styles.cell,
-              isSelected && [styles.cellSelected, { borderColor: color }],
-            ]}
+            style={[styles.cell, isSelected && [styles.cellSelected, { borderColor: color }]]}
             accessibilityRole="button"
             accessibilityLabel={t('a11y.iconChoice', { name: humanizeIconName(name) })}
             accessibilityState={{ selected: isSelected }}

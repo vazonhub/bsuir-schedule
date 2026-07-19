@@ -40,18 +40,32 @@ export const NetworkDataScreen = () => {
   const toastOpacity = useRef(new Animated.Value(0)).current;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast(message);
-    Animated.timing(toastOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
-    toastTimer.current = setTimeout(() => {
-      Animated.timing(toastOpacity, { toValue: 0, duration: reduceMotion ? 0 : 300, useNativeDriver: true }).start(
-        () => setToast(null),
-      );
-    }, 2000);
-  }, [toastOpacity, reduceMotion]);
+  const showToast = useCallback(
+    (message: string) => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      setToast(message);
+      Animated.timing(toastOpacity, {
+        toValue: 1,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start();
+      toastTimer.current = setTimeout(() => {
+        Animated.timing(toastOpacity, {
+          toValue: 0,
+          duration: reduceMotion ? 0 : 300,
+          useNativeDriver: true,
+        }).start(() => setToast(null));
+      }, 2000);
+    },
+    [toastOpacity, reduceMotion],
+  );
 
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   // ── Tooltip (availability hint) ──
   const [hintVisible, setHintVisible] = useState(false);
@@ -59,12 +73,18 @@ export const NetworkDataScreen = () => {
 
   const toggleHint = useCallback(() => {
     if (hintVisible) {
-      Animated.timing(tooltipOpacity, { toValue: 0, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start(
-        () => setHintVisible(false),
-      );
+      Animated.timing(tooltipOpacity, {
+        toValue: 0,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start(() => setHintVisible(false));
     } else {
       setHintVisible(true);
-      Animated.timing(tooltipOpacity, { toValue: 1, duration: reduceMotion ? 0 : 200, useNativeDriver: true }).start();
+      Animated.timing(tooltipOpacity, {
+        toValue: 1,
+        duration: reduceMotion ? 0 : 200,
+        useNativeDriver: true,
+      }).start();
     }
   }, [hintVisible, tooltipOpacity, reduceMotion]);
 
@@ -101,23 +121,19 @@ export const NetworkDataScreen = () => {
   }, [sourceGoogleDrive, setSourceGoogleDrive, googleSignedIn]);
 
   const handleClearCache = useCallback(() => {
-    Alert.alert(
-      t('settings.clearCache'),
-      t('settings.clearCacheConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.clear'),
-          style: 'destructive',
-          onPress: async () => {
-            await clearLocalCache();
-            await clearCloudSchedules();
-            void hapticSuccess();
-            showToast(t('settings.clearCacheDone'));
-          },
+    Alert.alert(t('settings.clearCache'), t('settings.clearCacheConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.clear'),
+        style: 'destructive',
+        onPress: async () => {
+          await clearLocalCache();
+          await clearCloudSchedules();
+          void hapticSuccess();
+          showToast(t('settings.clearCacheDone'));
         },
-      ],
-    );
+      },
+    ]);
   }, [t, showToast]);
 
   const handleRefreshWidget = useCallback(async () => {
@@ -136,9 +152,16 @@ export const NetworkDataScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
-        <Text style={styles.title} numberOfLines={1}>{t('settings.networkSection')}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {t('settings.networkSection')}
+        </Text>
       </View>
 
       {/* ── Доступность ── */}
@@ -162,7 +185,12 @@ export const NetworkDataScreen = () => {
             onPress={toggleBsuirApi}
           >
             <Text style={styles.sourceLabel}>{t('settings.sourceBsuirApi')}</Text>
-            <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceBsuirApi ? 1 : 0 }} />
+            <Ionicons
+              name="checkmark"
+              size={20}
+              color="#34C759"
+              style={{ opacity: sourceBsuirApi ? 1 : 0 }}
+            />
           </Pressable>
 
           {showICloud && (
@@ -173,7 +201,12 @@ export const NetworkDataScreen = () => {
                 onPress={toggleICloud}
               >
                 <Text style={styles.sourceLabel}>{t('settings.sourceICloud')}</Text>
-                <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceICloud ? 1 : 0 }} />
+                <Ionicons
+                  name="checkmark"
+                  size={20}
+                  color="#34C759"
+                  style={{ opacity: sourceICloud ? 1 : 0 }}
+                />
               </Pressable>
             </>
           )}
@@ -187,7 +220,12 @@ export const NetworkDataScreen = () => {
               >
                 <Text style={styles.sourceLabel}>{t('settings.sourceGoogleDrive')}</Text>
                 {googleSignedIn ? (
-                  <Ionicons name="checkmark" size={20} color="#34C759" style={{ opacity: sourceGoogleDrive ? 1 : 0 }} />
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color="#34C759"
+                    style={{ opacity: sourceGoogleDrive ? 1 : 0 }}
+                  />
                 ) : (
                   <View style={styles.signInPill}>
                     <Text style={styles.signInPillText}>{t('settings.signIn')}</Text>

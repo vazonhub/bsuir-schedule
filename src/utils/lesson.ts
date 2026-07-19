@@ -14,10 +14,7 @@ export const getLessonAccentColor = (type: LessonTypeAbbrev | null | undefined):
   const overrides = usePreferencesStore.getState().lessonColorOverrides;
   const override = overrides[type as KnownLessonType];
   if (override) return override;
-  return (
-    LESSON_TYPE_COLORS[type as KnownLessonType] ??
-    FALLBACK_LESSON_COLOR
-  );
+  return LESSON_TYPE_COLORS[type as KnownLessonType] ?? FALLBACK_LESSON_COLOR;
 };
 
 /** Known lesson type abbreviations that have translation keys. */
@@ -99,11 +96,7 @@ export const buildLessonBlockId = (lesson: NormalizedLesson): string => {
 };
 
 /** Lesson types that have no mid-lesson break (exams, consultations, credits). */
-const NO_BREAK_TYPES: ReadonlySet<string> = new Set([
-  'Консультация',
-  'Экзамен',
-  'Зачёт',
-]);
+const NO_BREAK_TYPES: ReadonlySet<string> = new Set(['Консультация', 'Экзамен', 'Зачёт']);
 
 export const getLessonBreakRange = (
   lesson: NormalizedLesson,

@@ -20,15 +20,15 @@
 
 ### Конвенции цветов (lesson type → accent)
 
-| Тип            | Источник API              | Цвет        | Hex       |
-| -------------- | ------------------------- | ----------- | --------- |
-| ПЗ             | `lessonTypeAbbrev = "ПЗ"` | фиолетовый  | `#8E5CD9` |
-| ЛР             | `"ЛР"`                    | оранжевый   | `#F08A24` |
-| ЛК             | `"ЛК"`                    | зелёный     | `#3FB36F` |
-| Консультация   | `"Консультация"`          | коричневый  | `#8B5A2B` |
-| Экзамен        | `"Экзамен"` (или `exams`) | фиолетовый* | `#7A3FB6` |
+| Тип          | Источник API              | Цвет         | Hex       |
+| ------------ | ------------------------- | ------------ | --------- |
+| ПЗ           | `lessonTypeAbbrev = "ПЗ"` | фиолетовый   | `#8E5CD9` |
+| ЛР           | `"ЛР"`                    | оранжевый    | `#F08A24` |
+| ЛК           | `"ЛК"`                    | зелёный      | `#3FB36F` |
+| Консультация | `"Консультация"`          | коричневый   | `#8B5A2B` |
+| Экзамен      | `"Экзамен"` (или `exams`) | фиолетовый\* | `#7A3FB6` |
 
-*У экзамена и ПЗ цвет одного семейства, но насыщенность другая — экзамен темнее. Если нужен полный визуальный различитель, см. фазу 9.
+\*У экзамена и ПЗ цвет одного семейства, но насыщенность другая — экзамен темнее. Если нужен полный визуальный различитель, см. фазу 9.
 
 Цвет применяется как `border-left` карточки урока (полоска ~4–6 px).
 
@@ -108,14 +108,14 @@
 
 Базовый URL: `https://iis.bsuir.by/api/v1`. Аутентификация для публичных endpoint'ов не нужна.
 
-| Метод | Путь                                | Назначение                                       |
-| ----- | ----------------------------------- | ------------------------------------------------ |
-| GET   | `/student-groups`                   | Список всех групп (`StudentGroupDto[]`)          |
-| GET   | `/employees/all`                    | Список всех преподавателей (`EmployeeDto[]`)     |
-| GET   | `/schedule?studentGroup={name}`     | Расписание группы (`ScheduleDto`)                |
-| GET   | `/employees/schedule/{urlId}`       | Расписание преподавателя (`ScheduleDto`)         |
-| GET   | `/schedule/current-week`            | Номер текущей недели (число 1..4)                |
-| GET   | `/employees/photo/{employeeId}`     | Фото преподавателя (бинарный JPEG)               |
+| Метод | Путь                            | Назначение                                   |
+| ----- | ------------------------------- | -------------------------------------------- |
+| GET   | `/student-groups`               | Список всех групп (`StudentGroupDto[]`)      |
+| GET   | `/employees/all`                | Список всех преподавателей (`EmployeeDto[]`) |
+| GET   | `/schedule?studentGroup={name}` | Расписание группы (`ScheduleDto`)            |
+| GET   | `/employees/schedule/{urlId}`   | Расписание преподавателя (`ScheduleDto`)     |
+| GET   | `/schedule/current-week`        | Номер текущей недели (число 1..4)            |
+| GET   | `/employees/photo/{employeeId}` | Фото преподавателя (бинарный JPEG)           |
 
 ### Особенности `ScheduleDto`
 
@@ -347,20 +347,20 @@
 
 ## 5. Связь файлов с фазами (быстрый индекс для Claude Code)
 
-| Фаза | Создаёт / меняет |
-| ---- | ---------------- |
-| 2 | `views/groups/*`, `components/SearchBar.tsx`, `hooks/useGroupSearch.ts`, `utils/groupGrouping.ts` |
-| 3 | `views/employees/*`, `components/Avatar.tsx`, `hooks/useEmployeeSearch.ts` |
-| 4.1 | `utils/scheduleNormalization.ts`, расширение `models/dto` |
-| 4.2 | `views/lesson/LessonCard.tsx`, `views/lesson/DayHeader.tsx`, `views/schedule/ScheduleView.tsx` |
-| 4.3 | `views/schedule/GroupScheduleScreen.tsx`, `views/schedule/EmployeeScheduleScreen.tsx` |
-| 5 | `views/lesson/LessonDetailsSheet.tsx` + установка `@gorhom/bottom-sheet` |
-| 6 | `services/cache/mmkv.ts`, `services/prefetch.ts`, апдейт всех контроллеров |
-| 7 | `stores/preferences.store.ts`, `components/PinButton.tsx` |
-| 8 | `theme/*`, `components/Surface.tsx` |
-| 9 | `utils/haptics.ts`, инфраструктура i18n |
-| 10 | `services/widget/*`, нативные таргеты iOS WidgetKit + Android Glance, изменения в `app.json` (App Group, entitlements) |
-| 11 | `utils/scheduleNormalization.ts`, `views/schedule/ScheduleView.tsx`, `views/lesson/LessonCard.tsx`, `views/lesson/DayHeader.tsx`, `views/settings/SettingsScreen.tsx`, `package.json` (+`@shopify/flash-list`) |
+| Фаза | Создаёт / меняет                                                                                                                                                                                               |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2    | `views/groups/*`, `components/SearchBar.tsx`, `hooks/useGroupSearch.ts`, `utils/groupGrouping.ts`                                                                                                              |
+| 3    | `views/employees/*`, `components/Avatar.tsx`, `hooks/useEmployeeSearch.ts`                                                                                                                                     |
+| 4.1  | `utils/scheduleNormalization.ts`, расширение `models/dto`                                                                                                                                                      |
+| 4.2  | `views/lesson/LessonCard.tsx`, `views/lesson/DayHeader.tsx`, `views/schedule/ScheduleView.tsx`                                                                                                                 |
+| 4.3  | `views/schedule/GroupScheduleScreen.tsx`, `views/schedule/EmployeeScheduleScreen.tsx`                                                                                                                          |
+| 5    | `views/lesson/LessonDetailsSheet.tsx` + установка `@gorhom/bottom-sheet`                                                                                                                                       |
+| 6    | `services/cache/mmkv.ts`, `services/prefetch.ts`, апдейт всех контроллеров                                                                                                                                     |
+| 7    | `stores/preferences.store.ts`, `components/PinButton.tsx`                                                                                                                                                      |
+| 8    | `theme/*`, `components/Surface.tsx`                                                                                                                                                                            |
+| 9    | `utils/haptics.ts`, инфраструктура i18n                                                                                                                                                                        |
+| 10   | `services/widget/*`, нативные таргеты iOS WidgetKit + Android Glance, изменения в `app.json` (App Group, entitlements)                                                                                         |
+| 11   | `utils/scheduleNormalization.ts`, `views/schedule/ScheduleView.tsx`, `views/lesson/LessonCard.tsx`, `views/lesson/DayHeader.tsx`, `views/settings/SettingsScreen.tsx`, `package.json` (+`@shopify/flash-list`) |
 
 ---
 

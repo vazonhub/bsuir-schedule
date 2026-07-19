@@ -15,7 +15,11 @@ const getTextFields = (g: StudentGroupDto): string[] => [
  * Single digit (e.g. "3") → course number OR group name substring.
  * Multi-digit token (e.g. "31", "410") → group name substring.
  */
-const tokenMatchesGroup = (token: string, group: StudentGroupDto, textFields: string[]): boolean => {
+const tokenMatchesGroup = (
+  token: string,
+  group: StudentGroupDto,
+  textFields: string[],
+): boolean => {
   if (/^\d+$/.test(token)) {
     if (token.length === 1) {
       return String(group.course) === token || group.name.toLowerCase().includes(token);
@@ -61,9 +65,7 @@ export const useGroupSearch = (items: StudentGroupDto[]): UseGroupSearchResult =
     if (!trimmed) return items;
     const tokens = trimmed.split(/\s+/).filter((t) => t && t !== 'курс');
     if (tokens.length === 0) return items;
-    return items
-      .filter((g) => matches(g, tokens))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return items.filter((g) => matches(g, tokens)).sort((a, b) => a.name.localeCompare(b.name));
   }, [items, trimmed]);
 
   return {

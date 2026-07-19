@@ -163,9 +163,7 @@ function DraggableRow<T extends Identifiable>({
       if (draggingId.value !== item.id) return;
       panOffset.value = e.translationY;
       const currentSlot = positions.value[item.id] ?? startSlot.value;
-      const rawTarget = Math.round(
-        (startSlot.value * slotHeight + e.translationY) / slotHeight,
-      );
+      const rawTarget = Math.round((startSlot.value * slotHeight + e.translationY) / slotHeight);
       const target = Math.min(Math.max(rawTarget, 0), count - 1);
       if (target !== currentSlot) {
         // Swap slots — everyone between current & target shifts by 1 toward
@@ -194,11 +192,7 @@ function DraggableRow<T extends Identifiable>({
   return (
     <GestureDetector gesture={pan}>
       <Animated.View
-        style={[
-          styles.row,
-          { height: itemHeight, top: 0, left: 0, right: 0 },
-          animStyle,
-        ]}
+        style={[styles.row, { height: itemHeight, top: 0, left: 0, right: 0 }, animStyle]}
       >
         {renderItem(item)}
       </Animated.View>

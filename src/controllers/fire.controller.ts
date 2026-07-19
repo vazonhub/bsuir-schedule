@@ -24,9 +24,12 @@ type LessonDayChecker = (iso: string) => boolean;
  * результат неизменен — переиспользуем его вместо повторной раскрутки.
  * Ключ по календарному дню (`todayISO`), т.к. номера недель считаются от него.
  */
-let checkerCache:
-  | { schedule: unknown; currentWeek: unknown; todayISO: string; checker: LessonDayChecker }
-  | null = null;
+let checkerCache: {
+  schedule: unknown;
+  currentWeek: unknown;
+  todayISO: string;
+  checker: LessonDayChecker;
+} | null = null;
 
 const buildChecker = (now: Date): LessonDayChecker => {
   const { defaultGroup } = usePreferencesStore.getState();

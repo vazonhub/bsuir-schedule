@@ -12,8 +12,7 @@ export const unstable_settings = {
   initialRouteName: '(amy)',
 };
 
-const iosVersion =
-  Platform.OS === 'ios' ? parseInt(String(Platform.Version), 10) : 0;
+const iosVersion = Platform.OS === 'ios' ? parseInt(String(Platform.Version), 10) : 0;
 const supportsLiquidGlass = iosVersion >= 26;
 
 /**
@@ -46,19 +45,31 @@ export default function TabsLayout() {
       labelStyle={isAndroid ? { fontSize: 12 } : undefined}
     >
       <NativeTabs.Trigger name="(amy)">
-        <Icon sf="calendar" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="calendar" />} />
+        <Icon
+          sf="calendar"
+          androidSrc={<VectorIcon family={MaterialCommunityIcons} name="calendar" />}
+        />
         <Label>{t('tabs.my')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(diary)">
-        <Icon sf="book.closed.fill" androidSrc={<VectorIcon family={MaterialCommunityIcons} name="book" />} />
+        <Icon
+          sf="book.closed.fill"
+          androidSrc={<VectorIcon family={MaterialCommunityIcons} name="book" />}
+        />
         <Label>{t('tabs.diary')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(schedule)">
-        <Icon sf="list.bullet.rectangle.fill" androidSrc={<VectorIcon family={MaterialIcons} name="view-list" />} />
+        <Icon
+          sf="list.bullet.rectangle.fill"
+          androidSrc={<VectorIcon family={MaterialIcons} name="view-list" />}
+        />
         <Label>{t('tabs.schedule')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(settings)">
-        <Icon sf="gearshape.fill" androidSrc={<VectorIcon family={MaterialIcons} name="settings" />} />
+        <Icon
+          sf="gearshape.fill"
+          androidSrc={<VectorIcon family={MaterialIcons} name="settings" />}
+        />
         <Label>{t('tabs.settings')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>

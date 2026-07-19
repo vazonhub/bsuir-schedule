@@ -29,10 +29,8 @@ export const useScheduleStore = create<ScheduleState>()(
       error: null,
       errorKind: null,
       currentWeek: null,
-      setSchedule: (key, schedule) =>
-        set((s) => ({ byKey: { ...s.byKey, [key]: schedule } })),
-      addLoadingKey: (key) =>
-        set((s) => ({ loadingKeys: { ...s.loadingKeys, [key]: true } })),
+      setSchedule: (key, schedule) => set((s) => ({ byKey: { ...s.byKey, [key]: schedule } })),
+      addLoadingKey: (key) => set((s) => ({ loadingKeys: { ...s.loadingKeys, [key]: true } })),
       removeLoadingKey: (key) =>
         set((s) => {
           const { [key]: _, ...rest } = s.loadingKeys;

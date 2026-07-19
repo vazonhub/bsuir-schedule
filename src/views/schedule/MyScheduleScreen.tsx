@@ -11,7 +11,12 @@ import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
 import type { DefaultEmployee, SubgroupChoice } from '@stores/preferences.store';
-import { usePreferencesStore, selectIsGroupPinned, selectIsEmployeePinned, selectSubgroup } from '@stores/preferences.store';
+import {
+  usePreferencesStore,
+  selectIsGroupPinned,
+  selectIsEmployeePinned,
+  selectSubgroup,
+} from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
@@ -55,7 +60,9 @@ const EmptyState = ({ onSelect }: { onSelect(): void }) => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.center}>
         <Ionicons name="calendar-outline" size={64} color={Palette.textTertiary} />
-        <Text {...textProps('title')} style={styles.emptyTitle}>{t('mySchedule.title')}</Text>
+        <Text {...textProps('title')} style={styles.emptyTitle}>
+          {t('mySchedule.title')}
+        </Text>
         <Text {...textProps('callout')} style={styles.emptySubtitle}>
           {t('mySchedule.subtitle')}
         </Text>
@@ -63,7 +70,9 @@ const EmptyState = ({ onSelect }: { onSelect(): void }) => {
           onPress={onSelect}
           style={({ pressed }) => [styles.selectBtn, pressed && styles.selectBtnPressed]}
         >
-          <Text {...textProps('body')} style={styles.selectBtnLabel}>{t('mySchedule.selectGroup')}</Text>
+          <Text {...textProps('body')} style={styles.selectBtnLabel}>
+            {t('mySchedule.selectGroup')}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -201,34 +210,35 @@ const DefaultEmployeeSchedule = ({ employee }: { employee: DefaultEmployee }) =>
 
 // ────────────────────────────────────────────────────────────────
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: Palette.background },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xxxl,
-    gap: Spacing.lg,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: Palette.textPrimary,
-    marginTop: Spacing.lg,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: Palette.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  selectBtn: {
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.xxl,
-    paddingVertical: Spacing.lg,
-    borderRadius: Radius.lg,
-    backgroundColor: Palette.accent,
-  },
-  selectBtnPressed: { opacity: 0.7 },
-  selectBtnLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: Palette.background },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: Spacing.xxxl,
+      gap: Spacing.lg,
+    },
+    emptyTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: Palette.textPrimary,
+      marginTop: Spacing.lg,
+    },
+    emptySubtitle: {
+      fontSize: 15,
+      color: Palette.textSecondary,
+      textAlign: 'center',
+      lineHeight: 21,
+    },
+    selectBtn: {
+      marginTop: Spacing.md,
+      paddingHorizontal: Spacing.xxl,
+      paddingVertical: Spacing.lg,
+      borderRadius: Radius.lg,
+      backgroundColor: Palette.accent,
+    },
+    selectBtnPressed: { opacity: 0.7 },
+    selectBtnLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  });

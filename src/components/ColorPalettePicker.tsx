@@ -48,18 +48,12 @@ const Swatch = ({
     <Animated.View style={{ transform: [{ scale }] }}>
       <Pressable
         onPress={handlePress}
-        style={[
-          styles.swatch,
-          { backgroundColor: color },
-          isSelected && styles.swatchSelected,
-        ]}
+        style={[styles.swatch, { backgroundColor: color }, isSelected && styles.swatchSelected]}
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ selected: isSelected }}
       >
-        {isSelected && (
-          <Ionicons name="checkmark" size={18} color={checkColor} />
-        )}
+        {isSelected && <Ionicons name="checkmark" size={18} color={checkColor} />}
       </Pressable>
     </Animated.View>
   );

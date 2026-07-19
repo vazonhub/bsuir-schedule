@@ -17,17 +17,15 @@ const SUPPORTED: LanguageChoice[] = ['ru', 'be', 'en'];
  */
 const getDeviceLanguageTag = (): string | undefined => {
   if (Platform.OS === 'ios') {
-    const settings =
-      NativeModules.SettingsManager?.settings as
-        | { AppleLocale?: string; AppleLanguages?: string[] }
-        | undefined;
+    const settings = NativeModules.SettingsManager?.settings as
+      | { AppleLocale?: string; AppleLanguages?: string[] }
+      | undefined;
     const raw = settings?.AppleLocale ?? settings?.AppleLanguages?.[0];
     return raw?.split(/[-_]/)[0]?.toLowerCase();
   }
   // Android
-  const locale =
-    (NativeModules.I18nManager as { localeIdentifier?: string } | undefined)
-      ?.localeIdentifier;
+  const locale = (NativeModules.I18nManager as { localeIdentifier?: string } | undefined)
+    ?.localeIdentifier;
   return locale?.split(/[-_]/)[0]?.toLowerCase();
 };
 

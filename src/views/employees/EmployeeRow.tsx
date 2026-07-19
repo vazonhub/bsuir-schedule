@@ -41,17 +41,21 @@ export const EmployeeRow = React.memo(({ employee, onPress, onPhotoPress }: Prop
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
-      accessibilityLabel={t('employees.teacherLabel', { name: `${employee.lastName} ${employee.firstName} ${employee.middleName}` })}
+      accessibilityLabel={t('employees.teacherLabel', {
+        name: `${employee.lastName} ${employee.firstName} ${employee.middleName}`,
+      })}
       accessibilityHint={t('a11y.openEmployeeSchedule')}
     >
-      <Pressable onPress={() => onPhotoPress?.(employee.photoLink)} hitSlop={4} importantForAccessibility="no">
+      <Pressable
+        onPress={() => onPhotoPress?.(employee.photoLink)}
+        hitSlop={4}
+        importantForAccessibility="no"
+      >
         <Avatar uri={employee.photoLink} initials={buildInitials(employee)} />
       </Pressable>
       <View style={styles.main}>
         <Text {...textProps('headline')} style={styles.title} numberOfLines={1}>
-          {[employee.lastName, employee.firstName, employee.middleName]
-            .filter(Boolean)
-            .join(' ')}
+          {[employee.lastName, employee.firstName, employee.middleName].filter(Boolean).join(' ')}
         </Text>
         {subtitle && (
           <Text {...textProps('footnote')} style={styles.subtitle} numberOfLines={1}>
@@ -59,31 +63,34 @@ export const EmployeeRow = React.memo(({ employee, onPress, onPhotoPress }: Prop
           </Text>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">&rsaquo;</Text>
+      <Text maxFontSizeMultiplier={1} style={styles.chevron} importantForAccessibility="no">
+        &rsaquo;
+      </Text>
     </Pressable>
   );
 });
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Palette.card,
-    borderRadius: Radius.lg,
-    marginHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.cardGap,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.lg,
-  },
-  cardPressed: { backgroundColor: Palette.cardPressed },
-  main: { flex: 1, gap: 2 },
-  title: { fontSize: 17, fontWeight: '600', color: Palette.textPrimary },
-  subtitle: { fontSize: 13, color: Palette.textSecondary },
-  chevron: {
-    fontSize: 22,
-    lineHeight: 22,
-    color: Palette.textTertiary,
-    marginLeft: Spacing.sm,
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Palette.card,
+      borderRadius: Radius.lg,
+      marginHorizontal: Spacing.screenPadding,
+      marginBottom: Spacing.cardGap,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.lg,
+    },
+    cardPressed: { backgroundColor: Palette.cardPressed },
+    main: { flex: 1, gap: 2 },
+    title: { fontSize: 17, fontWeight: '600', color: Palette.textPrimary },
+    subtitle: { fontSize: 13, color: Palette.textSecondary },
+    chevron: {
+      fontSize: 22,
+      lineHeight: 22,
+      color: Palette.textTertiary,
+      marginLeft: Spacing.sm,
+    },
+  });

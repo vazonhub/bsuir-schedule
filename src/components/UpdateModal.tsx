@@ -31,13 +31,7 @@ interface Props {
   onClose: () => void;
 }
 
-export const UpdateModal = ({
-  visible,
-  version,
-  releaseNotes,
-  storeUrl,
-  onClose,
-}: Props) => {
+export const UpdateModal = ({ visible, version, releaseNotes, storeUrl, onClose }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const insets = useSafeAreaInsets();
@@ -47,9 +41,7 @@ export const UpdateModal = ({
     const url = storeUrl ?? FALLBACK_STORE_URL;
     if (Platform.OS === 'android') {
       const id = url.match(/id=([^&]+)/)?.[1] ?? 'by.vazon.bsuirtime';
-      void Linking.openURL(`market://details?id=${id}`).catch(() =>
-        Linking.openURL(url),
-      );
+      void Linking.openURL(`market://details?id=${id}`).catch(() => Linking.openURL(url));
     } else {
       void Linking.openURL(url);
     }
@@ -85,9 +77,7 @@ export const UpdateModal = ({
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.notes}>
-            {releaseNotes || t('update.noNotes')}
-          </Text>
+          <Text style={styles.notes}>{releaseNotes || t('update.noNotes')}</Text>
         </ScrollView>
 
         {/* Actions */}

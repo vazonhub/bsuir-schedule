@@ -16,11 +16,9 @@ const FUZZY_THRESHOLD = 0.55;
 const FUZZY_MIN_TOKEN_LENGTH = 3;
 
 /** Lowercase + collapse Cyrillic ё→е so search treats "Семёнов"=="Семенов". */
-export const normalizeForSearch = (s: string): string =>
-  s.toLowerCase().replace(/ё/g, 'е');
+export const normalizeForSearch = (s: string): string => s.toLowerCase().replace(/ё/g, 'е');
 
-export const tokenize = (s: string): string[] =>
-  normalizeForSearch(s).split(/\s+/).filter(Boolean);
+export const tokenize = (s: string): string[] => normalizeForSearch(s).split(/\s+/).filter(Boolean);
 
 const bigrams = (s: string): Set<string> => {
   const set = new Set<string>();
@@ -82,8 +80,14 @@ const tokenScoreEntry = <T>(entry: SearchIndexEntry<T>, token: string): number =
   let best = 0;
   for (const word of entry.words) {
     if (word === token) return 3; // exact — short-circuit
-    if (word.startsWith(token)) { best = Math.max(best, 2); continue; }
-    if (word.includes(token)) { best = Math.max(best, 1); continue; }
+    if (word.startsWith(token)) {
+      best = Math.max(best, 2);
+      continue;
+    }
+    if (word.includes(token)) {
+      best = Math.max(best, 1);
+      continue;
+    }
   }
   if (best > 0) return best;
   // Fuzzy bigram match for longer tokens — handles typos / transpositions.
@@ -97,10 +101,7 @@ const tokenScoreEntry = <T>(entry: SearchIndexEntry<T>, token: string): number =
   return best;
 };
 
-export const fuzzyFilter = <T>(
-  index: Array<SearchIndexEntry<T>>,
-  query: string,
-): T[] => {
+export const fuzzyFilter = <T>(index: Array<SearchIndexEntry<T>>, query: string): T[] => {
   const tokens = tokenize(query);
   if (tokens.length === 0) return index.map((e) => e.raw);
   const scored: Array<{ raw: T; score: number }> = [];
@@ -109,7 +110,10 @@ export const fuzzyFilter = <T>(
     let allMatch = true;
     for (const token of tokens) {
       const s = tokenScoreEntry(entry, token);
-      if (s === 0) { allMatch = false; break; }
+      if (s === 0) {
+        allMatch = false;
+        break;
+      }
       totalScore += s;
     }
     if (allMatch) scored.push({ raw: entry.raw, score: totalScore });

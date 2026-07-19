@@ -115,21 +115,21 @@ feature/* ──PR──▶ develop ──PR (vX.Y.Z)──▶ testing ──PR 
 
 ## §2. Что потребуется от разработчика (ручные шаги)
 
-| Шаг | Когда | Что сделать |
-| --- | --- | --- |
-| `EXPO_TOKEN` | Фаза 6 | expo.dev → Access tokens → создать robot token → GitHub repo Settings → Secrets → Actions |
-| Default branch | Фаза 1 | Подтвердить смену на `develop` (или дать `gh` доступ) |
-| Google SA | Фаза 9 | Клики в Google Cloud + Play Console по инструкции |
-| EAS env vars | Фаза 8 | `eas` залогинен локально — заведём вместе значениями из `.env` |
-| Branch protection | Фаза 10 | Применить скрипт после смены плана/визибилити репо |
+| Шаг               | Когда   | Что сделать                                                                               |
+| ----------------- | ------- | ----------------------------------------------------------------------------------------- |
+| `EXPO_TOKEN`      | Фаза 6  | expo.dev → Access tokens → создать robot token → GitHub repo Settings → Secrets → Actions |
+| Default branch    | Фаза 1  | Подтвердить смену на `develop` (или дать `gh` доступ)                                     |
+| Google SA         | Фаза 9  | Клики в Google Cloud + Play Console по инструкции                                         |
+| EAS env vars      | Фаза 8  | `eas` залогинен локально — заведём вместе значениями из `.env`                            |
+| Branch protection | Фаза 10 | Применить скрипт после смены плана/визибилити репо                                        |
 
 ## §3. Секреты и токены
 
-| Секрет | Где живёт | Зачем |
-| --- | --- | --- |
-| `EXPO_TOKEN` | GitHub Actions secrets | Авторизация `eas` CLI в workflow |
-| ASC API Key | EAS credentials (уже есть) | submit в TestFlight |
-| Google SA JSON | EAS credentials (Фаза 9) | submit в Internal testing track |
+| Секрет          | Где живёт                          | Зачем                               |
+| --------------- | ---------------------------------- | ----------------------------------- |
+| `EXPO_TOKEN`    | GitHub Actions secrets             | Авторизация `eas` CLI в workflow    |
+| ASC API Key     | EAS credentials (уже есть)         | submit в TestFlight                 |
+| Google SA JSON  | EAS credentials (Фаза 9)           | submit в Internal testing track     |
 | `EXPO_PUBLIC_*` | EAS Environment Variables (Фаза 8) | Unity Ads / Google Sign-In в билдах |
 
 ## §4. Definition of Done

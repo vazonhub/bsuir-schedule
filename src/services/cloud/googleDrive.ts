@@ -20,8 +20,7 @@ export const isGoogleDriveAvailable = Platform.OS === 'android';
 
 // ── Helpers ──
 
-const sanitiseKey = (key: string): string =>
-  key.replace(/[^a-zA-Z0-9_-]/g, '_') + '.json';
+const sanitiseKey = (key: string): string => key.replace(/[^a-zA-Z0-9_-]/g, '_') + '.json';
 
 const authHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,
@@ -31,10 +30,7 @@ const authHeaders = (token: string) => ({
  * Find the Drive file ID for a given key. Uses cache, falls back to list query.
  * Returns `null` if not found.
  */
-const resolveFileId = async (
-  key: string,
-  token: string,
-): Promise<string | null> => {
+const resolveFileId = async (key: string, token: string): Promise<string | null> => {
   const name = sanitiseKey(key);
   const cached = fileIdCache.get(name);
   if (cached) return cached;
@@ -53,9 +49,7 @@ const resolveFileId = async (
 /**
  * Wrapper that retries once on 401 (expired token).
  */
-const withRetry = async <T>(
-  fn: (token: string) => Promise<T>,
-): Promise<T | null> => {
+const withRetry = async <T>(fn: (token: string) => Promise<T>): Promise<T | null> => {
   const token = await getAccessToken();
   if (!token) return null;
   try {
@@ -90,27 +84,21 @@ export const googleDriveGet = async (key: string): Promise<string | null> => {
 };
 
 /** Write a string value to Google Drive appDataFolder (upsert). */
-export const googleDriveSet = async (
-  key: string,
-  value: string,
-): Promise<void> => {
+export const googleDriveSet = async (key: string, value: string): Promise<void> => {
   if (!isGoogleDriveAvailable) return;
   await withRetry(async (token) => {
     const existingId = await resolveFileId(key, token);
 
     if (existingId) {
       // Update existing file.
-      const res = await fetch(
-        `${UPLOAD_API}/${existingId}?uploadType=media`,
-        {
-          method: 'PATCH',
-          headers: {
-            ...authHeaders(token),
-            'Content-Type': 'application/json',
-          },
-          body: value,
+      const res = await fetch(`${UPLOAD_API}/${existingId}?uploadType=media`, {
+        method: 'PATCH',
+        headers: {
+          ...authHeaders(token),
+          'Content-Type': 'application/json',
         },
-      );
+        body: value,
+      });
       if (!res.ok && res.status === 404) {
         // File was deleted externally — remove from cache and create.
         fileIdCache.delete(sanitiseKey(key));
@@ -180,11 +168,7 @@ export const googleDriveGetAllKeys = async (): Promise<string[]> => {
 // ── Internal ──
 
 /** Create a new file in appDataFolder via multipart upload. */
-const createFile = async (
-  key: string,
-  value: string,
-  token: string,
-): Promise<void> => {
+const createFile = async (key: string, value: string, token: string): Promise<void> => {
   const name = sanitiseKey(key);
   const boundary = '---bsuirtime' + Date.now();
   const metadata = JSON.stringify({

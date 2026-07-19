@@ -158,19 +158,12 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
                 <Pressable
                   key={subject.subject}
                   onPress={() => handleSubjectPick(subject.subject)}
-                  style={({ pressed }) => [
-                    styles.subjectRow,
-                    pressed && styles.subjectRowPressed,
-                  ]}
+                  style={({ pressed }) => [styles.subjectRow, pressed && styles.subjectRowPressed]}
                 >
                   <Text {...textProps('body')} style={styles.subjectCode}>
                     {subject.subject}
                   </Text>
-                  <Text
-                    {...textProps('footnote')}
-                    style={styles.subjectFull}
-                    numberOfLines={1}
-                  >
+                  <Text {...textProps('footnote')} style={styles.subjectFull} numberOfLines={1}>
                     {subject.subjectFullName}
                   </Text>
                   <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />

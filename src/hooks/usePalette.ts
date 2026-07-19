@@ -30,9 +30,14 @@ export const usePalette = () => {
   const { fontScale, isBoldTextEnabled } = useAccessibility();
 
   return useMemo(() => {
-    const base = resolved === 'dark'
-      ? (highContrast ? PaletteDarkHighContrast : PaletteDark)
-      : (highContrast ? PaletteHighContrast : PaletteLight);
+    const base =
+      resolved === 'dark'
+        ? highContrast
+          ? PaletteDarkHighContrast
+          : PaletteDark
+        : highContrast
+          ? PaletteHighContrast
+          : PaletteLight;
     // Spread creates a new object reference so downstream useMemo deps fire.
     return { ...base };
   }, [resolved, highContrast, fontScale, isBoldTextEnabled]);

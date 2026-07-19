@@ -27,23 +27,14 @@ export const Avatar = ({ uri, initials, size = 44, maxChars = 2 }: Props) => {
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const [errored, setErrored] = useState(false);
   const showImage = Boolean(uri) && !errored;
-  const label = maxChars === 2
-    ? (initials ?? '?').slice(0, 2).toUpperCase()
-    : (initials ?? '?').toUpperCase();
-  const fontSize = label.length <= 2
-    ? Math.round(size * 0.38)
-    : Math.round(size * 0.7 / label.length);
+  const label =
+    maxChars === 2 ? (initials ?? '?').slice(0, 2).toUpperCase() : (initials ?? '?').toUpperCase();
+  const fontSize =
+    label.length <= 2 ? Math.round(size * 0.38) : Math.round((size * 0.7) / label.length);
 
   return (
-    <View
-      style={[
-        styles.container,
-        { width: size, height: size, borderRadius: size / 2 },
-      ]}
-    >
-      <Text style={[styles.initials, { fontSize }]}>
-        {label}
-      </Text>
+    <View style={[styles.container, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.initials, { fontSize }]}>{label}</Text>
       {showImage && (
         <Image
           source={uri ?? undefined}
@@ -59,20 +50,21 @@ export const Avatar = ({ uri, initials, size = 44, maxChars = 2 }: Props) => {
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  container: {
-    backgroundColor: Palette.cardPressed,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  image: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-  initials: {
-    color: Palette.textSecondary,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: Palette.cardPressed,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    image: {
+      ...StyleSheet.absoluteFillObject,
+      width: '100%',
+      height: '100%',
+    },
+    initials: {
+      color: Palette.textSecondary,
+      fontWeight: '600',
+    },
+  });

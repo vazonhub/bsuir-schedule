@@ -62,6 +62,7 @@ export const GroupScheduleScreen = () => {
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: Palette.background },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: Palette.background },
+  });

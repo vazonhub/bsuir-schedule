@@ -80,11 +80,21 @@ export const GlassButton = ({
       {Platform.OS === 'ios' ? (
         <BlurView
           intensity={active ? 90 : 70}
-          tint={isDark ? (active ? 'systemThickMaterialDark' : 'systemThinMaterialDark') : (active ? 'systemThickMaterial' : 'systemThinMaterial')}
+          tint={
+            isDark
+              ? active
+                ? 'systemThickMaterialDark'
+                : 'systemThinMaterialDark'
+              : active
+                ? 'systemThickMaterial'
+                : 'systemThinMaterial'
+          }
           style={StyleSheet.absoluteFill}
         />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? Palette.card : '#FFFFFF' }]} />
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? Palette.card : '#FFFFFF' }]}
+        />
       )}
       <View
         style={[
@@ -98,19 +108,20 @@ export const GlassButton = ({
   );
 };
 
-const makeStyles = (Palette: PaletteType, tintBg: string) => StyleSheet.create({
-  wrap: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.7 },
-  tint: { backgroundColor: tintBg },
-  tintActive: { backgroundColor: Palette.accent + '33' },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-});
+const makeStyles = (Palette: PaletteType, tintBg: string) =>
+  StyleSheet.create({
+    wrap: {
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pressed: { opacity: 0.7 },
+    tint: { backgroundColor: tintBg },
+    tintActive: { backgroundColor: Palette.accent + '33' },
+    content: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+  });

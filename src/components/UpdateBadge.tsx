@@ -32,12 +32,8 @@ export const UpdateBadge = ({ onPress }: Props) => {
   const latestVersion = useAppVersionStore((s) => s.latestVersion);
   const lastSeenVersion = usePreferencesStore((s) => s.lastSeenVersion);
 
-  const hasUpdate = latestVersion
-    ? AppVersionController.hasUpdate
-    : false;
-  const isUnseen = latestVersion
-    ? lastSeenVersion !== latestVersion
-    : false;
+  const hasUpdate = latestVersion ? AppVersionController.hasUpdate : false;
+  const isUnseen = latestVersion ? lastSeenVersion !== latestVersion : false;
 
   const visible = DEV_FORCE_VISIBLE || hasUpdate || isUnseen;
   const label = hasUpdate ? `v${latestVersion}` : t('update.new');

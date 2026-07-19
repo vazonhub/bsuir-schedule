@@ -56,7 +56,12 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Pr
             },
           ]}
         >
-          <Text style={[styles.badgeText, { fontSize: Math.round(size * 0.24), color: Palette.textSecondary }]}>
+          <Text
+            style={[
+              styles.badgeText,
+              { fontSize: Math.round(size * 0.24), color: Palette.textSecondary },
+            ]}
+          >
             {extra}+
           </Text>
         </View>
@@ -67,7 +72,7 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Pr
           style={[
             styles.avatarWrapper,
             {
-              marginLeft: (i === 0 && extra <= 0) ? 0 : -actualOverlap,
+              marginLeft: i === 0 && extra <= 0 ? 0 : -actualOverlap,
               zIndex: i === reversed.length - 1 ? reversed.length + 1 : i,
               borderRadius: (size + 4) / 2,
               borderColor: Palette.card,
@@ -81,22 +86,23 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Pr
   );
 };
 
-const makeStyles = (Palette: PaletteType) => StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarWrapper: {
-    borderWidth: 2,
-    borderColor: Palette.card,
-  },
-  badge: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 0,
-    borderWidth: 2,
-  },
-  badgeText: {
-    fontWeight: '700',
-  },
-});
+const makeStyles = (Palette: PaletteType) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    avatarWrapper: {
+      borderWidth: 2,
+      borderColor: Palette.card,
+    },
+    badge: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 0,
+      borderWidth: 2,
+    },
+    badgeText: {
+      fontWeight: '700',
+    },
+  });

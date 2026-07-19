@@ -5,9 +5,7 @@ import type { AccessibilityRole } from 'react-native';
  *
  * @example buildLabel('Лекция', 'Математика', null, '08:00–09:35') → "Лекция, Математика, 08:00–09:35"
  */
-export function buildLabel(
-  ...parts: (string | null | undefined | false | 0)[]
-): string {
+export function buildLabel(...parts: (string | null | undefined | false | 0)[]): string {
   return parts.filter(Boolean).join(', ');
 }
 
@@ -70,8 +68,7 @@ export function luminance(hex: string): number {
   const g = parseInt(raw.substring(2, 4), 16) / 255;
   const b = parseInt(raw.substring(4, 6), 16) / 255;
 
-  const toLinear = (c: number) =>
-    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }

@@ -7,6 +7,7 @@
 Мобильное приложение «Bsuir Time» — расписание занятий БГУИР. Стек: Expo SDK 54 + React Native 0.81 + TypeScript (strict).
 
 **Платформы:**
+
 - **iOS** — основная. Минимальный target — iOS 15.1. Liquid Glass / native large title — только на iOS 26+ (с graceful fallback на старшие версии).
 - **Android** — полноценная поддержка функционала, но UI делается iOS-first и потом адаптируется под Material 3. Виджеты на Home Screen реализуем на обеих платформах (WidgetKit + Glance).
 

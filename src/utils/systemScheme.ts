@@ -14,8 +14,7 @@ import type { ResolvedScheme } from '@stores/preferences.store';
  * When a forced override is active, system changes are NOT reported — but
  * that's fine because we only need the value when switching to 'auto'.
  */
-let current: ResolvedScheme =
-  (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
+let current: ResolvedScheme = (Appearance.getColorScheme() as ResolvedScheme | null) ?? 'light';
 
 Appearance.addChangeListener(({ colorScheme }) => {
   if (colorScheme) {

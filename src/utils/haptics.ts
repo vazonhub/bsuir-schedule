@@ -7,4 +7,5 @@ export const hapticLight = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle
 export const hapticMedium = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 /** Success — pin/unpin, selecting default group. */
-export const hapticSuccess = () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+export const hapticSuccess = () =>
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

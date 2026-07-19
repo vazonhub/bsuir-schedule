@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 const GAME_ID_IOS = process.env.EXPO_PUBLIC_UNITY_GAME_ID_IOS ?? '';
 const GAME_ID_ANDROID = process.env.EXPO_PUBLIC_UNITY_GAME_ID_ANDROID ?? '';
 const PLACEMENT_IOS = process.env.EXPO_PUBLIC_UNITY_REWARDED_PLACEMENT_IOS ?? 'rewardedVideo_ios';
-const PLACEMENT_ANDROID = process.env.EXPO_PUBLIC_UNITY_REWARDED_PLACEMENT_ANDROID ?? 'rewardedVideo_android';
+const PLACEMENT_ANDROID =
+  process.env.EXPO_PUBLIC_UNITY_REWARDED_PLACEMENT_ANDROID ?? 'rewardedVideo_android';
 
 const gameId = Platform.OS === 'ios' ? GAME_ID_IOS : GAME_ID_ANDROID;
 const placementId = Platform.OS === 'ios' ? PLACEMENT_IOS : PLACEMENT_ANDROID;

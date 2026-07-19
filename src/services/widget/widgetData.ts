@@ -101,8 +101,7 @@ const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
 
 const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): WidgetLesson => {
   const numSub = lesson.raw.numSubgroup;
-  const isMine =
-    subgroup === 0 || numSub === 0 || numSub === subgroup;
+  const isMine = subgroup === 0 || numSub === 0 || numSub === subgroup;
 
   return {
     subject: lesson.raw.subject,
@@ -128,7 +127,12 @@ const toDateISO = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
-const toDayBlock = (date: Date, lessons: NormalizedLesson[], subgroup: SubgroupChoice, holidays: Holiday[]): WidgetDayBlock => ({
+const toDayBlock = (
+  date: Date,
+  lessons: NormalizedLesson[],
+  subgroup: SubgroupChoice,
+  holidays: Holiday[],
+): WidgetDayBlock => ({
   dateISO: toDateISO(date),
   dayOfWeek: date.getDay(),
   dayOfMonth: date.getDate(),

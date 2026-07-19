@@ -83,7 +83,10 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
             accessibilityRole="button"
             accessibilityLabel={t('a11y.alphabetJumpTo', { letter: l })}
           >
-            <Text maxFontSizeMultiplier={1}style={[styles.letter, l === activeLetter && styles.letterActive]}>
+            <Text
+              maxFontSizeMultiplier={1}
+              style={[styles.letter, l === activeLetter && styles.letterActive]}
+            >
               {l === activeLetter ? '•' : l}
             </Text>
           </Pressable>
@@ -94,11 +97,7 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
     return (
       <View style={styles.container}>
         {Platform.OS === 'ios' ? (
-          <BlurView
-            intensity={40}
-            tint={scheme === 'dark' ? 'dark' : 'light'}
-            style={styles.blur}
-          >
+          <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={styles.blur}>
             {accessibleInner}
           </BlurView>
         ) : (
@@ -137,11 +136,7 @@ export const AlphabetIndex = ({ letters, onSelect, activeLetter, scheme = 'light
       onResponderMove={handleTouchMove}
     >
       {Platform.OS === 'ios' ? (
-        <BlurView
-          intensity={40}
-          tint={scheme === 'dark' ? 'dark' : 'light'}
-          style={styles.blur}
-        >
+        <BlurView intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={styles.blur}>
           {inner}
         </BlurView>
       ) : (

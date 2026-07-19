@@ -27,8 +27,18 @@ import { toDateISO } from '@utils/holidays';
 type PaletteType = ReturnType<typeof usePalette>;
 
 const MONTHS_RU = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
 ];
 
 const formatHolidayDate = (dateISO: string): string => {
@@ -93,7 +103,10 @@ export const HolidaysScreen = () => {
     [apiHolidays, userAdded, userRemoved, userAddedHidden],
   );
 
-  const hasOverrides = Object.keys(userAdded).length > 0 || Object.keys(userRemoved).length > 0 || Object.keys(userAddedHidden).length > 0;
+  const hasOverrides =
+    Object.keys(userAdded).length > 0 ||
+    Object.keys(userRemoved).length > 0 ||
+    Object.keys(userAddedHidden).length > 0;
 
   // ── Add holiday modal ──
   const [showAddModal, setShowAddModal] = useState(false);
@@ -122,18 +135,30 @@ export const HolidaysScreen = () => {
     ]);
   }, [t, resetUserOverrides]);
 
-  const handleDelete = useCallback((h: DisplayHoliday) => {
-    Alert.alert(t('settings.holidaysDeleteTitle'), h.name, [
-      { text: t('settings.holidaysAddCancel'), style: 'cancel' },
-      { text: t('common.delete'), style: 'destructive', onPress: () => deleteUserHoliday(h.date, h.name) },
-    ]);
-  }, [t, deleteUserHoliday]);
+  const handleDelete = useCallback(
+    (h: DisplayHoliday) => {
+      Alert.alert(t('settings.holidaysDeleteTitle'), h.name, [
+        { text: t('settings.holidaysAddCancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => deleteUserHoliday(h.date, h.name),
+        },
+      ]);
+    },
+    [t, deleteUserHoliday],
+  );
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
         <Text style={styles.title} numberOfLines={1}>
           {t('settings.holidaysSection')}
@@ -197,7 +222,9 @@ export const HolidaysScreen = () => {
                       )}
                       {h.isHidden && (
                         <View style={styles.hiddenBadge}>
-                          <Text style={styles.hiddenBadgeText}>{t('settings.holidaysRemoved')}</Text>
+                          <Text style={styles.hiddenBadgeText}>
+                            {t('settings.holidaysRemoved')}
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -307,9 +334,7 @@ export const HolidaysScreen = () => {
                   style={[styles.modalButton, styles.modalButtonSave]}
                   onPress={handleSaveNew}
                 >
-                  <Text style={styles.modalButtonSaveText}>
-                    {t('settings.holidaysAddSave')}
-                  </Text>
+                  <Text style={styles.modalButtonSaveText}>{t('settings.holidaysAddSave')}</Text>
                 </Pressable>
               </View>
             </Pressable>

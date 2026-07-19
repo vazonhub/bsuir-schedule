@@ -72,7 +72,12 @@ export const extractDiarySubjects = (
 
   const bySubject = new Map<
     string,
-    { subject: string; subjectFullName: string; remaining: LessonTypeCounts; total: LessonTypeCounts }
+    {
+      subject: string;
+      subjectFullName: string;
+      remaining: LessonTypeCounts;
+      total: LessonTypeCounts;
+    }
   >();
 
   for (const lesson of all) {

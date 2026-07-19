@@ -8,8 +8,7 @@ import { Platform } from 'react-native';
  * from Google Cloud Console before building.
  */
 
-const GOOGLE_WEB_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
 
 const isAndroid = Platform.OS === 'android';
 

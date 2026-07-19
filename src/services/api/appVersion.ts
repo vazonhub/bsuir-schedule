@@ -20,9 +20,7 @@ export interface StoreVersionInfo {
  *
  * Used as the single source of truth for both iOS and Android.
  */
-export const fetchStoreVersion = async (
-  locale: 'ru' | 'en',
-): Promise<StoreVersionInfo | null> => {
+export const fetchStoreVersion = async (locale: 'ru' | 'en'): Promise<StoreVersionInfo | null> => {
   const country = locale === 'en' ? 'us' : 'by';
   const url = `https://itunes.apple.com/lookup?bundleId=${IOS_BUNDLE_ID}&country=${country}`;
 

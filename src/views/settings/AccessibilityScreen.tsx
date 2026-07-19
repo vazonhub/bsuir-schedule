@@ -39,7 +39,15 @@ export const AccessibilityScreen = () => {
   const isLargeTextEnabled = a11y.fontScale > 1.0;
   const fontScalePercent = Math.round(a11y.fontScale * 100);
 
-  type Feature = { key: string; labelKey: string; descKey: string; enabled: boolean; detail?: string; onToggle?: () => void; androidIntent?: string };
+  type Feature = {
+    key: string;
+    labelKey: string;
+    descKey: string;
+    enabled: boolean;
+    detail?: string;
+    onToggle?: () => void;
+    androidIntent?: string;
+  };
 
   const openAndroidIntent = useCallback((intent: string) => {
     void Linking.sendIntent(intent).catch(() => Linking.openSettings());
@@ -54,13 +62,17 @@ export const AccessibilityScreen = () => {
       enabled: a11y.isScreenReaderEnabled,
       androidIntent: 'android.settings.ACCESSIBILITY_SETTINGS',
     },
-    ...(!isAndroid ? [{
-      key: 'voiceControl',
-      labelKey: 'accessibility.voiceControl',
-      descKey: 'accessibility.voiceControlDesc',
-      enabled: a11y.isScreenReaderEnabled,
-      detail: t('accessibility.supported'),
-    }] : []),
+    ...(!isAndroid
+      ? [
+          {
+            key: 'voiceControl',
+            labelKey: 'accessibility.voiceControl',
+            descKey: 'accessibility.voiceControlDesc',
+            enabled: a11y.isScreenReaderEnabled,
+            detail: t('accessibility.supported'),
+          },
+        ]
+      : []),
     {
       key: 'largeText',
       labelKey: 'accessibility.largeText',
@@ -76,12 +88,16 @@ export const AccessibilityScreen = () => {
       enabled: a11y.isReduceMotionEnabled,
       androidIntent: 'android.settings.ACCESSIBILITY_SETTINGS',
     },
-    ...(!isAndroid ? [{
-      key: 'boldText',
-      labelKey: 'accessibility.boldText',
-      descKey: 'accessibility.boldTextDesc',
-      enabled: a11y.isBoldTextEnabled,
-    }] : []),
+    ...(!isAndroid
+      ? [
+          {
+            key: 'boldText',
+            labelKey: 'accessibility.boldText',
+            descKey: 'accessibility.boldTextDesc',
+            enabled: a11y.isBoldTextEnabled,
+          },
+        ]
+      : []),
   ];
 
   // Features togglable inside the app (Android-only overrides).
@@ -91,7 +107,9 @@ export const AccessibilityScreen = () => {
       labelKey: 'accessibility.differentiateWithoutColor',
       descKey: 'accessibility.differentiateWithoutColorDesc',
       enabled: a11y.isDifferentiateWithoutColorEnabled,
-      onToggle: isAndroid ? () => setAndroidDwc(!a11y.isDifferentiateWithoutColorEnabled) : undefined,
+      onToggle: isAndroid
+        ? () => setAndroidDwc(!a11y.isDifferentiateWithoutColorEnabled)
+        : undefined,
     },
     {
       key: 'increaseContrast',
@@ -108,16 +126,15 @@ export const AccessibilityScreen = () => {
   const renderFeatureContent = (feature: Feature, showChevron = false) => (
     <>
       <View style={styles.featureInfo}>
-        <Text {...textProps('body')} style={styles.featureLabel}>{t(feature.labelKey)}</Text>
-        <Text {...textProps('footnote')} style={styles.featureDesc}>{t(feature.descKey)}</Text>
+        <Text {...textProps('body')} style={styles.featureLabel}>
+          {t(feature.labelKey)}
+        </Text>
+        <Text {...textProps('footnote')} style={styles.featureDesc}>
+          {t(feature.descKey)}
+        </Text>
       </View>
       <View style={styles.featureRight}>
-        <View
-          style={[
-            styles.statusBadge,
-            feature.enabled ? styles.statusOn : styles.statusOff,
-          ]}
-        >
+        <View style={[styles.statusBadge, feature.enabled ? styles.statusOn : styles.statusOff]}>
           <Text
             maxFontSizeMultiplier={1}
             style={[
@@ -128,9 +145,7 @@ export const AccessibilityScreen = () => {
             {feature.detail ?? (feature.enabled ? t('accessibility.on') : t('accessibility.off'))}
           </Text>
         </View>
-        {showChevron && (
-          <Ionicons name="chevron-forward" size={14} color={Palette.textTertiary} />
-        )}
+        {showChevron && <Ionicons name="chevron-forward" size={14} color={Palette.textTertiary} />}
       </View>
     </>
   );
@@ -139,9 +154,16 @@ export const AccessibilityScreen = () => {
     <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <GlassButton onPress={() => router.back()} size={38} accessibilityLabel={t('common.back')}>
-          <Ionicons name="chevron-back" size={22} color={Palette.textPrimary} style={{ marginLeft: -1 }} />
+          <Ionicons
+            name="chevron-back"
+            size={22}
+            color={Palette.textPrimary}
+            style={{ marginLeft: -1 }}
+          />
         </GlassButton>
-        <Text {...textProps('title')} style={styles.title} numberOfLines={1}>{t('accessibility.title')}</Text>
+        <Text {...textProps('title')} style={styles.title} numberOfLines={1}>
+          {t('accessibility.title')}
+        </Text>
       </View>
 
       <ScrollView
@@ -151,7 +173,9 @@ export const AccessibilityScreen = () => {
           { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md },
         ]}
       >
-        <Text {...textProps('subhead')} style={styles.hint}>{t('accessibility.subtitle')}</Text>
+        <Text {...textProps('subhead')} style={styles.hint}>
+          {t('accessibility.subtitle')}
+        </Text>
 
         {isAndroid ? (
           <>
@@ -163,8 +187,13 @@ export const AccessibilityScreen = () => {
                   <View key={feature.key}>
                     {idx > 0 && <View style={styles.separator} />}
                     <Pressable
-                      style={({ pressed }) => [styles.featureRow, pressed && styles.featureRowPressed]}
-                      onPress={() => feature.androidIntent && openAndroidIntent(feature.androidIntent)}
+                      style={({ pressed }) => [
+                        styles.featureRow,
+                        pressed && styles.featureRowPressed,
+                      ]}
+                      onPress={() =>
+                        feature.androidIntent && openAndroidIntent(feature.androidIntent)
+                      }
                       accessibilityRole="button"
                       accessibilityLabel={`${t(feature.labelKey)}, ${feature.detail ?? (feature.enabled ? t('accessibility.on') : t('accessibility.off'))}`}
                       accessibilityHint={t('accessibility.openSettings')}
@@ -184,7 +213,10 @@ export const AccessibilityScreen = () => {
                   <View key={feature.key}>
                     {idx > 0 && <View style={styles.separator} />}
                     <Pressable
-                      style={({ pressed }) => [styles.featureRow, pressed && styles.featureRowPressed]}
+                      style={({ pressed }) => [
+                        styles.featureRow,
+                        pressed && styles.featureRowPressed,
+                      ]}
                       onPress={feature.onToggle}
                       accessibilityRole="switch"
                       accessibilityLabel={`${t(feature.labelKey)}, ${feature.detail ?? (feature.enabled ? t('accessibility.on') : t('accessibility.off'))}`}
@@ -222,7 +254,10 @@ export const AccessibilityScreen = () => {
         {!isAndroid && (
           <View style={styles.section}>
             <Pressable
-              style={({ pressed }) => [styles.settingsButton, pressed && styles.settingsButtonPressed]}
+              style={({ pressed }) => [
+                styles.settingsButton,
+                pressed && styles.settingsButtonPressed,
+              ]}
               onPress={openSettings}
               accessibilityRole="button"
               accessibilityLabel={t('accessibility.openSettings')}
