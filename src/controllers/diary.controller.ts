@@ -1,6 +1,7 @@
 import { pullDiaryFromCloud, pushDiaryToCloud } from '@services/cloud/syncService';
 import { useDiaryStore } from '@stores/diary.store';
 import { usePreferencesStore, waitForHydration } from '@stores/preferences.store';
+import { SNAPSHOT_VERSION } from '@utils/diarySync';
 import type { DiaryCloudSnapshot } from '@utils/diarySync';
 
 /**
@@ -27,6 +28,7 @@ const buildLocalSnapshot = (): DiaryCloudSnapshot => {
   const diary = useDiaryStore.getState();
   const prefs = usePreferencesStore.getState();
   return {
+    v: SNAPSHOT_VERSION,
     updatedAt: diary.updatedAt,
     progress: diary.progress,
     hidden: diary.hidden,
