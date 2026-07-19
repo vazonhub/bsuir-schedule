@@ -44,44 +44,44 @@ feature/* ──PR──▶ develop ──PR (vX.Y.Z)──▶ testing ──PR 
 
 ## §1. Фазы работ
 
-### Фаза 1 — структура веток ✅ определение / ⬜ выполнение
+### Фаза 1 — структура веток ⏸ (после merge infra/ci-cd)
 
 - [ ] Создать `develop` от `master`, запушить.
 - [ ] Создать `testing` от `develop`, запушить.
 - [ ] Сделать `develop` default branch на GitHub (Settings → General → Default branch, либо `gh repo edit --default-branch develop`).
 
-### Фаза 2 — pre-commit (husky + lint-staged)
+### Фаза 2 — pre-commit (husky + lint-staged) ✅
 
 - [ ] `husky` v9 + `lint-staged`.
 - [ ] pre-commit hook: `lint-staged` → `prettier --write` + `eslint --fix` только по staged-файлам.
 - [ ] Скрипт `prepare` в package.json для автоустановки хуков после `npm install`.
 
-### Фаза 3 — общий CI (`.github/workflows/ci.yml`)
+### Фаза 3 — общий CI (`.github/workflows/ci.yml`) ✅
 
 - [ ] Триггеры: `pull_request` → `develop`, `testing`, `master`; `push` → `develop`, `testing`, `master`.
 - [ ] Node 22, `npm ci` с кэшем.
 - [ ] Шаги: `prettier --check` (новый скрипт `format:check`) → `eslint` → `tsc --noEmit` → `npm run test --if-present` (тестов пока нет — шаг тихо пропускается, появятся — подхватится сам).
 
-### Фаза 4 — проверка версии в PR (`version-check` job)
+### Фаза 4 — проверка версии в PR (`version-check` job) ✅
 
 - [ ] Job в ci.yml только для PR в `testing` и `master` (`types: opened, edited, synchronize, reopened` — правка заголовка перезапускает).
 - [ ] Извлечь `vX.Y.Z` из заголовка PR, сравнить с `package.json.version` — иначе fail с понятным сообщением.
 - [ ] Для PR в `master`: дополнительно проверить, что тега `vX.Y.Z` ещё нет.
 
-### Фаза 5 — профили EAS (`eas.json`)
+### Фаза 5 — профили EAS (`eas.json`) ✅
 
 - [ ] Профиль build `testing`: distribution store, `autoIncrement: true`, iOS image как в production, Android `app-bundle`, канал/env `production`-подобные.
 - [ ] Профиль build `production-apk`: Android `buildType: apk` — для аттача к GitHub Release, той же подписью.
 - [ ] Профили submit: `testing.ios` (ASC API key — уже в EAS credentials), `testing.android` (`track: internal`, Google Service Account — Фаза 9).
 
-### Фаза 6 — testing-пайплайн (`.github/workflows/eas-testing.yml`)
+### Фаза 6 — testing-пайплайн (`.github/workflows/eas-testing.yml`) ✅
 
 - [ ] Триггер: `push` → `testing` + `workflow_dispatch` с input `platform: all|ios|android`.
 - [ ] Выбор платформы: по умолчанию обе; тег `[ios]` / `[android]` в сообщении head-коммита (включая merge-коммит PR) ограничивает сборку одной платформой.
 - [ ] `eas build --profile testing --platform <p> --auto-submit --non-interactive --no-wait` — билд и сабмит выполняет EAS, runner не ждёт.
 - [ ] Секрет `EXPO_TOKEN` в GitHub (robot access token с expo.dev).
 
-### Фаза 7 — релизный пайплайн (`.github/workflows/release.yml`)
+### Фаза 7 — релизный пайплайн (`.github/workflows/release.yml`) ✅
 
 - [ ] Триггер: `push` → `master`.
 - [ ] Прочитать версию из `package.json`, создать и запушить тег `vX.Y.Z` (если ещё нет).
@@ -89,29 +89,41 @@ feature/* ──PR──▶ develop ──PR (vX.Y.Z)──▶ testing ──PR 
 - [ ] Создать GitHub Release: авто-changelog (generate_release_notes), постоянные ссылки на App Store и Google Play, приложить `bsuir-time-vX.Y.Z.apk`.
 - [ ] В сторы CI ничего не сабмитит — релиз в App Store Connect / Play Console делается руками промоушеном testing-билдов.
 
-### Фаза 8 — переменные окружения в EAS
+### Фаза 8 — переменные окружения в EAS ✅
 
 - [ ] Завести все `EXPO_PUBLIC_*` из локального `.env` в EAS Environment Variables (environments: production, preview, development).
 - [ ] ⚠️ Вероятный фикс текущего бага: реклама в проде не работает, потому что EAS-билды собирались без Unity-переменных.
 - [ ] Проверить `eas env:list` после заведения.
 
-### Фаза 9 — Google Service Account для Play Console
+### Фаза 9 — Google Service Account для Play Console ⏸ (ручные шаги)
 
 - [ ] Google Cloud: создать проект (или использовать существующий), включить Google Play Android Developer API, создать Service Account, скачать JSON-ключ.
 - [ ] Play Console: Users and permissions → пригласить SA email с правами на релизы приложения.
 - [ ] Загрузить ключ в EAS credentials (`eas credentials` → Android → Google Service Account) — тогда `--auto-submit` работает с серверов EAS, ключ в GitHub не нужен.
 
-### Фаза 10 — branch protection
+### Фаза 10 — branch protection ✅ скрипт / ⏸ применение
 
 - [ ] Скрипт `scripts/setup-branch-protection.sh` (через `gh api`): rulesets для `master` (только PR, required checks: ci + version-check, linear history), `develop` (только PR, required checks: ci), `testing` (required checks, прямой push разрешён для merge из develop).
 - [ ] ⚠️ Пока репо приватный на Free-плане — GitHub не даст применить. Скрипт готовим сейчас, применяем после перехода в опенсорс/на платный план.
 
-### Фаза 11 — документация
+### Фаза 11 — документация ✅
 
 - [ ] `RELEASE.md` — чеклист релиза (пошагово, от бампа до промоушена в сторах).
 - [ ] Обновить `CLAUDE.md`: раздел про ветки/флоу и новые команды.
 
 ---
+
+### Фаза 12 — lint-долг ✅ (добавлена по ходу)
+
+- [x] Миграция eslint на flat config (v9): линтер в репо был сломан и не запускался вовсе.
+- [x] Репо-вайд prettier-формат (75 файлов).
+- [x] 624 ошибки → 0 ошибок, 0 предупреждений: реальные фиксы (Animated.Value через lazy useState, displayName, set-state-in-effect, инлайн-стили → StyleSheet, цветовые литералы → константы, мёртвый код) + точечные отключения только ложных срабатываний (no-unused-styles на фабрике тем, no-inline-styles для android-widget, require для ассетов/ленивых модулей).
+- [x] CI гоняет eslint с `--max-warnings 0`.
+
+### Фаза 13 — community-файлы для опенсорса ✅ (добавлена по ходу)
+
+- [x] CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md.
+- [x] .github/ISSUE_TEMPLATE (bug + feature + config), PULL_REQUEST_TEMPLATE.md.
 
 ## §2. Что потребуется от разработчика (ручные шаги)
 
