@@ -76,6 +76,35 @@ export const en: TranslationKeys = {
     reminderBody: 'Drop by today so your {{n}}-day streak survives.',
   },
 
+  // Diary onboarding (spotlight tutorial)
+  onboarding: {
+    welcomeTitle: 'This is your diary',
+    welcomeBody:
+      "Here you track assignments for your group's subjects. Let's take a quick tour of what you can do.",
+    streakTitle: 'Streak',
+    streakBody:
+      'Complete tasks and drop by on school days to grow your streak. Miss one and the flame starts to fade.',
+    plannerTitle: 'Planner',
+    plannerBody: 'Add tasks, drag to reorder them, and check them off when done.',
+    upcomingTitle: 'Upcoming',
+    upcomingBody: 'Your nearest classes and deadlines. Tap one to open it in the schedule.',
+    subjectCardTitle: 'Subjects',
+    subjectCardBody:
+      'Each card is a subject from your schedule. The counters show how many tasks are left per lesson type.',
+    enterCountTitle: 'Task count',
+    enterCountBody: 'Tap a card to set how many assignments a subject has.',
+    completeTaskTitle: 'Mark as done',
+    completeTaskBody: 'Tap a task cell once you finish it. Completed tasks grow your streak.',
+    hideSubjectTitle: 'Hide a subject',
+    hideSubjectBody: 'Long-press a card to hide the subject, reset progress, or change the count.',
+    next: 'Next',
+    skip: 'Skip',
+    done: 'Done',
+    stepProgress: 'Step {{current}} of {{total}}',
+    diarySection: 'Diary',
+    replay: 'Replay the diary tutorial',
+  },
+
   error: {
     serverDown: 'iis.bsuir.by servers are temporarily unavailable',
     serverHint: 'Try again later or open another schedule if it is already cached',
