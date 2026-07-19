@@ -1,0 +1,888 @@
+import WidgetKit
+import SwiftUI
+import UIKit
+
+// MARK: - Data models (match TS WidgetSnapshot)
+
+struct WidgetLesson: Codable {
+    let subject: String
+    let typeAbbrev: String?
+    let typeColorHex: String
+    let startTime: String
+    let endTime: String
+    let auditories: [String]
+    let teacher: String?
+    let teacherPhotoUrl: String?
+    /// Photo URLs for all teachers (for multi-avatar display).
+    let teacherPhotos: [String]?
+    let numSubgroup: Int
+    let isMine: Bool
+    let note: String?
+    let studentGroups: [String]?
+}
+
+struct WidgetDayBlock: Codable {
+    let dateISO: String
+    let dayOfWeek: Int
+    let dayOfMonth: Int
+    let month: Int
+    let lessons: [WidgetLesson]
+    let holidayName: String?
+}
+
+struct WidgetStrings: Codable {
+    let daysShort: [String]?
+    let months: [String]?
+    let weekLabel: String?
+    let noClasses: String?
+    let allDone: String?
+    let subgroupShort: String?
+    let description: String?
+    let now: String?
+    let next: String?
+}
+
+struct WidgetUpcoming: Codable {
+    let lesson: WidgetLesson
+    let dateISO: String
+    let isOngoing: Bool
+    let blockId: String
+}
+
+struct WidgetSnapshot: Codable {
+    let groupName: String
+    let generatedAt: String
+    let currentWeek: Int
+    let subgroup: Int
+    let today: WidgetDayBlock
+    let nextDay: WidgetDayBlock?
+    let upcoming: WidgetUpcoming?
+    let strings: WidgetStrings?
+}
+
+// MARK: - Day relation (today / tomorrow / future)
+
+enum DayRelation {
+    case today
+    case tomorrow
+    case future
+
+    var color: Color {
+        switch self {
+        case .today: return .blue
+        case .tomorrow: return .red
+        case .future: return .orange
+        }
+    }
+}
+
+func dayRelation(dateISO: String, realTodayISO: String, realTomorrowISO: String) -> DayRelation {
+    if dateISO == realTodayISO { return .today }
+    if dateISO == realTomorrowISO { return .tomorrow }
+    return .future
+}
+
+// MARK: - Shared storage reader
+
+private let appGroup = "group.by.vazon.bsuirschedule"
+private let storageKey = "widgetSnapshot"
+
+func loadSnapshot() -> WidgetSnapshot? {
+    guard let defaults = UserDefaults(suiteName: appGroup) else { return nil }
+    if let data = defaults.data(forKey: storageKey) {
+        return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+    }
+    if let raw = defaults.string(forKey: storageKey),
+       let jsonData = raw.data(using: .utf8) {
+        return try? JSONDecoder().decode(WidgetSnapshot.self, from: jsonData)
+    }
+    return nil
+}
+
+// MARK: - Helpers
+
+extension Color {
+    init(hex: String) {
+        let h = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
+        var rgb: UInt64 = 0
+        Scanner(string: h).scanHexInt64(&rgb)
+        self.init(
+            red: Double((rgb >> 16) & 0xFF) / 255,
+            green: Double((rgb >> 8) & 0xFF) / 255,
+            blue: Double(rgb & 0xFF) / 255
+        )
+    }
+}
+
+extension WidgetLesson {
+    /// SF Symbol name that best represents the lesson type. Used on accessory
+    /// (Lock Screen) widgets, where accent color mostly gets tinted to system
+    /// colors anyway — so a symbol carries the meaning instead.
+    var typeSymbolName: String {
+        switch typeAbbrev ?? "" {
+        case "ЛК", "УЛк":     return "book.fill"
+        case "ЛР":            return "flask.fill"
+        case "ПЗ", "УПз":     return "pencil"
+        case "Консультация":  return "person.2.fill"
+        case "Экзамен":       return "graduationcap.fill"
+        default:              return "calendar"
+        }
+    }
+}
+
+private let dayNamesShort = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
+private let monthNames = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+]
+
+func formatDayLabel(_ block: WidgetDayBlock) -> String {
+    let dow = dayNamesShort[block.dayOfWeek]
+    let month = monthNames[block.month]
+    return "\(dow), \(block.dayOfMonth) \(month)"
+}
+
+/// Minutes since midnight from "HH:mm" string.
+func minutesFromTime(_ time: String) -> Int? {
+    let parts = time.split(separator: ":")
+    guard parts.count == 2, let h = Int(parts[0]), let m = Int(parts[1]) else { return nil }
+    return h * 60 + m
+}
+
+/// Filter lessons: keep only those whose endTime is after the given minutes-since-midnight.
+func remainingLessons(from lessons: [WidgetLesson], afterMinutes: Int) -> [WidgetLesson] {
+    lessons.filter { lesson in
+        guard let end = minutesFromTime(lesson.endTime) else { return true }
+        return end > afterMinutes
+    }
+}
+
+/// Current time as minutes since midnight.
+func nowMinutes() -> Int {
+    let cal = Calendar.current
+    let now = Date()
+    return cal.component(.hour, from: now) * 60 + cal.component(.minute, from: now)
+}
+
+// MARK: - Photo downloader
+
+func downloadPhotos(for lessons: [WidgetLesson], completion: @escaping ([String: Data]) -> Void) {
+    let mine = lessons.filter { $0.isMine }
+    let allUrls = mine.flatMap { $0.teacherPhotos ?? [$0.teacherPhotoUrl].compactMap { $0 } }
+    let uniqueUrls = Set(allUrls)
+    guard !uniqueUrls.isEmpty else { completion([:]); return }
+
+    let lock = NSLock()
+    var cache: [String: Data] = [:]
+    let group = DispatchGroup()
+
+    for urlStr in uniqueUrls {
+        guard let url = URL(string: urlStr) else { continue }
+        group.enter()
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 5
+        URLSession.shared.dataTask(with: request) { data, _, _ in
+            if let data = data {
+                lock.lock()
+                cache[urlStr] = data
+                lock.unlock()
+            }
+            group.leave()
+        }.resume()
+    }
+
+    group.notify(queue: .main) { completion(cache) }
+}
+
+// MARK: - Timeline
+
+struct ScheduleEntry: TimelineEntry {
+    let date: Date
+    let snapshot: WidgetSnapshot?
+    let photos: [String: Data]
+    /// Today's block (may be nil if snapshot is nil).
+    let todayBlock: WidgetDayBlock?
+    /// Today's remaining lessons (filtered by time).
+    let todayLessons: [WidgetLesson]
+    /// Relation of today's block to real today.
+    let todayRelation: DayRelation
+    /// Next day block with lessons (nil if no next day available).
+    let nextDayBlock: WidgetDayBlock?
+    /// All lessons for the next day.
+    let nextDayLessons: [WidgetLesson]
+    /// Relation of next day block to real today.
+    let nextDayRelation: DayRelation
+}
+
+struct ScheduleTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> ScheduleEntry {
+        ScheduleEntry(date: .now, snapshot: nil, photos: [:],
+                      todayBlock: nil, todayLessons: [], todayRelation: .today,
+                      nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .tomorrow)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (ScheduleEntry) -> Void) {
+        let entry = buildCurrentEntry(snapshot: loadSnapshot(), photos: [:])
+        completion(entry)
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<ScheduleEntry>) -> Void) {
+        let snapshot = loadSnapshot()
+        let allLessons = (snapshot?.today.lessons ?? []) + (snapshot?.nextDay?.lessons ?? [])
+        let mineLessons = allLessons.filter { $0.isMine }
+
+        downloadPhotos(for: mineLessons) { photos in
+            var entries: [ScheduleEntry] = []
+            let cal = Calendar.current
+
+            // Entry for right now
+            entries.append(buildCurrentEntry(snapshot: snapshot, photos: photos))
+
+            // Generate entries at each lesson boundary (start and end times) for today
+            if let snap = snapshot {
+                let todayLessons = snap.today.lessons
+                var times = Set<Int>()
+                for lesson in todayLessons {
+                    if let s = minutesFromTime(lesson.startTime) { times.insert(s) }
+                    if let e = minutesFromTime(lesson.endTime) { times.insert(e) }
+                }
+
+                let current = nowMinutes()
+                for mins in times.sorted() where mins > current {
+                    if let entryDate = cal.date(bySettingHour: mins / 60, minute: mins % 60, second: 0, of: Date()) {
+                        entries.append(buildEntry(at: entryDate, afterMinutes: mins, snapshot: snap, photos: photos))
+                    }
+                }
+
+                // Entry at midnight for next day rollover
+                if let tomorrow = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: Date())) {
+                    entries.append(buildEntry(at: tomorrow, afterMinutes: 0, snapshot: snap, photos: photos))
+                }
+            }
+
+            // Fallback: refresh at least every 2 hours
+            let fallback = cal.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
+            completion(Timeline(entries: entries, policy: .after(fallback)))
+        }
+    }
+
+    private func buildCurrentEntry(snapshot: WidgetSnapshot?, photos: [String: Data]) -> ScheduleEntry {
+        guard let snap = snapshot else {
+            return ScheduleEntry(date: .now, snapshot: nil, photos: photos,
+                                 todayBlock: nil, todayLessons: [], todayRelation: .today,
+                                 nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .tomorrow)
+        }
+        return buildEntry(at: Date(), afterMinutes: nowMinutes(), snapshot: snap, photos: photos)
+    }
+
+    private func buildEntry(at date: Date, afterMinutes: Int, snapshot: WidgetSnapshot, photos: [String: Data]) -> ScheduleEntry {
+        let cal = Calendar.current
+        let todayStart = cal.startOfDay(for: date)
+        let todayISO = isoString(from: todayStart)
+        let tomorrowISO = isoString(from: cal.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart)
+
+        // If the snapshot's "today" matches the real current date, use normal logic.
+        if snapshot.today.dateISO == todayISO {
+            let remaining = remainingLessons(from: snapshot.today.lessons, afterMinutes: afterMinutes)
+            let tRel = dayRelation(dateISO: snapshot.today.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+            let nRel = snapshot.nextDay.map { dayRelation(dateISO: $0.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO) } ?? .tomorrow
+
+            if !remaining.isEmpty {
+                return ScheduleEntry(
+                    date: date, snapshot: snapshot, photos: photos,
+                    todayBlock: snapshot.today, todayLessons: remaining, todayRelation: tRel,
+                    nextDayBlock: snapshot.nextDay, nextDayLessons: snapshot.nextDay?.lessons ?? [], nextDayRelation: nRel
+                )
+            }
+
+            // Today is done — show next day as primary
+            if let next = snapshot.nextDay {
+                let nextRel = dayRelation(dateISO: next.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+                return ScheduleEntry(
+                    date: date, snapshot: snapshot, photos: photos,
+                    todayBlock: next, todayLessons: next.lessons, todayRelation: nextRel,
+                    nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
+                )
+            }
+
+            // No next day
+            return ScheduleEntry(
+                date: date, snapshot: snapshot, photos: photos,
+                todayBlock: snapshot.today, todayLessons: [], todayRelation: tRel,
+                nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
+            )
+        }
+
+        // Snapshot is stale — check if nextDay matches the real today.
+        if let next = snapshot.nextDay, next.dateISO == todayISO {
+            let remaining = remainingLessons(from: next.lessons, afterMinutes: afterMinutes)
+            let tRel = dayRelation(dateISO: next.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+            return ScheduleEntry(
+                date: date, snapshot: snapshot, photos: photos,
+                todayBlock: next, todayLessons: remaining.isEmpty ? next.lessons : remaining, todayRelation: tRel,
+                nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
+            )
+        }
+
+        // Snapshot is too old — show whatever we have.
+        let block = snapshot.nextDay ?? snapshot.today
+        let bRel = dayRelation(dateISO: block.dateISO, realTodayISO: todayISO, realTomorrowISO: tomorrowISO)
+        return ScheduleEntry(
+            date: date, snapshot: snapshot, photos: photos,
+            todayBlock: block, todayLessons: block.lessons, todayRelation: bRel,
+            nextDayBlock: nil, nextDayLessons: [], nextDayRelation: .future
+        )
+    }
+
+    private func isoString(from date: Date) -> String {
+        let cal = Calendar.current
+        let y = cal.component(.year, from: date)
+        let m = cal.component(.month, from: date)
+        let d = cal.component(.day, from: date)
+        return String(format: "%04d-%02d-%02d", y, m, d)
+    }
+}
+
+// MARK: - Reusable views
+
+struct LessonRow: View {
+    let lesson: WidgetLesson
+    let photo: Data?
+    /// All downloaded photo data keyed by URL.
+    var allPhotos: [String: Data] = [:]
+    var compact: Bool = false
+    var showNote: Bool = false
+
+    var body: some View {
+        if lesson.isMine {
+            fullRow
+        } else {
+            compactRow
+        }
+    }
+
+    private var fullRow: some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Color(hex: lesson.typeColorHex))
+                .frame(width: 4)
+
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Text(lesson.subject)
+                        .font(.system(size: compact ? 12 : 13, weight: .semibold))
+                        .lineLimit(1)
+
+                    if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                        Text("\(lesson.numSubgroup) п/г")
+                            .font(.system(size: compact ? 9 : 10, weight: .medium))
+                            .foregroundColor(Color(hex: lesson.typeColorHex))
+                    }
+                }
+
+                HStack(spacing: 3) {
+                    Text("\(lesson.startTime)–\(lesson.endTime)")
+                        .font(.system(size: compact ? 10 : 11))
+                        .foregroundColor(.secondary)
+
+                    if !lesson.auditories.isEmpty {
+                        Text("·").foregroundColor(.secondary)
+                        Text(lesson.auditories.joined(separator: ", "))
+                            .font(.system(size: compact ? 10 : 11, weight: .medium))
+                            .lineLimit(1)
+                    }
+                }
+
+                if showNote, let note = lesson.note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if !compact {
+                let urls = lesson.teacherPhotos ?? [lesson.teacherPhotoUrl].compactMap { $0 }
+                let photoDataList = urls.prefix(2).compactMap { url -> Data? in allPhotos[url] ?? (url == lesson.teacherPhotoUrl ? photo : nil) }
+                let extraCount = max(0, urls.count - 2)
+                // Reversed: badge on the left, first teacher on the right
+                let reversedPhotos = Array(photoDataList.reversed())
+
+                let groups = lesson.studentGroups ?? []
+
+                if !reversedPhotos.isEmpty || extraCount > 0 {
+                    HStack(spacing: -10) {
+                        if extraCount > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text("\(extraCount)+")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(Double(reversedPhotos.count + 1))
+                        }
+                        ForEach(Array(reversedPhotos.enumerated()), id: \.offset) { index, data in
+                            if let img = UIImage(data: data) {
+                                Image(uiImage: img)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 28, height: 28)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                    .zIndex(index == reversedPhotos.count - 1 ? Double(reversedPhotos.count + 1) : Double(index))
+                            }
+                        }
+                    }
+                } else if !groups.isEmpty {
+                    let visibleGroups = Array(groups.prefix(2).reversed())
+                    let groupExtra = max(0, groups.count - 2)
+                    HStack(spacing: -10) {
+                        if groupExtra > 0 {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 28, height: 28)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text("\(groupExtra)+")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(Double(visibleGroups.count + 1))
+                        }
+                        ForEach(Array(visibleGroups.enumerated()), id: \.offset) { index, name in
+                            ZStack {
+                                Circle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 30, height: 30)
+                                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 1.5))
+                                Text(name)
+                                    .font(.system(size: 7, weight: .bold))
+                                    .foregroundColor(.secondary)
+                            }
+                            .zIndex(index == visibleGroups.count - 1 ? Double(visibleGroups.count + 1) : Double(index))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Compact row for lessons of another subgroup — dashed outline.
+    private var compactRow: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Text(lesson.subject)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+
+                if lesson.numSubgroup == 1 || lesson.numSubgroup == 2 {
+                    Text("\(lesson.numSubgroup) п/г")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(Color(hex: lesson.typeColorHex))
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            Text("\(lesson.startTime)–\(lesson.endTime)")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 2)
+        .padding(.horizontal, 6)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(Color(hex: lesson.typeColorHex).opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        )
+    }
+}
+
+struct EmptyStateView: View {
+    var allDone: Bool = false
+    var holidayName: String? = nil
+    var displayBlock: WidgetDayBlock? = nil
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if let holiday = holidayName {
+                Image(systemName: "star.fill")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                Text(holiday)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.center)
+                if let block = displayBlock {
+                    Text(formatDayLabel(block))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Image(systemName: allDone ? "checkmark.circle" : "calendar")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                Text(allDone ? "На сегодня пар больше нет" : "Нет пар")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+/// Section header for a day inside multi-day widgets.
+struct DaySectionHeader: View {
+    let block: WidgetDayBlock
+    let relation: DayRelation
+
+    var body: some View {
+        HStack {
+            Text(formatDayLabel(block))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(relation.color)
+            Spacer()
+        }
+    }
+}
+
+struct WidgetHeader: View {
+    let groupName: String
+    let currentWeek: Int
+    var dateLabel: String? = nil
+    var dateLabelColor: Color = .orange
+    var showWeek: Bool = true
+
+    var body: some View {
+        HStack {
+            Text(groupName)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+            if let label = dateLabel {
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(dateLabelColor)
+            }
+            Spacer()
+            if showWeek {
+                Text("Неделя \(currentWeek)")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Small widget
+
+struct SmallWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        if let snap = entry.snapshot {
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
+                let lessons = Array(entry.todayLessons.prefix(2))
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text(snap.groupName)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        if let block = entry.todayBlock {
+                            Text(formatDayLabel(block))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(entry.todayRelation.color)
+                        }
+                        Spacer()
+                    }
+
+                    ForEach(Array(lessons.enumerated()), id: \.offset) { _, lesson in
+                        LessonRow(lesson: lesson, photo: nil, compact: true)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            } else {
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
+            }
+        } else {
+            EmptyStateView()
+        }
+    }
+}
+
+// MARK: - Medium widget
+
+struct MediumWidgetView: View {
+    let entry: ScheduleEntry
+    private let maxSlots = 3
+
+    var body: some View {
+        if let snap = entry.snapshot {
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    WidgetHeader(
+                        groupName: snap.groupName,
+                        currentWeek: snap.currentWeek,
+                        dateLabel: entry.todayBlock.map { formatDayLabel($0) },
+                        dateLabelColor: entry.todayRelation.color
+                    )
+
+                    let todaySlice = Array(entry.todayLessons.prefix(maxSlots))
+
+                    ForEach(Array(todaySlice.enumerated()), id: \.offset) { _, lesson in
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos)
+                    }
+
+                    // Fill remaining slots with next day lessons
+                    if todaySlice.count < maxSlots, let nextBlock = entry.nextDayBlock, !entry.nextDayLessons.isEmpty {
+                        let nextCount = maxSlots - todaySlice.count - 1 // 1 slot for date header
+                        if nextCount > 0 {
+                            DaySectionHeader(block: nextBlock, relation: entry.nextDayRelation)
+                            let nextSlice = Array(entry.nextDayLessons.prefix(nextCount))
+                            ForEach(Array(nextSlice.enumerated()), id: \.offset) { _, lesson in
+                                LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos)
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            } else {
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
+            }
+        } else {
+            EmptyStateView()
+        }
+    }
+}
+
+// MARK: - Large widget
+
+struct LargeWidgetView: View {
+    let entry: ScheduleEntry
+    private let maxSlots = 5
+
+    var body: some View {
+        if let snap = entry.snapshot {
+            if let holiday = entry.todayBlock?.holidayName {
+                EmptyStateView(holidayName: holiday, displayBlock: entry.todayBlock)
+            } else if !entry.todayLessons.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    WidgetHeader(
+                        groupName: snap.groupName,
+                        currentWeek: snap.currentWeek,
+                        dateLabel: entry.todayBlock.map { formatDayLabel($0) },
+                        dateLabelColor: entry.todayRelation.color
+                    )
+
+                    // Only show lessons relevant to the user's subgroup.
+                    let todayMine = entry.todayLessons.filter { $0.isMine }
+                    let todaySlice = Array(todayMine.prefix(maxSlots))
+
+                    ForEach(Array(todaySlice.enumerated()), id: \.offset) { index, lesson in
+                        LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
+                        if index < todaySlice.count - 1 || (!entry.nextDayLessons.isEmpty && entry.nextDayBlock != nil) {
+                            Divider()
+                        }
+                    }
+
+                    // Fill remaining slots with next day lessons
+                    if todaySlice.count < maxSlots, let nextBlock = entry.nextDayBlock, !entry.nextDayLessons.isEmpty {
+                        let nextMine = entry.nextDayLessons.filter { $0.isMine }
+                        let nextCount = maxSlots - todaySlice.count - 1 // 1 slot for date header
+                        if nextCount > 0 && !nextMine.isEmpty {
+                            DaySectionHeader(block: nextBlock, relation: entry.nextDayRelation)
+                            let nextSlice = Array(nextMine.prefix(nextCount))
+                            ForEach(Array(nextSlice.enumerated()), id: \.offset) { index, lesson in
+                                LessonRow(lesson: lesson, photo: entry.photos[lesson.teacherPhotoUrl ?? ""], allPhotos: entry.photos, showNote: true)
+                                if index < nextSlice.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+            } else {
+                EmptyStateView(allDone: !snap.today.lessons.isEmpty)
+            }
+        } else {
+            EmptyStateView()
+        }
+    }
+}
+
+// MARK: - Lock Screen (accessory) widgets
+
+/// One-liner above the clock. Format: "{typeAbbrev} · {subject} · {startTime}".
+/// iOS will auto-truncate with an ellipsis; we don't shorten anything in JS.
+@available(iOSApplicationExtension 16.0, *)
+struct InlineWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        if let up = entry.snapshot?.upcoming {
+            Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+        } else {
+            Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
+        }
+    }
+}
+
+/// Circular complication — icon centred, start time small below.
+/// Subject text does not fit into ~57×57 pt; icon carries the meaning.
+@available(iOSApplicationExtension 16.0, *)
+struct CircularWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        ZStack {
+            AccessoryWidgetBackground()
+            if let up = entry.snapshot?.upcoming {
+                VStack(spacing: 1) {
+                    Image(systemName: up.lesson.typeSymbolName)
+                        .font(.system(size: 18, weight: .semibold))
+                        .widgetAccentable()
+                    Text(up.lesson.startTime)
+                        .font(.system(size: 10, weight: .medium))
+                        .monospacedDigit()
+                }
+            } else {
+                Image(systemName: "calendar")
+                    .font(.system(size: 20, weight: .semibold))
+                    .widgetAccentable()
+            }
+        }
+    }
+}
+
+/// Rectangular widget (~120×47 pt). Layout: [icon] on the right, subject
+/// (top) + time (bottom) on the left. Auditory appended to time if it fits.
+@available(iOSApplicationExtension 16.0, *)
+struct RectangularWidgetView: View {
+    let entry: ScheduleEntry
+
+    var body: some View {
+        if let up = entry.snapshot?.upcoming {
+            HStack(alignment: .center, spacing: 8) {
+                Image(systemName: up.lesson.typeSymbolName)
+                    .font(.system(size: 22, weight: .semibold))
+                    .widgetAccentable()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(up.lesson.subject)
+                        .font(.headline)
+                        .lineLimit(2)
+                    Text("\(up.lesson.startTime)–\(up.lesson.endTime)")
+                        .font(.caption2)
+                        .monospacedDigit()
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            HStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 22, weight: .semibold))
+                    .widgetAccentable()
+                Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
+                    .font(.headline)
+                Spacer(minLength: 0)
+            }
+        }
+    }
+}
+
+// MARK: - Entry view router
+
+struct ScheduleWidgetEntryView: View {
+    @Environment(\.widgetFamily) var family
+    let entry: ScheduleEntry
+
+    var body: some View {
+        switch family {
+        case .systemSmall:
+            SmallWidgetView(entry: entry)
+        case .systemMedium:
+            MediumWidgetView(entry: entry)
+        case .systemLarge:
+            LargeWidgetView(entry: entry)
+        default:
+            if #available(iOSApplicationExtension 16.0, *) {
+                switch family {
+                case .accessoryInline:      InlineWidgetView(entry: entry)
+                case .accessoryCircular:    CircularWidgetView(entry: entry)
+                case .accessoryRectangular: RectangularWidgetView(entry: entry)
+                default: MediumWidgetView(entry: entry)
+                }
+            } else {
+                MediumWidgetView(entry: entry)
+            }
+        }
+    }
+}
+
+// MARK: - Widget declaration
+
+/// Build a deep-link URL for the given entry. Points to the "upcoming" lesson
+/// via `bsuirtime://lesson?id=<encoded blockId>` if available, else the root
+/// `bsuirtime://`. The blockId contains ":", spaces and Cyrillic characters,
+/// so it is percent-encoded as a query value.
+private func widgetDeepLink(for entry: ScheduleEntry) -> URL? {
+    let root = URL(string: "bsuirtime://")
+    guard let blockId = entry.snapshot?.upcoming?.blockId else { return root }
+    let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=?#+/"))
+    let encoded = blockId.addingPercentEncoding(withAllowedCharacters: allowed) ?? blockId
+    return URL(string: "bsuirtime://lesson?id=\(encoded)") ?? root
+}
+
+private func supportedFamilies() -> [WidgetFamily] {
+    var families: [WidgetFamily] = [.systemSmall, .systemMedium, .systemLarge]
+    if #available(iOSApplicationExtension 16.0, *) {
+        families.append(contentsOf: [.accessoryCircular, .accessoryRectangular, .accessoryInline])
+    }
+    return families
+}
+
+struct ScheduleWidget: Widget {
+    let kind = "ScheduleWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ScheduleTimelineProvider()) { entry in
+            if #available(iOS 17, *) {
+                ScheduleWidgetEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+                    .widgetURL(widgetDeepLink(for: entry))
+            } else {
+                ScheduleWidgetEntryView(entry: entry)
+                    .padding(12)
+                    .background()
+                    .widgetURL(widgetDeepLink(for: entry))
+            }
+        }
+        .configurationDisplayName("Bsuir Time")
+        .description("Расписание занятий")
+        .supportedFamilies(supportedFamilies())
+    }
+}
+
+// MARK: - Bundle
+
+@main
+struct ScheduleWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        ScheduleWidget()
+    }
+}

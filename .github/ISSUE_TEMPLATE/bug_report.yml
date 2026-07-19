@@ -1,0 +1,57 @@
+name: 🐞 Bug report
+description: Something in the app works incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to see instead.
+      placeholder: "I open the schedule for group 410101 and today's lessons are missing, although there are classes..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - iOS
+        - Android
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and OS version
+      placeholder: 'iPhone 14, iOS 18.2 / Pixel 8, Android 15'
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Settings → About
+      placeholder: '2.3.1'
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots / extra context
+      description: If the problem is tied to a specific group/lecturer — name them, it speeds up reproduction a lot.

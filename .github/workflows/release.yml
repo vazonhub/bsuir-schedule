@@ -1,0 +1,100 @@
+name: Release
+
+# Merge PR «Release vX.Y.Z» в master →
+#   1. git-тег vX.Y.Z (версия из package.json);
+#   2. production-APK билд через EAS (ждём и скачиваем);
+#   3. GitHub Release: авто-changelog + ссылки на сторы + APK.
+# В App Store / Google Play CI ничего не сабмитит — релиз делается руками
+# промоушеном билдов, загруженных на этапе testing.
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Tag, APK & GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        id: tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::warning::Тег $TAG уже существует — релиз пропущен (push в master без бампа версии)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.tag.outputs.skip == 'false'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.tag.outputs.skip == 'false'
+        run: npm ci
+
+      - name: Setup EAS CLI
+        if: steps.tag.outputs.skip == 'false'
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build production APK
+        if: steps.tag.outputs.skip == 'false'
+        run: >-
+          eas build
+          --profile production-apk
+          --platform android
+          --non-interactive
+          --json
+          --wait
+          --message "Release v${{ steps.version.outputs.version }}"
+          > eas-build.json
+
+      - name: Download APK
+        if: steps.tag.outputs.skip == 'false'
+        run: |
+          BUILD_URL=$(node -p "JSON.parse(require('fs').readFileSync('eas-build.json', 'utf8'))[0].artifacts.buildUrl")
+          curl -fL "$BUILD_URL" -o "bsuir-time-v${{ steps.version.outputs.version }}.apk"
+          ls -lh bsuir-time-*.apk
+
+      - name: Create GitHub Release
+        if: steps.tag.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          body: |
+            ## Bsuir Time v${{ steps.version.outputs.version }}
+
+            | Платформа | Где взять |
+            | --- | --- |
+            | iOS | [App Store](https://apps.apple.com/app/id6762343557) |
+            | Android | [Google Play](https://play.google.com/store/apps/details?id=by.vazon.bsuirtime) или APK ниже |
+
+            ---
+          files: bsuir-time-v${{ steps.version.outputs.version }}.apk

@@ -1,0 +1,75 @@
+name: EAS Testing Build
+
+# Push в testing → EAS build + submit (iOS → TestFlight, Android → Internal testing).
+# По умолчанию собираются обе платформы. Ограничить одной:
+#   - тег [ios] или [android] в сообщении head-коммита (merge-коммита PR), или
+#   - ручной запуск Run workflow с выбором платформы.
+
+on:
+  push:
+    branches: [testing]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Платформа для сборки'
+        type: choice
+        options: [all, ios, android]
+        default: all
+
+concurrency:
+  group: eas-testing-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: EAS build & submit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve platform
+        id: platform
+        env:
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+          DISPATCH_PLATFORM: ${{ inputs.platform }}
+        run: |
+          if [ -n "$DISPATCH_PLATFORM" ]; then
+            PLATFORM="$DISPATCH_PLATFORM"
+          else
+            case "$HEAD_MESSAGE" in
+              *"[ios]"*) PLATFORM=ios ;;
+              *"[android]"*) PLATFORM=android ;;
+              *) PLATFORM=all ;;
+            esac
+          fi
+          echo "platform=$PLATFORM" >> "$GITHUB_OUTPUT"
+          echo "Building platform: $PLATFORM"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # --no-wait: билд и сабмит выполняются на серверах EAS, runner не ждёт.
+      - name: Start EAS build + submit
+        env:
+          HEAD_MESSAGE: ${{ github.event.head_commit.message || 'Manual testing build' }}
+        run: |
+          MESSAGE=$(printf '%s' "$HEAD_MESSAGE" | head -1 | cut -c1-1024)
+          eas build \
+            --profile testing \
+            --platform "${{ steps.platform.outputs.platform }}" \
+            --auto-submit \
+            --non-interactive \
+            --no-wait \
+            --message "$MESSAGE"
