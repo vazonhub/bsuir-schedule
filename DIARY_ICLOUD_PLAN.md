@@ -5,16 +5,16 @@
 
 ## 0. Зафиксированные продуктовые решения (итог 2 волн вопросов)
 
-| Тема | Решение |
-|---|---|
-| Merge-стратегия | **LWW по `updatedAt`** — весь снапшот дневника единое целое; новее по времени побеждает |
-| Объём синка | `progress` (кол-во лаб + сделанные), `hidden` (замьюченные предметы), `planner`, **+** `blockedLessons` (замьюченные пары), **+** `diaryOnboardingSeen` |
-| Огонёк | Уже синкается (`fire:state` через `pushFireToCloud`/`pullFireFromCloud`) — только проверить, не трогать |
-| Живой синк | Только по входу в foreground / на старте (как огонёк), **без** `onExternalChange` |
-| Архитектура | Новый `DiaryController` по образцу `FireController` |
-| Бэкенды | iCloud **и** Google Drive (Android), гейтинг по `prefs.sourceICloud` / `prefs.sourceGoogleDrive` |
-| Галочка iCloud вкл. | При включении — сразу `pull + merge + push` |
-| Ключ в облаке | `diary:state` (один JSON-блоб) |
+| Тема                | Решение                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Merge-стратегия     | **LWW по `updatedAt`** — весь снапшот дневника единое целое; новее по времени побеждает                                                                 |
+| Объём синка         | `progress` (кол-во лаб + сделанные), `hidden` (замьюченные предметы), `planner`, **+** `blockedLessons` (замьюченные пары), **+** `diaryOnboardingSeen` |
+| Огонёк              | Уже синкается (`fire:state` через `pushFireToCloud`/`pullFireFromCloud`) — только проверить, не трогать                                                 |
+| Живой синк          | Только по входу в foreground / на старте (как огонёк), **без** `onExternalChange`                                                                       |
+| Архитектура         | Новый `DiaryController` по образцу `FireController`                                                                                                     |
+| Бэкенды             | iCloud **и** Google Drive (Android), гейтинг по `prefs.sourceICloud` / `prefs.sourceGoogleDrive`                                                        |
+| Галочка iCloud вкл. | При включении — сразу `pull + merge + push`                                                                                                             |
+| Ключ в облаке       | `diary:state` (один JSON-блоб)                                                                                                                          |
 
 ## 1. Текущее состояние (аудит)
 
@@ -36,7 +36,7 @@
 ```ts
 // src/utils/diarySync.ts
 interface DiaryCloudSnapshot {
-  updatedAt: number;          // ms epoch — ключ LWW
+  updatedAt: number; // ms epoch — ключ LWW
   progress: Record<string, Record<string, SubjectProgress>>;
   hidden: Record<string, string[]>;
   planner: Record<string, PlannerItem[]>;
@@ -45,7 +45,7 @@ interface DiaryCloudSnapshot {
 }
 ```
 
-+ type-guard `isDiaryCloudSnapshot(x)` (по образцу `isFireCore`) — валидация при `pull`.
+- type-guard `isDiaryCloudSnapshot(x)` (по образцу `isFireCore`) — валидация при `pull`.
 
 ## 3. Логика merge (LWW)
 
@@ -66,6 +66,7 @@ else:                                    ничего (равные метки)
 ## 4. Отслеживание изменений
 
 `DiaryController.init()` подписывается на срезы обоих сторов:
+
 - `useDiaryStore` → `progress`, `hidden`, `planner`;
 - `usePreferencesStore` → `blockedLessons`, `diaryOnboardingSeen`.
 
@@ -75,26 +76,28 @@ diary-стор + **debounced** (~1 с) best-effort push в облако. Экш�
 
 ## 5. Файлы
 
-| Слой | Файл | Что делаем |
-|---|---|---|
-| utils | `src/utils/diarySync.ts` | **новый**: `DiaryCloudSnapshot`, `isDiaryCloudSnapshot` |
-| store | `src/stores/diary.store.ts` | `updatedAt` (persist), `touchUpdatedAt`, `applyRemoteSnapshot` |
-| store | `src/stores/preferences.store.ts` | bulk-сеттер `setBlockedLessons(map)` |
-| service | `src/services/cloud/syncService.ts` | `DIARY_KEY='diary:state'`, `pushDiaryToCloud`, `pullDiaryFromCloud` |
-| controller | `src/controllers/diary.controller.ts` | **новый**: `init`, `onAppActive`, `onICloudEnabled`, LWW-merge, debounced push |
-| controller | `src/controllers/index.ts` | экспорт `DiaryController` |
-| hook | `src/hooks/useAppBootstrap.ts` | `DiaryController.init()` + `onAppActive()` на старте и в foreground |
-| view | `src/views/settings/NetworkDataScreen.tsx` | включение галочки iCloud → `DiaryController.onICloudEnabled()` |
+| Слой       | Файл                                       | Что делаем                                                                          |
+| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| utils      | `src/utils/diarySync.ts`                   | **новый**: `DiaryCloudSnapshot`, `isDiaryCloudSnapshot`                             |
+| store      | `src/stores/diary.store.ts`                | `updatedAt` (persist), `touchUpdatedAt`, `applyRemoteSnapshot`                      |
+| store      | `src/stores/preferences.store.ts`          | bulk-сеттер `setBlockedLessons(map)`                                                |
+| service    | `src/services/cloud/syncService.ts`        | `DIARY_KEY='diary:state'`, `pushDiaryToCloud`, `pullDiaryFromCloud`                 |
+| controller | `src/controllers/diary.controller.ts`      | **новый**: `init`, `onAppActive`, `onCloudSourceEnabled`, LWW-merge, debounced push |
+| controller | `src/controllers/index.ts`                 | экспорт `DiaryController`                                                           |
+| hook       | `src/hooks/useAppBootstrap.ts`             | `DiaryController.init()` + `onAppActive()` на старте и в foreground                 |
+| view       | `src/views/settings/NetworkDataScreen.tsx` | включение галочки iCloud/Drive → `DiaryController.onCloudSourceEnabled()`           |
 
 ## 6. Шаги (каждый — отдельный коммит)
 
 1. ✅ Этот документ.
-2. Модель снапшота (`diarySync.ts`) + `updatedAt`/`touchUpdatedAt`/`applyRemoteSnapshot` в `diary.store`.
-3. `setBlockedLessons` в `preferences.store`.
-4. `pushDiaryToCloud` / `pullDiaryFromCloud` в `syncService`.
-5. `DiaryController` (LWW merge, подписки, debounced push).
-6. Проводка: `useAppBootstrap` + тогл iCloud в `NetworkDataScreen`.
-7. Проверка огонька, `npm run typecheck`, `npm run lint`.
+2. ✅ Модель снапшота (`diarySync.ts`) + `updatedAt`/`touchUpdatedAt`/`applyRemoteSnapshot` в `diary.store`.
+3. ✅ `setBlockedLessons` в `preferences.store`.
+4. ✅ `pushDiaryToCloud` / `pullDiaryFromCloud` в `syncService`.
+5. ✅ `DiaryController` (LWW merge, подписки, debounced push).
+6. ✅ Проводка: `useAppBootstrap` + тоглы iCloud/Drive в `NetworkDataScreen`.
+7. ✅ Проверка огонька, `npm run typecheck`, Prettier по новым файлам
+   (`npm run lint` сломан на уровне репо ещё до ветки: ESLint 9 требует
+   `eslint.config.js`, а в проекте старый `.eslintrc` — чинится отдельной задачей).
 
 ## 7. Definition of done
 

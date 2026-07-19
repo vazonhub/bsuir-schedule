@@ -37,9 +37,7 @@ const isSubjectProgress = (x: unknown): x is SubjectProgress => {
   );
 };
 
-const isProgressMap = (
-  x: unknown,
-): x is Record<string, Record<string, SubjectProgress>> => {
+const isProgressMap = (x: unknown): x is Record<string, Record<string, SubjectProgress>> => {
   if (typeof x !== 'object' || x == null) return false;
   return Object.values(x).every((group) => {
     if (typeof group !== 'object' || group == null) return false;
