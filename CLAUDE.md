@@ -45,8 +45,20 @@
 - `npm run ios` — Metro + iOS симулятор (нужен dev client, не Expo Go).
 - `npm run typecheck` — `tsc --noEmit`.
 - `npm run lint` / `npm run lint:fix`.
-- `npm run format` — Prettier.
+- `npm run format` / `npm run format:check` — Prettier.
+- `npm run bump:patch|minor|major` — бамп версии в package.json (источник истины версии).
 - `npm run prebuild` — сгенерировать `ios/` и `android/` (после изменения plugins или нативных зависимостей).
+
+Pre-commit хук (husky + lint-staged) сам гоняет prettier + eslint --fix по staged-файлам.
+
+## Git flow и CI/CD
+
+Полная модель — `CICD_PLAN.md`, чеклист релиза — `RELEASE.md`. Коротко:
+
+- **`develop`** — default branch, вся разработка. Фиче-ветки `feature/*`, `fix/*` — от неё, PR — в неё.
+- **`testing`** — PR `develop → testing` с заголовком `Release vX.Y.Z` (CI сверяет версию с package.json). После merge — автоматический EAS build + submit обеих платформ (iOS → TestFlight, Android → Internal testing). Тег `[ios]`/`[android]` в merge-коммите ограничивает сборку одной платформой.
+- **`master`** — только релизы. PR `testing → master` с тем же заголовком. После merge — автоматически: git-тег, production-APK, GitHub Release. Публикация в сторах — руками (промоушен testing-билдов).
+- CI (`.github/workflows/ci.yml`) на всех PR: prettier, eslint (`--max-warnings 0`), tsc, тесты (`--if-present`).
 
 ## Запуск на устройстве
 
