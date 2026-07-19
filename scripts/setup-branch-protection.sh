@@ -20,10 +20,10 @@ upsert_ruleset() {
   local name="$1" body="$2" existing_id
   existing_id=$(gh api "repos/$REPO/rulesets" --jq ".[] | select(.name == \"$name\") | .id" 2>/dev/null || true)
   if [ -n "$existing_id" ]; then
-    echo "→ обновляю ruleset «$name» (id $existing_id)"
+    echo "→ обновляю ruleset «${name}» (id $existing_id)"
     echo "$body" | gh api -X PUT "repos/$REPO/rulesets/$existing_id" --input - >/dev/null
   else
-    echo "→ создаю ruleset «$name»"
+    echo "→ создаю ruleset «${name}»"
     echo "$body" | gh api -X POST "repos/$REPO/rulesets" --input - >/dev/null
   fi
 }
