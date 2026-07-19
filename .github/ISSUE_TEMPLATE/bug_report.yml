@@ -1,0 +1,57 @@
+name: 🐞 Баг
+description: Что-то работает не так
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что случилось?
+      description: Опиши проблему и что ожидал увидеть вместо этого.
+      placeholder: 'Открываю расписание группы 410101, вкладка «Сегодня» пустая, хотя пары есть...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Открыть ...
+        2. Нажать ...
+        3. Увидеть ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      options:
+        - iOS
+        - Android
+        - Обе
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Устройство и версия ОС
+      placeholder: 'iPhone 14, iOS 18.2 / Pixel 8, Android 15'
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: Версия приложения
+      description: Настройки → О приложении
+      placeholder: '2.3.1'
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Скриншоты / дополнительно
+      description: Если проблема связана с конкретной группой/преподавателем — укажи их, это сильно ускорит воспроизведение.

@@ -1,0 +1,31 @@
+name: 💡 Предложение
+description: Идея новой функции или улучшения
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую проблему решаем?
+      description: Опиши ситуацию, в которой тебе не хватило этой функции.
+      placeholder: 'Хочу видеть расписание сессии, а не только семестра...'
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Как ты это видишь?
+      description: Опиши желаемое поведение. Скетчи и примеры из других приложений приветствуются.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      options:
+        - iOS
+        - Android
+        - Обе
+    validations:
+      required: true
