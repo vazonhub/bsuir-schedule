@@ -252,6 +252,7 @@ export const FloatingTopBar = React.memo(
   },
 );
 
+FloatingTopBar.displayName = 'FloatingTopBar';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: {

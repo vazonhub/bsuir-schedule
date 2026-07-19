@@ -106,6 +106,7 @@ export const DayHeader = React.memo(
   },
 );
 
+DayHeader.displayName = 'DayHeader';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     wrap: {

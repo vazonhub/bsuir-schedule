@@ -70,6 +70,7 @@ export const EmployeeRow = React.memo(({ employee, onPress, onPhotoPress }: Prop
   );
 });
 
+EmployeeRow.displayName = 'EmployeeRow';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     card: {

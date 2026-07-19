@@ -46,6 +46,7 @@ export const GroupRow = React.memo(({ group, onPress }: Props) => {
   );
 });
 
+GroupRow.displayName = 'GroupRow';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     card: {

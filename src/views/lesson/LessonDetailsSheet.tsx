@@ -434,6 +434,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
   },
 );
 
+LessonDetailsSheet.displayName = 'LessonDetailsSheet';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     background: {

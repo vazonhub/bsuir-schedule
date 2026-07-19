@@ -346,6 +346,7 @@ export const LessonCard = React.memo(
   },
 );
 
+LessonCard.displayName = 'LessonCard';
 const STRIPE_WIDTH = 4;
 
 const makeStyles = (Palette: PaletteType) =>
