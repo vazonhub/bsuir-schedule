@@ -1,28 +1,70 @@
 import SwiftUI
 
 /// Entry view: routes to the day pager when a snapshot exists, otherwise shows
-/// the "open on phone" prompt.
+/// a loading / error / "open on phone" state. A toolbar button opens the
+/// group/teacher picker.
 struct RootView: View {
   @EnvironmentObject private var store: WatchStore
+  @State private var showPicker = false
 
   var body: some View {
     NavigationStack {
-      Group {
-        if let snapshot = store.snapshot {
-          DaysPagerView(snapshot: snapshot)
-        } else {
-          OpenOnPhoneView(locale: store.locale)
+      content
+        .navigationDestination(for: WatchLesson.self) { lesson in
+          if let snapshot = store.snapshot {
+            LessonDetailView(lesson: lesson, snapshot: snapshot)
+          }
         }
-      }
-      .navigationDestination(for: WatchLesson.self) { lesson in
-        if let snapshot = store.snapshot {
-          LessonDetailView(lesson: lesson, snapshot: snapshot)
+        .toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button {
+              showPicker = true
+            } label: {
+              Image(systemName: "magnifyingglass")
+            }
+            .accessibilityLabel(L10n.strings(for: store.locale).pickTitle)
+          }
         }
-      }
+    }
+    .sheet(isPresented: $showPicker) {
+      NavigationStack { SchedulePickerView() }
+        .environmentObject(store)
     }
     .task {
       store.refreshFromAPIIfNeeded()
     }
+  }
+
+  @ViewBuilder private var content: some View {
+    if let snapshot = store.snapshot {
+      DaysPagerView(snapshot: snapshot)
+    } else if store.isRefreshing {
+      loadingView
+    } else if store.fetchFailed {
+      errorView
+    } else {
+      OpenOnPhoneView(locale: store.locale) { showPicker = true }
+    }
+  }
+
+  private var loadingView: some View {
+    let s = L10n.strings(for: store.locale)
+    return VStack(spacing: 8) {
+      ProgressView()
+      Text(s.loading).font(.footnote).foregroundStyle(.secondary)
+    }
+  }
+
+  private var errorView: some View {
+    let s = L10n.strings(for: store.locale)
+    return VStack(spacing: 8) {
+      Image(systemName: "wifi.exclamationmark")
+        .font(.title3)
+        .foregroundStyle(.orange)
+      Text(s.errorTitle).font(.headline).multilineTextAlignment(.center)
+      Button(s.retry) { store.refreshFromAPIIfNeeded() }
+    }
+    .padding()
   }
 }
 

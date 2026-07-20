@@ -4,6 +4,8 @@ import SwiftUI
 /// phone and cannot fetch on its own — the pinned group is unknown).
 struct OpenOnPhoneView: View {
   let locale: String
+  /// Opens the group/teacher picker so the watch can be used standalone.
+  var onChoose: (() -> Void)?
 
   var body: some View {
     let s = L10n.strings(for: locale)
@@ -19,6 +21,14 @@ struct OpenOnPhoneView: View {
           .font(.caption2)
           .foregroundStyle(.secondary)
           .multilineTextAlignment(.center)
+        if let onChoose {
+          Button {
+            onChoose()
+          } label: {
+            Label(s.chooseButton, systemImage: "magnifyingglass")
+          }
+          .padding(.top, 4)
+        }
       }
       .frame(maxWidth: .infinity)
       .padding()

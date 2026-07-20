@@ -30,6 +30,43 @@ private struct APISchedule: Decodable {
   let schedules: [String: [APILesson]]?
 }
 
+private struct APIGroupListItem: Decodable {
+  let name: String
+}
+
+private struct APIEmployeeListItem: Decodable {
+  let urlId: String
+  let firstName: String?
+  let middleName: String?
+  let lastName: String?
+  let fio: String?
+}
+
+// MARK: - Search result rows (consumed by the picker UI)
+
+/// A student group match for the picker.
+struct GroupHit: Identifiable, Hashable {
+  let name: String
+  var id: String { name }
+}
+
+/// A teacher match for the picker.
+struct EmployeeHit: Identifiable, Hashable {
+  let urlId: String
+  let displayName: String
+  var id: String { urlId }
+}
+
+/// Metadata reused when building a snapshot from an API fetch: comes from the
+/// phone-pushed snapshot when present, otherwise from built-in defaults.
+/// Subgroup isn't carried here — manual watch selections always show all
+/// subgroups (there's no way to pick one on the watch).
+struct WatchMeta {
+  let theme: String
+  let locale: String
+  let strings: WatchStrings
+}
+
 /// Simplified schedule fetcher used only when the cached snapshot is stale and
 /// the phone isn't reachable.
 ///
@@ -64,50 +101,151 @@ enum BsuirAPI {
     "Суббота": 6,
   ]
 
+  // In-memory caches for the picker lists (fetched once per app launch). Swift 5
+  // language mode — plain statics are acceptable for this single-user watch app.
+  private static var cachedGroups: [String]?
+  private static var cachedEmployees: [EmployeeHit]?
+
   // MARK: Public entry
 
-  /// Fetch and rebuild the `days` window for `group`, reusing the metadata and
-  /// localized strings from `base`. Returns nil on any failure.
-  static func fetchWindow(group: String, base: WatchSnapshot) async -> WatchSnapshot? {
+  /// Fetch and rebuild the `days` window for a student `group`.
+  static func fetchGroupWindow(group: String, displayName: String, meta: WatchMeta) async
+    -> WatchSnapshot?
+  {
     guard
       let week = try? await fetchCurrentWeek(),
       let schedule = try? await fetchSchedule(group: group)
     else { return nil }
+    return buildSnapshot(
+      schedule: schedule, week: week, displayName: displayName, subgroup: 0, meta: meta)
+  }
 
-    let days = buildDays(schedule: schedule, currentWeek: week, subgroup: base.subgroup)
+  /// Fetch and rebuild the `days` window for a teacher (`urlId`). Subgroup
+  /// filtering doesn't apply to teacher schedules, so all lessons are shown.
+  static func fetchEmployeeWindow(urlId: String, displayName: String, meta: WatchMeta) async
+    -> WatchSnapshot?
+  {
+    guard
+      let week = try? await fetchCurrentWeek(),
+      let schedule = try? await fetchEmployeeSchedule(urlId: urlId)
+    else { return nil }
+    return buildSnapshot(
+      schedule: schedule, week: week, displayName: displayName, subgroup: 0, meta: meta)
+  }
 
+  private static func buildSnapshot(
+    schedule: APISchedule, week: Int, displayName: String, subgroup: Int, meta: WatchMeta
+  ) -> WatchSnapshot {
+    let days = buildDays(schedule: schedule, currentWeek: week, subgroup: subgroup)
     let iso = ISO8601DateFormatter()
     iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
     return WatchSnapshot(
-      version: base.version,
-      groupName: base.groupName,
+      version: 1,
+      groupName: displayName,
       generatedAt: iso.string(from: Date()),
       currentWeek: week,
-      theme: base.theme,
-      subgroup: base.subgroup,
-      locale: base.locale,
-      strings: base.strings,
+      theme: meta.theme,
+      subgroup: subgroup,
+      locale: meta.locale,
+      strings: meta.strings,
       days: days
     )
   }
 
+  // MARK: Search (picker)
+
+  /// Student groups whose name contains `query` (case-insensitive). Fetches the
+  /// full list once and filters locally. Empty query returns nothing.
+  static func searchGroups(query: String) async -> [GroupHit] {
+    let trimmed = query.trimmingCharacters(in: .whitespaces)
+    guard !trimmed.isEmpty else { return [] }
+    let all = await allGroups()
+    return
+      all
+      .filter { $0.range(of: trimmed, options: .caseInsensitive) != nil }
+      .prefix(30)
+      .map(GroupHit.init)
+  }
+
+  /// Teachers whose short FIO / last name contains `query` (case-insensitive).
+  static func searchEmployees(query: String) async -> [EmployeeHit] {
+    let trimmed = query.trimmingCharacters(in: .whitespaces)
+    guard !trimmed.isEmpty else { return [] }
+    let all = await allEmployees()
+    return Array(
+      all
+        .filter { $0.displayName.range(of: trimmed, options: .caseInsensitive) != nil }
+        .prefix(30))
+  }
+
+  private static func allGroups() async -> [String] {
+    if let cached = cachedGroups { return cached }
+    guard let url = URL(string: "\(base)/student-groups"),
+      let data = try? await getData(url),
+      let items = try? JSONDecoder().decode([APIGroupListItem].self, from: data)
+    else { return [] }
+    let names = items.map { $0.name }
+    cachedGroups = names
+    return names
+  }
+
+  private static func allEmployees() async -> [EmployeeHit] {
+    if let cached = cachedEmployees { return cached }
+    guard let url = URL(string: "\(base)/employees/all"),
+      let data = try? await getData(url),
+      let items = try? JSONDecoder().decode([APIEmployeeListItem].self, from: data)
+    else { return [] }
+    let hits = items.map { item -> EmployeeHit in
+      let name = employeeDisplayName(item)
+      return EmployeeHit(urlId: item.urlId, displayName: name)
+    }
+    cachedEmployees = hits
+    return hits
+  }
+
+  private static func employeeDisplayName(_ item: APIEmployeeListItem) -> String {
+    if let fio = item.fio, !fio.isEmpty { return fio }
+    let initials = [item.firstName?.first, item.middleName?.first]
+      .compactMap { $0 }
+      .map { "\($0)." }
+      .joined(separator: " ")
+    let name = "\(item.lastName ?? "") \(initials)".trimmingCharacters(in: .whitespaces)
+    return name.isEmpty ? item.urlId : name
+  }
+
   // MARK: Networking
+
+  /// GET returning the body only for a 2xx response. A non-2xx status (e.g. the
+  /// server's off-season 503 "schedule unavailable") throws rather than letting
+  /// an error body fall through to a decode failure.
+  private static func getData(_ url: URL) async throws -> Data {
+    let (data, response) = try await URLSession.shared.data(from: url)
+    if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+      throw URLError(.badServerResponse)
+    }
+    return data
+  }
 
   private static func fetchCurrentWeek() async throws -> Int {
     guard let url = URL(string: "\(base)/schedule/current-week") else {
       throw URLError(.badURL)
     }
-    let (data, _) = try await URLSession.shared.data(from: url)
-    return try JSONDecoder().decode(Int.self, from: data)
+    return try JSONDecoder().decode(Int.self, from: try await getData(url))
   }
 
   private static func fetchSchedule(group: String) async throws -> APISchedule {
     var components = URLComponents(string: "\(base)/schedule")
     components?.queryItems = [URLQueryItem(name: "studentGroup", value: group)]
     guard let url = components?.url else { throw URLError(.badURL) }
-    let (data, _) = try await URLSession.shared.data(from: url)
-    return try JSONDecoder().decode(APISchedule.self, from: data)
+    return try JSONDecoder().decode(APISchedule.self, from: try await getData(url))
+  }
+
+  private static func fetchEmployeeSchedule(urlId: String) async throws -> APISchedule {
+    guard
+      let encoded = urlId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+      let url = URL(string: "\(base)/employees/schedule/\(encoded)")
+    else { throw URLError(.badURL) }
+    return try JSONDecoder().decode(APISchedule.self, from: try await getData(url))
   }
 
   // MARK: Normalization (simplified port of flattenSchedule)
@@ -244,29 +382,5 @@ enum BsuirAPI {
     let weekday = calendar.component(.weekday, from: start)  // 1=Sun..7=Sat
     let isoDow = weekday == 1 ? 7 : weekday - 1  // 1=Mon..7=Sun
     return calendar.date(byAdding: .day, value: -(isoDow - 1), to: start) ?? start
-  }
-}
-
-// MARK: - Store integration
-
-extension WatchStore {
-  /// Refresh from the BSUIR API when the cached snapshot is stale and we know
-  /// which group to fetch. No-op when data is fresh or no snapshot exists.
-  func refreshFromAPIIfNeeded() {
-    guard let base = snapshot, isStale, !isRefreshing else { return }
-    isRefreshing = true
-    fetchFailed = false
-    let group = base.groupName
-    Task {
-      let result = await BsuirAPI.fetchWindow(group: group, base: base)
-      await MainActor.run {
-        self.isRefreshing = false
-        if let result = result {
-          self.setSnapshot(result)
-        } else {
-          self.fetchFailed = true
-        }
-      }
-    }
   }
 }

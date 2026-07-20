@@ -15,6 +15,17 @@ enum L10n {
     /// Format with a localized relative time, e.g. "обновлено 2 дн. назад".
     let updatedAgoFormat: String
     let daysWord: String
+    // Picker (watch-side group/teacher switching).
+    let pickTitle: String
+    let pickGroup: String
+    let pickTeacher: String
+    let searchGroupPrompt: String
+    let searchTeacherPrompt: String
+    let chooseButton: String
+    let backToPinned: String
+    let recent: String
+    let searching: String
+    let nothingFound: String
   }
 
   static func strings(for locale: String) -> Strings {
@@ -28,7 +39,17 @@ enum L10n {
         retry: "Retry",
         updatedJustNow: "updated just now",
         updatedAgoFormat: "updated %@ ago",
-        daysWord: "d"
+        daysWord: "d",
+        pickTitle: "Schedule",
+        pickGroup: "Group",
+        pickTeacher: "Teacher",
+        searchGroupPrompt: "Group number",
+        searchTeacherPrompt: "Last name",
+        chooseButton: "Choose a group",
+        backToPinned: "Pinned group",
+        recent: "Recent",
+        searching: "Searching…",
+        nothingFound: "Nothing found"
       )
     case "be":
       return Strings(
@@ -39,7 +60,17 @@ enum L10n {
         retry: "Паўтарыць",
         updatedJustNow: "абноўлена толькі што",
         updatedAgoFormat: "абноўлена %@ таму",
-        daysWord: "дз"
+        daysWord: "дз",
+        pickTitle: "Расклад",
+        pickGroup: "Група",
+        pickTeacher: "Выклад.",
+        searchGroupPrompt: "Нумар групы",
+        searchTeacherPrompt: "Прозвішча",
+        chooseButton: "Выбраць групу",
+        backToPinned: "Замацаваная група",
+        recent: "Нядаўнія",
+        searching: "Пошук…",
+        nothingFound: "Нічога не знойдзена"
       )
     default: // ru
       return Strings(
@@ -50,7 +81,17 @@ enum L10n {
         retry: "Повторить",
         updatedJustNow: "обновлено только что",
         updatedAgoFormat: "обновлено %@ назад",
-        daysWord: "дн"
+        daysWord: "дн",
+        pickTitle: "Расписание",
+        pickGroup: "Группа",
+        pickTeacher: "Препод.",
+        searchGroupPrompt: "Номер группы",
+        searchTeacherPrompt: "Фамилия",
+        chooseButton: "Выбрать группу",
+        backToPinned: "Закреплённая группа",
+        recent: "Недавние",
+        searching: "Поиск…",
+        nothingFound: "Ничего не найдено"
       )
     }
   }
