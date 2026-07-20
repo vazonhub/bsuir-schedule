@@ -394,6 +394,7 @@
         }
       ],
       "./plugins/withWidgetExtras",
+      "./plugins/withWatchComplication",
       "./plugins/withWatchApp",
       "./plugins/withUnityBanner",
       "react-native-iap",
