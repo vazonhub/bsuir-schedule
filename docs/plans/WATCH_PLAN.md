@@ -119,8 +119,11 @@ interface WatchSnapshot {
 
 **Фаза 1 — Слой данных на телефоне (TS, без нативного кода)**
 
-- [ ] 1.1 `src/services/watch/watchData.ts` — типы + `buildWatchSnapshot(...)` (окно 4 недели).
-- [ ] 1.2 i18n: ключи `watch.*` в `src/i18n/{ru,en,be}.ts`.
+- [x] 1.1 `src/services/watch/watchData.ts` — типы + `buildWatchSnapshot(...)` (окно 4 недели).
+- [x] 1.2 i18n: строки снапшота (`daysShort`/`daysLong`/`months`/`weekLabel`/`noClasses`/
+      `today`/`tomorrow`/`subgroupShort`) целиком мапятся на существующие `date.*` и `widget.*` —
+      **новые ключи не заводим** (DRY), берём существующие при сборке снапшота в Фазе 4.
+      Watch-специфичные подписи (fallback-экраны) локализуются на стороне watch-таргета (Фаза 3).
       _Проверка: `npm run typecheck`, `npm run lint`._
 
 **Фаза 2 — Локальный Expo-модуль `modules/watch-bridge` (сторона телефона)**
