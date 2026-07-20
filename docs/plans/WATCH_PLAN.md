@@ -128,35 +128,35 @@ interface WatchSnapshot {
 
 **Фаза 2 — Локальный Expo-модуль `modules/watch-bridge` (сторона телефона)**
 
-- [ ] 2.1 Скелет модуля: `expo-module.config.json`, `package.json`, `index.ts`
+- [x] 2.1 Скелет модуля: `expo-module.config.json`, `package.json`, `index.ts`
       (`isSupported()`, `isPaired()`, `sendContext(json: string)`).
-- [ ] 2.2 iOS Swift: `WCSession` делегат + `updateApplicationContext` (+ фолбэк transfer). Android/web — no-op.
-- [ ] 2.3 Автолинк/сборка: подключить модуль, `npm run typecheck`.
+- [x] 2.2 iOS Swift: `WCSession` делегат + `updateApplicationContext` (+ фолбэк transfer). Android/web — no-op.
+- [x] 2.3 Автолинк/сборка: подключить модуль, `npm run typecheck`.
 
 **Фаза 3 — Watch-таргет (Swift) + config-plugin**
 
-- [ ] 3.1 `targets/watch/` — модели (Codable зеркало `WatchSnapshot`), хранилище (App Group UserDefaults),
+- [x] 3.1 `targets/watch/` — модели (Codable зеркало `WatchSnapshot`), хранилище (App Group UserDefaults),
       WC-приёмник (`WKApplicationDelegate` + `WCSessionDelegate`).
-- [ ] 3.2 `targets/watch/` — SwiftUI вью: `TodayView`, навигация по дням, `LessonDetailView`, локализация.
-- [ ] 3.3 `targets/watch/` — API-фолбэк клиент (URLSession) + индикатор устаревания.
-- [ ] 3.4 `plugins/withWatchApp.js` — создание watch-app таргета в pbxproj (Info.plist `WKApplication`,
+- [x] 3.2 `targets/watch/` — SwiftUI вью: `TodayView`, навигация по дням, `LessonDetailView`, локализация.
+- [x] 3.3 `targets/watch/` — API-фолбэк клиент (URLSession) + индикатор устаревания.
+- [x] 3.4 `plugins/withWatchApp.js` — создание watch-app таргета в pbxproj (Info.plist `WKApplication`,
       entitlements с App Group, «Embed Watch Content» в основной таргет, копирование Swift на каждый prebuild).
       Регистрация плагина в `app.json`. Ассеты иконки часов (минимальный AppIcon для сборки).
-- [ ] 3.5 Верификация prebuild: `npx expo prebuild -p ios --clean` — убедиться, что pbxproj валиден и таргет создан.
+- [x] 3.5 Верификация prebuild: `npx expo prebuild -p ios --clean` — убедиться, что pbxproj валиден и таргет создан.
       _(Swift компилируется только в Xcode у пользователя — я делаю code-review Swift.)_
 
 **Фаза 4 — Связка телефон→часы end-to-end**
 
-- [ ] 4.1 `src/services/watch/index.ts` — сборка снапшота из сторов, отправка через `watch-bridge`,
+- [x] 4.1 `src/services/watch/index.ts` — сборка снапшота из сторов, отправка через `watch-bridge`,
       подписки на изменения (default-группа, подгруппа, тема, локаль, blocked, праздники) — зеркало `widget/index.ts`.
-- [ ] 4.2 Вызвать `updateWatchSnapshot()` рядом со всеми вызовами `updateWidgetSnapshot()`
+- [x] 4.2 Вызвать `updateWatchSnapshot()` рядом со всеми вызовами `updateWidgetSnapshot()`
       (загрузка расписания, `AppState → active`, prefetch, bootstrap).
       _Проверка: `npm run typecheck`, `npm run lint`; пользователь: prebuild + Xcode watch-scheme + симулятор._
 
 **Фаза 5 — Полировка и документация**
 
-- [ ] 5.1 Заметки в `README.md` / `CLAUDE.md` (watch-app, поток данных), обновить память проекта.
-- [ ] 5.2 Финальный `npm run typecheck && npm run lint && npm run format`.
+- [x] 5.1 Заметки в `README.md` / `CLAUDE.md` (watch-app, поток данных), обновить память проекта.
+- [x] 5.2 Финальный `npm run typecheck && npm run lint && npm run format`.
 
 ## 7. Верификация
 

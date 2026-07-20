@@ -1,7 +1,4 @@
-const {
-  withEntitlementsPlist,
-  withXcodeProject,
-} = require('expo/config-plugins');
+const { withEntitlementsPlist, withXcodeProject } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -167,9 +164,7 @@ function withWatchApp(config) {
     const sourcePhaseUuid = proj.generateUuid();
     const sourceFiles = [];
     for (const swiftFile of swiftFiles) {
-      const ref = findRef(
-        (r) => r.name === swiftFile || (r.path && r.path.endsWith(swiftFile)),
-      );
+      const ref = findRef((r) => r.name === swiftFile || (r.path && r.path.endsWith(swiftFile)));
       if (!ref) continue;
       const buildFileUuid = proj.generateUuid();
       buildFileSection[buildFileUuid] = {
@@ -366,8 +361,7 @@ function withWatchApp(config) {
       fileRef_comment: `${WATCH_NAME}.app`,
       settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
     };
-    buildFileSection[embedBuildFileUuid + '_comment'] =
-      `${WATCH_NAME}.app in Embed Watch Content`;
+    buildFileSection[embedBuildFileUuid + '_comment'] = `${WATCH_NAME}.app in Embed Watch Content`;
 
     const copySection = proj.hash.project.objects['PBXCopyFilesBuildPhase'] || {};
     proj.hash.project.objects['PBXCopyFilesBuildPhase'] = copySection;

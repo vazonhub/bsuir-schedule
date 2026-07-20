@@ -86,6 +86,10 @@ Historical design/plan documents live in `docs/plans/` (kept as an archive; they
 - Pinned groups and lecturers are prefetched in the background on app start and on `AppState → active`. See `src/services/prefetch.ts`.
 - There is no separate "Today" tab. Its role is played by auto-scroll on the pinned group's schedule and by widgets.
 - Home/Lock Screen widgets are mandatory functionality on both iOS and Android. The widget snapshot is produced by `src/services/widget/widgetData.ts` and written to shared storage (App Group on iOS, SharedPreferences on Android).
+- **Apple Watch app** (watchOS only, iOS 15.1+ / watchOS 10+). Shows the pinned (`defaultGroup`) schedule: today + paging by days/weeks. Data flow differs from widgets because the watch is a separate device — App Group UserDefaults do **not** sync across devices:
+  - Phone builds a richer `WatchSnapshot` (full 4-week window, `src/services/watch/watchData.ts`) and pushes it via **WatchConnectivity** (`updateApplicationContext`). The bridge is a local Expo module `modules/watch-bridge` (Swift `WCSession`). Same update triggers as the widget (`updateWatchSnapshot()` sits next to every `updateWidgetSnapshot()` call).
+  - Watch (SwiftUI, `targets/watch/*`) caches the snapshot in its own App-Group `UserDefaults` and renders it. If the cache is stale and the phone is unreachable, it falls back to fetching the BSUIR API directly (`targets/watch/API.swift`) — a **simplified** normalization (no exams/holidays/blocked lessons).
+  - The watch target is created by `plugins/withWatchApp.js` (mirrors `withWidget.js`; hand-rolled pbxproj since `ios/` is gitignored). Swift sources in `targets/watch/` are the source of truth and are copied into `ios/BsuirWatch/` on every `prebuild`. EAS build/submit + complications are deferred (see `docs/plans/WATCH_PLAN.md`).
 
 ## API notes
 
