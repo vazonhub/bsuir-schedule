@@ -152,19 +152,22 @@ function withWatchApp(config) {
     const fileRefSection = proj.pbxFileReferenceSection();
     const buildFileSection = proj.pbxBuildFileSection();
 
-    const findRef = (predicate) => {
-      for (const key in fileRefSection) {
-        const ref = fileRefSection[key];
-        if (typeof ref === 'object' && predicate(ref, key)) return key;
-      }
-      return null;
-    };
+    // Map each file's basename to the PBXFileReference uuid `addPbxGroup` just
+    // created. We read the uuids from the group's `children` (whose `comment` is
+    // the clean basename) rather than scanning `pbxFileReferenceSection` by name:
+    // at this point the in-memory refs store `name`/`path` wrapped in literal
+    // quotes (`"RootView.swift"`), so an `=== basename` match silently misses
+    // every file and the Sources phase ends up empty (no compiled executable).
+    const refByName = {};
+    for (const child of grp.pbxGroup.children) {
+      refByName[child.comment] = child.value;
+    }
 
     // --- Sources build phase (all Swift files) ---
     const sourcePhaseUuid = proj.generateUuid();
     const sourceFiles = [];
     for (const swiftFile of swiftFiles) {
-      const ref = findRef((r) => r.name === swiftFile || (r.path && r.path.endsWith(swiftFile)));
+      const ref = refByName[swiftFile];
       if (!ref) continue;
       const buildFileUuid = proj.generateUuid();
       buildFileSection[buildFileUuid] = {
@@ -188,9 +191,7 @@ function withWatchApp(config) {
     // --- Resources build phase (asset catalog) ---
     const resPhaseUuid = proj.generateUuid();
     const resFiles = [];
-    const assetsRef = findRef(
-      (r) => r.name === 'Assets.xcassets' || (r.path && r.path.endsWith('Assets.xcassets')),
-    );
+    const assetsRef = refByName['Assets.xcassets'];
     if (assetsRef) {
       // Ensure Xcode treats it as an asset catalog.
       fileRefSection[assetsRef].lastKnownFileType = 'folder.assetcatalog';
