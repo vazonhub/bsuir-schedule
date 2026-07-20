@@ -14,6 +14,7 @@ import { isGoogleSignedIn, signInWithGoogle } from '@services/cloud/googleAuth';
 import { isGoogleDriveAvailable } from '@services/cloud/googleDrive';
 import { isICloudAvailable } from '@services/cloud/icloud';
 import { clearCloudSchedules } from '@services/cloud/syncService';
+import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
@@ -142,6 +143,7 @@ export const NetworkDataScreen = () => {
 
   const handleRefreshWidget = useCallback(async () => {
     await updateWidgetSnapshot();
+    void updateWatchSnapshot();
     void hapticSuccess();
     showToast(t('settings.refreshWidgetDone'));
   }, [t, showToast]);
