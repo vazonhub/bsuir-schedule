@@ -20,6 +20,10 @@ concurrency:
   group: eas-testing-${{ github.ref }}
   cancel-in-progress: false
 
+# Least-privilege token: the build job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: EAS build & submit

@@ -12,6 +12,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege token: both jobs only read the repository.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Format / Lint / Types / Tests
