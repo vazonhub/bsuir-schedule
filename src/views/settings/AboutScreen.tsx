@@ -61,6 +61,10 @@ export const AboutScreen = () => {
     void Linking.openURL('https://t.me/multibelbet');
   }, []);
 
+  const openGithub = useCallback(() => {
+    void Linking.openURL('https://github.com/vazonhub/bsuir-schedule');
+  }, []);
+
   const openPrivacyPolicy = useCallback(() => {
     const url = language === 'en' ? PRIVACY_POLICY_EN : PRIVACY_POLICY_RU;
     void Linking.openURL(url);
@@ -104,6 +108,15 @@ export const AboutScreen = () => {
           >
             <Ionicons name="paper-plane-outline" size={20} color={Palette.accent} />
             <Text style={styles.navLabel}>Telegram</Text>
+            <Ionicons name="open-outline" size={18} color={Palette.textTertiary} />
+          </Pressable>
+          <View style={styles.separator} />
+          <Pressable
+            style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+            onPress={openGithub}
+          >
+            <Ionicons name="logo-github" size={20} color={Palette.accent} />
+            <Text style={styles.navLabel}>GitHub</Text>
             <Ionicons name="open-outline" size={18} color={Palette.textTertiary} />
           </Pressable>
         </View>
