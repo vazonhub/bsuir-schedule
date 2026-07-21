@@ -47,3 +47,6 @@ yarn-error.*
 
 # Tooling
 .tmp-init/
+
+# Test coverage
+/coverage

@@ -5,6 +5,7 @@ import { buildDemoSchedule, DEMO_SCHEDULE_GROUP_NAME } from '@fixtures/demoSched
 import type { ScheduleDto } from '@models/dto';
 import { EmployeesApi, GroupsApi, ScheduleApi } from '@services/api';
 import { pullScheduleFromCloud, pushScheduleToCloud } from '@services/cloud/syncService';
+import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
 import type { ErrorKind } from '@stores/schedule.store';
@@ -85,6 +86,7 @@ export const ScheduleController = {
           void pushScheduleToCloud(groupName, data);
           if (groupName === prefs.defaultGroup) {
             void updateWidgetSnapshot();
+            void updateWatchSnapshot();
           }
           return;
         } catch (e) {

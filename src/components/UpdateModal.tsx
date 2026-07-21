@@ -40,6 +40,10 @@ export const UpdateModal = ({ visible, version, releaseNotes, storeUrl, onClose 
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
+  const handleOpenGithub = useCallback(() => {
+    void Linking.openURL('https://github.com/vazonhub/bsuir-schedule');
+  }, []);
+
   const handleOpenStore = useCallback(() => {
     const url = storeUrl ?? FALLBACK_STORE_URL;
     if (Platform.OS === 'android') {
@@ -91,6 +95,14 @@ export const UpdateModal = ({ visible, version, releaseNotes, storeUrl, onClose 
           >
             <Ionicons name="storefront-outline" size={20} color="#FFFFFF" />
             <Text style={styles.storeButtonText}>{t('update.openStore')}</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.githubButton, pressed && styles.githubButtonPressed]}
+            onPress={handleOpenGithub}
+          >
+            <Ionicons name="logo-github" size={20} color={Palette.textPrimary} />
+            <Text style={styles.githubButtonText}>GitHub</Text>
           </Pressable>
 
           <Pressable
@@ -176,6 +188,23 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 16,
       fontWeight: '600',
       color: STORE_BUTTON_TEXT_COLOR,
+    },
+    githubButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.md,
+      backgroundColor: Palette.card,
+      borderRadius: Radius.md,
+      paddingVertical: Spacing.cardPaddingY,
+    },
+    githubButtonPressed: {
+      backgroundColor: Palette.cardPressed,
+    },
+    githubButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: Palette.textPrimary,
     },
     closeButton: {
       alignItems: 'center',

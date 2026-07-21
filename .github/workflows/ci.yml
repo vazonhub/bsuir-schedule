@@ -12,6 +12,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least-privilege token: both jobs only read the repository.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Format / Lint / Types / Tests
@@ -37,9 +41,9 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
 
-      # Тестов пока нет — как только появится скрипт `test`, шаг включится сам.
+      # Unit-тесты кор-логики (jest-expo). CI-режим: без watch, падает при провале.
       - name: Tests
-        run: npm run test --if-present
+        run: npm test -- --ci
 
   # PR в testing/master обязан называться с версией (например «Release v2.4.0»),
   # совпадающей с package.json. Для master дополнительно: тега ещё не существует.

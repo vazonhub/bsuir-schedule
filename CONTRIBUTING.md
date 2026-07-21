@@ -31,10 +31,28 @@ CI runs these on every PR — run them locally before pushing:
 npm run format:check   # prettier
 npm run lint           # eslint (0 warnings allowed)
 npm run typecheck      # tsc --noEmit
+npm test               # jest (unit tests)
 ```
 
 The pre-commit hook (husky + lint-staged) runs prettier and `eslint --fix`
 on staged files automatically.
+
+### Tests
+
+Unit tests cover the core logic in `src/utils` and run on [jest-expo].
+Tests live in `src/**/__tests__/*.test.ts` next to the code they exercise.
+
+```bash
+npm test               # run once
+npm run test:watch     # watch mode
+npm run test:coverage  # with a coverage report
+```
+
+Aliases (`@utils/…`, `@theme`, …) resolve through the babel `module-resolver`
+plugin — the same config the app uses — so imports in tests match the source.
+When adding logic to a util, add or extend the matching `*.test.ts`.
+
+[jest-expo]: https://docs.expo.dev/develop/unit-testing/
 
 ## Branches and pull requests
 

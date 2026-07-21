@@ -2,6 +2,33 @@
 
 Полная модель веток и пайплайнов — в `docs/plans/CICD_PLAN.md`.
 
+## 0. Одноразовая настройка watch-таргетов (только владелец)
+
+Apple Watch-приложение и его complication встроены в основное iOS-приложение
+(config-плагины `withWatchApp` / `withWatchComplication`), поэтому при EAS-сборке
+схемы `BsuirTime` они **автоматически попадают в архив** — отдельная EAS-сборка
+не нужна, `eas.json` менять не нужно. Проверено: Release-архив содержит
+`BsuirTime.app/Watch/BsuirWatch.app/PlugIns/BsuirWatchComplication.appex`.
+
+Что нужно сделать один раз перед первым релизом с часами:
+
+1. **Зарегистрировать App IDs** в Apple Developer (Certificates, IDs & Profiles)
+   с включённой capability **App Groups**:
+   - `by.vazon.bsuirschedule.watchkitapp` (watch-приложение);
+   - `by.vazon.bsuirschedule.watchkitapp.complication` (complication).
+     (`by.vazon.bsuirschedule` и `.widget` уже заведены.)
+2. **App Group** `group.by.vazon.bsuirschedule` — добавить к обоим новым App ID
+   (тот же, что у основного приложения и виджета).
+3. **Провижининг**: `eas credentials -p ios` (или первый `eas build`) обнаруживает
+   встроенные таргеты по пребилду и заводит distribution-профили на каждый bundle
+   id. Дать EAS создать/обновить профили для двух новых id.
+4. **App Store Connect**: watch-приложение публикуется в составе основного —
+   отдельной записи не требуется.
+
+Версии watch/complication синхронизируются с основным приложением так же, как у
+виджета (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` из версии приложения) —
+отдельных действий не требует.
+
 ## 1. Подготовка версии (в develop)
 
 ```bash
