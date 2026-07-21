@@ -11,6 +11,7 @@ import { initAds } from '@services/ads';
 import { restoreGoogleSession } from '@services/cloud/googleAuth';
 import { prefetchPinned } from '@services/prefetch';
 import { trackUsageAndMaybeRequestReview } from '@services/review';
+import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -32,7 +33,10 @@ export const useAppBootstrap = () => {
     void GroupsController.loadAll();
     void EmployeesController.loadAll();
     void HolidaysController.sync(new Date().getFullYear());
-    void prefetchPinned().then(() => updateWidgetSnapshot());
+    void prefetchPinned().then(() => {
+      updateWidgetSnapshot();
+      void updateWatchSnapshot();
+    });
     void registerWidgetBackgroundFetch();
     void trackUsageAndMaybeRequestReview();
     void AppVersionController.checkForUpdate();
@@ -56,6 +60,7 @@ export const useAppBootstrap = () => {
       void HolidaysController.sync(new Date().getFullYear());
       void prefetchPinned().then(() => {
         updateWidgetSnapshot();
+        void updateWatchSnapshot();
         // After prefetch the defaultGroup schedule and currentWeek are already in
         // the store — the streak can correctly determine a lesson day.
         void FireController.onAppActive();

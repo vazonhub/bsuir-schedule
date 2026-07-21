@@ -46,6 +46,9 @@
   activity calendar and an evening reminder.
 - 🧩 **Home & Lock Screen widgets** — WidgetKit on iOS (including Lock Screen
   accessories) and Glance-style widgets on Android, with deep links into the app.
+- ⌚ **Apple Watch app** — browse the pinned group's schedule on the wrist
+  (today + days/weeks). Synced from the phone via WatchConnectivity, with a
+  direct-API fallback when the phone isn't reachable.
 - ☁️ **Cloud sync** — iCloud on iOS, Google Drive on Android; offline-first
   with cached schedules as a fallback data source.
 - 🎨 **Personalization** — light/dark themes, custom lesson-type colors,
@@ -95,8 +98,9 @@ src/
 ├── components/       reusable UI without business logic
 ├── widgets/          Android widget UI
 └── theme/ utils/ …   design tokens and helpers
-targets/              native iOS widget (WidgetKit) & Unity banner view
-plugins/              Expo config plugins (widgets, StoreKit, icons, …)
+targets/              native iOS widget (WidgetKit), watchOS app & Unity banner view
+modules/              local Expo native modules (watch-bridge — WatchConnectivity)
+plugins/              Expo config plugins (widgets, watch app, StoreKit, icons, …)
 services/auditory-api Cloudflare Worker + crawler for room occupancy
 ```
 

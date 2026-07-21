@@ -394,6 +394,8 @@
         }
       ],
       "./plugins/withWidgetExtras",
+      "./plugins/withWatchComplication",
+      "./plugins/withWatchApp",
       "./plugins/withUnityBanner",
       "react-native-iap",
       "@react-native-google-signin/google-signin",
@@ -409,6 +411,20 @@
                 {
                   "targetName": "ScheduleWidget",
                   "bundleIdentifier": "by.vazon.bsuirschedule.widget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
+                  }
+                },
+                {
+                  "targetName": "BsuirWatch",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchkitapp",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
+                  }
+                },
+                {
+                  "targetName": "BsuirWatchComplication",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchcomplications",
                   "entitlements": {
                     "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
