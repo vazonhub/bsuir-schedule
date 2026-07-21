@@ -414,6 +414,20 @@
                   "entitlements": {
                     "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
+                },
+                {
+                  "targetName": "BsuirWatch",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchkitapp",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
+                  }
+                },
+                {
+                  "targetName": "BsuirWatchComplication",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watchcomplications",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
+                  }
                 }
               ]
             }
