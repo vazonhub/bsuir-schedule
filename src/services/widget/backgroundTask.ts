@@ -4,6 +4,8 @@ import { ScheduleApi } from '@services/api';
 import { usePreferencesStore } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
 
+import { updateWatchSnapshot } from '@services/watch';
+
 import { updateWidgetSnapshot } from './index';
 
 const TASK_NAME = 'WIDGET_REFRESH';
@@ -37,6 +39,7 @@ export const registerWidgetBackgroundFetch = async (): Promise<void> => {
         useScheduleStore.getState().setSchedule(defaultGroup, data);
 
         await updateWidgetSnapshot();
+        await updateWatchSnapshot();
 
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch {

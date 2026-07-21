@@ -1,0 +1,7 @@
+{
+  "name": "watch-bridge",
+  "version": "1.0.0",
+  "description": "Phone-side WatchConnectivity bridge — pushes schedule snapshots to the paired Apple Watch.",
+  "main": "index.ts",
+  "private": true
+}
