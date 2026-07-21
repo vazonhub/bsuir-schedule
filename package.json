@@ -27,6 +27,9 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios",
     "android:eas": "eas build --platform android --profile production",
@@ -90,6 +93,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
@@ -102,6 +106,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-native": "^5.0.0",
     "husky": "^9.1.7",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.2",
     "lint-staged": "^17.1.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
