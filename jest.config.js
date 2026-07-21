@@ -10,10 +10,11 @@
  */
 module.exports = {
   preset: 'jest-expo',
+  setupFiles: ['<rootDir>/jest.setup.js'],
   // Only pick up files that opt in via `.test.ts(x)` — keeps fixtures/helpers out.
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
   clearMocks: true,
   // Coverage is collected for reporting only; no threshold gate (yet).
-  collectCoverageFrom: ['src/utils/**/*.ts', '!src/**/*.d.ts'],
+  collectCoverageFrom: ['src/utils/**/*.ts', '!src/**/*.d.ts', '!**/__tests__/**'],
   coverageDirectory: 'coverage',
 };
