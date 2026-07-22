@@ -74,9 +74,9 @@ jobs:
         run: |
           MESSAGE=$(printf '%s' "$HEAD_MESSAGE" | head -1 | cut -c1-1024)
           eas build \
-            --profile testing \
+            --profile production \
             --platform "${{ steps.platform.outputs.platform }}" \
-            --auto-submit \
+            --auto-submit-with-profile testing \
             --non-interactive \
             --no-wait \
             --message "$MESSAGE"
