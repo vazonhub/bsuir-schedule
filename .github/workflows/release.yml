@@ -57,7 +57,7 @@ jobs:
 
       - name: Setup EAS CLI
         if: steps.tag.outputs.skip == 'false'
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
