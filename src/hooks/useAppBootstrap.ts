@@ -13,6 +13,7 @@ import { prefetchPinned } from '@services/prefetch';
 import { trackUsageAndMaybeRequestReview } from '@services/review';
 import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
+import { registerWidgetBackgroundFetch } from '@services/widget/backgroundTask';
 import { usePreferencesStore } from '@stores/preferences.store';
 
 const FOREGROUND_DEBOUNCE_MS = 5_000;
@@ -36,6 +37,7 @@ export const useAppBootstrap = () => {
       updateWidgetSnapshot();
       void updateWatchSnapshot();
     });
+    void registerWidgetBackgroundFetch();
     void trackUsageAndMaybeRequestReview();
     void AppVersionController.checkForUpdate();
     void restoreGoogleSession();

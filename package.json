@@ -19,7 +19,7 @@
     "bump:minor": "npm version minor --no-git-tag-version",
     "bump:major": "npm version major --no-git-tag-version",
     "start": "expo start",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --scheme BsuirTime",
     "android": "expo run:android",
     "web": "expo start --web",
     "prebuild": "expo prebuild",
@@ -31,7 +31,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npx expo prebuild --clean && npx expo run:ios",
+    "ios:build": "npx expo prebuild --clean && npx expo run:ios --scheme BsuirTime",
+    "ios:watch": "bash scripts/ios-watch.sh",
     "android:eas": "eas build --platform android --profile production",
     "android:build": "npx expo prebuild --clean && npx expo run:android",
     "prepare": "husky",
@@ -50,10 +51,11 @@
     "@shopify/flash-list": "2.0.2",
     "axios": "^1.18.1",
     "date-fns": "^4.1.0",
-    "expo": "~57.0.7",
+    "expo": "~54.0.33",
     "expo-accessibility-plus": "^0.1.2",
     "expo-alternate-app-icons": "^8.0.0",
     "expo-application": "~7.0.8",
+    "expo-background-fetch": "~14.0.9",
     "expo-blur": "~15.0.8",
     "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
@@ -65,11 +67,12 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-notifications": "~0.32.17",
-    "expo-router": "~6.0.23",
+    "expo-router": "~6.0.24",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-store-review": "~9.0.9",
     "expo-system-ui": "~6.0.9",
+    "expo-task-manager": "~14.0.9",
     "expo-widgetkit-bridge": "^0.2.0",
     "i18next": "^26.0.5",
     "react": "19.1.0",
@@ -105,7 +108,7 @@
     "eslint-plugin-react-native": "^5.0.0",
     "husky": "^9.1.7",
     "jest": "~29.7.0",
-    "jest-expo": "~57.0.2",
+    "jest-expo": "~54.0.17",
     "lint-staged": "^17.1.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
@@ -129,6 +132,7 @@
     }
   },
   "overrides": {
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "postcss": "^8.5.10"
   }
 }
