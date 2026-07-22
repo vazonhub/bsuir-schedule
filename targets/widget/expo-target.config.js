@@ -4,7 +4,7 @@ module.exports = (config) => ({
   name: 'ScheduleWidget',
   displayName: 'Расписание БГУИР',
   bundleIdentifier: '.widget',
-  deploymentTarget: '16.4',
+  deploymentTarget: '15.1',
   frameworks: ['SwiftUI', 'WidgetKit'],
   entitlements: {
     'com.apple.security.application-groups': config.ios?.entitlements?.[

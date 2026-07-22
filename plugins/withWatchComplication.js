@@ -35,12 +35,12 @@ function withWatchComplication(config) {
     const proj = mod.modResults;
     const projectRoot = mod.modRequest.projectRoot;
     const appBundleId = mod.ios?.bundleIdentifier ?? 'by.vazon.bsuirschedule';
-    // NB: NOT nested under `.watchkitapp` — Apple reserves the whole
-    // `<app>.watchkitapp.*` namespace and refuses to register any App ID in it
-    // (portal, App Store Connect API / EAS, and Xcode automatic signing all fail
-    // with "identifier is not available"). A sibling id under the main app is
-    // registrable and still embeds fine inside the watch app.
-    const extBundleId = appBundleId + '.watchcomplications';
+    // The complication is embedded inside the watch app, so Xcode requires its
+    // bundle id to be prefixed by the watch app's id (`<app>.watch`). We stay
+    // out of Apple's reserved `<app>.watchkitapp.*` namespace (unregistrable)
+    // by having the watch app itself use `.watch` — see withWatchApp.js. Keep
+    // this in sync with `watchBundleId` there.
+    const extBundleId = appBundleId + '.watch.complication';
     const appVersion = mod.version ?? '0.1.0';
     const buildNumber = mod.ios?.buildNumber ?? '1';
 
