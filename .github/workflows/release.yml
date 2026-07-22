@@ -64,6 +64,10 @@ jobs:
 
       - name: Build production APK
         if: steps.tag.outputs.skip == 'false'
+        env:
+          # app.config.ts injects extra.eas.projectId / owner from these — .env is not committed.
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+          EXPO_OWNER: ${{ secrets.EXPO_OWNER }}
         run: >-
           eas build
           --profile production-apk
