@@ -8,7 +8,7 @@ Context for Claude Code (and for developers). Loaded automatically when working 
 
 **Platforms:**
 
-- **iOS** — primary. Minimum target — iOS 15.1. Liquid Glass / native large title — iOS 26+ only (with graceful fallback on older versions).
+- **iOS** — primary. Minimum target — iOS 16.4 (floor imposed by Expo SDK 57 / `expo-modules-core`). Liquid Glass / native large title — iOS 26+ only (with graceful fallback on older versions).
 - **Android** — full feature support, but UI is designed iOS-first and then adapted to Material 3. Home Screen widgets ship on both platforms (WidgetKit + Glance-style).
 
 ## Architecture — MVC
@@ -86,7 +86,7 @@ Historical design/plan documents live in `docs/plans/` (kept as an archive; they
 - Pinned groups and lecturers are prefetched in the background on app start and on `AppState → active`. See `src/services/prefetch.ts`.
 - There is no separate "Today" tab. Its role is played by auto-scroll on the pinned group's schedule and by widgets.
 - Home/Lock Screen widgets are mandatory functionality on both iOS and Android. The widget snapshot is produced by `src/services/widget/widgetData.ts` and written to shared storage (App Group on iOS, SharedPreferences on Android).
-- **Apple Watch app** (watchOS only, iOS 15.1+ / watchOS 10+). Shows the pinned (`defaultGroup`) schedule: today + paging by days/weeks, and can switch to any other group or teacher directly on the watch. Data flow differs from widgets because the watch is a separate device — App Group UserDefaults do **not** sync across devices:
+- **Apple Watch app** (watchOS only, iOS 16.4+ / watchOS 10+). Shows the pinned (`defaultGroup`) schedule: today + paging by days/weeks, and can switch to any other group or teacher directly on the watch. Data flow differs from widgets because the watch is a separate device — App Group UserDefaults do **not** sync across devices:
   - Phone builds a richer `WatchSnapshot` (full 4-week window, `src/services/watch/watchData.ts`) and pushes it via **WatchConnectivity** (`updateApplicationContext`). The bridge is a local Expo module `modules/watch-bridge` (Swift `WCSession`). Same update triggers as the widget (`updateWatchSnapshot()` sits next to every `updateWidgetSnapshot()` call).
   - Watch (SwiftUI, `targets/watch/*`) caches the snapshot in its own App-Group `UserDefaults` and renders it. If the cache is stale and the phone is unreachable — or the user picks another group/teacher via the picker (`PickerView.swift`) — it fetches the BSUIR API directly (`targets/watch/API.swift`) — a **simplified** normalization (no exams/holidays/blocked lessons). A manual selection is an override kept separate from the phone snapshot, so clearing it restores the pinned group offline.
   - **Complications**: a watchOS WidgetKit extension (`targets/watch-complication/`, target via `plugins/withWatchComplication.js`) shows the nearest upcoming lesson (inline/circular/rectangular) from the same App-Group cache.

@@ -10,7 +10,7 @@
 ![Expo](https://img.shields.io/badge/Expo_SDK-57%2B-000020)
 [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react&logoColor=white)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![Platforms](https://img.shields.io/badge/platforms-iOS%2015.1%2B%20%7C%20Android-8E8E93)](#getting-started)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2016.4%2B%20%7C%20Android-8E8E93)](#getting-started)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 [<img src="https://img.shields.io/badge/App%20Store-Bsuir%20Time-0D96F6?logo=apple&logoColor=white" alt="Download on the App Store" />](https://apps.apple.com/by/app/bsuir-time/id6762343557)
