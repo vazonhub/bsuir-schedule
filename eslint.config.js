@@ -66,8 +66,6 @@ module.exports = [
             '^@react-native-async-storage/async-storage$',
             '^expo-alternate-app-icons$',
             '^expo-application$',
-            '^expo-background-fetch$',
-            '^expo-task-manager$',
             '^react$',
             '^react-native$',
             '^react-native-android-widget$',

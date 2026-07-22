@@ -8,7 +8,7 @@ const path = require('path');
 
 const WIDGET_NAME = 'ScheduleWidget';
 const APP_GROUP = 'group.by.vazon.bsuirschedule';
-const DEPLOYMENT_TARGET = '15.1';
+const DEPLOYMENT_TARGET = '16.4';
 
 function withWidget(config) {
   // 1. Main app entitlements
