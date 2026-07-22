@@ -4,7 +4,7 @@ Context for Claude Code (and for developers). Loaded automatically when working 
 
 ## About the project
 
-"Bsuir Time" — a BSUIR class schedule mobile app. Stack: Expo SDK 57 + React Native 0.81 + TypeScript (strict). See [README.md](README.md) for the feature overview and [CONTRIBUTING.md](CONTRIBUTING.md) for the contributor guide.
+"Bsuir Time" — a BSUIR class schedule mobile app. Stack: Expo SDK 54 + React Native 0.81 + TypeScript (strict). See [README.md](README.md) for the feature overview and [CONTRIBUTING.md](CONTRIBUTING.md) for the contributor guide.
 
 **Platforms:**
 
