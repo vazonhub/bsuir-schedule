@@ -32,6 +32,7 @@
     "test:coverage": "jest --coverage",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
     "ios:build": "npx expo prebuild --clean && npx expo run:ios --scheme BsuirTime",
+    "ios:watch": "bash scripts/ios-watch.sh",
     "android:eas": "eas build --platform android --profile production",
     "android:build": "npx expo prebuild --clean && npx expo run:android",
     "prepare": "husky",
