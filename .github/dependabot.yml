@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+  # Root app (the main Expo / React Native project).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    # Bundle routine minor/patch updates into a single PR to avoid noise.
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # A major Expo SDK bump must be done manually, together with React
+      # Native and the whole expo-* family — otherwise the project ends up
+      # in an incoherent half-upgraded state that breaks the build (a lone
+      # `expo` 54->57 security bump is exactly what broke pods + Metro).
+      # Applies to both version and security updates for this dependency.
+      - dependency-name: expo
+        update-types:
+          - version-update:semver-major
+
+  # Cloudflare Worker for auditory occupancy (services/auditory-api).
+  - package-ecosystem: npm
+    directory: /services/auditory-api
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used by the CI/CD workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
