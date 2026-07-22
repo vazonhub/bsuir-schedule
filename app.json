@@ -417,14 +417,14 @@
                 },
                 {
                   "targetName": "BsuirWatch",
-                  "bundleIdentifier": "by.vazon.bsuirschedule.watchkitapp",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watch",
                   "entitlements": {
                     "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
                 },
                 {
                   "targetName": "BsuirWatchComplication",
-                  "bundleIdentifier": "by.vazon.bsuirschedule.watchcomplications",
+                  "bundleIdentifier": "by.vazon.bsuirschedule.watch.complication",
                   "entitlements": {
                     "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }

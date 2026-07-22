@@ -14,9 +14,12 @@ Apple Watch-приложение и его complication встроены в ос
 
 1. **Зарегистрировать App IDs** в Apple Developer (Certificates, IDs & Profiles)
    с включённой capability **App Groups**:
-   - `by.vazon.bsuirschedule.watchkitapp` (watch-приложение);
-   - `by.vazon.bsuirschedule.watchkitapp.complication` (complication).
+   - `by.vazon.bsuirschedule.watch` (watch-приложение);
+   - `by.vazon.bsuirschedule.watch.complication` (complication).
      (`by.vazon.bsuirschedule` и `.widget` уже заведены.)
+     NB: НЕ используем namespace `…watchkitapp.*` — Apple его резервирует и не
+     даёт зарегистрировать App ID («identifier is not available»). Поэтому
+     watch-приложение живёт на `.watch`, а complication вложен в него.
 2. **App Group** `group.by.vazon.bsuirschedule` — добавить к обоим новым App ID
    (тот же, что у основного приложения и виджета).
 3. **Провижининг**: `eas credentials -p ios` (или первый `eas build`) обнаруживает
