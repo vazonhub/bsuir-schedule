@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.28.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -15,27 +15,24 @@
       }
     },
     "testing": {
-      "autoIncrement": true,
       "environment": "production",
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-26.2"
+        "image": "macos-tahoe-26.5-xcode-26.6"
       },
       "android": {
         "buildType": "app-bundle"
       }
     },
     "production": {
-      "autoIncrement": true,
       "environment": "production",
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-26.2"
+        "image": "macos-tahoe-26.5-xcode-26.6"
       },
       "android": {
         "buildType": "app-bundle"
       }
     },
     "production-apk": {
-      "autoIncrement": true,
       "environment": "production",
       "android": {
         "buildType": "apk"

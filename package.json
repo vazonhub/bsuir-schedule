@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "2.3.1",
+  "version": "3.0.0",
   "description": "Bsuir Time — BSUIR class schedule app for iOS and Android: 4-week cycle, widgets, diary, cloud sync",
   "license": "MIT",
   "author": "Konstantsin Betenya",
@@ -15,11 +15,12 @@
   "main": "./index.ts",
   "private": true,
   "scripts": {
-    "bump:patch": "npm version patch --no-git-tag-version",
-    "bump:minor": "npm version minor --no-git-tag-version",
-    "bump:major": "npm version major --no-git-tag-version",
+    "bump:patch": "npm version patch --no-git-tag-version && npm run bump:build",
+    "bump:minor": "npm version minor --no-git-tag-version && npm run bump:build",
+    "bump:major": "npm version major --no-git-tag-version && npm run bump:build",
+    "bump:build": "node scripts/bump-build.js",
     "start": "expo start",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --scheme BsuirTime",
     "android": "expo run:android",
     "web": "expo start --web",
     "prebuild": "expo prebuild",
@@ -27,8 +28,12 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
     "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "ios:eas": "eas build --platform ios --profile production --auto-submit",
-    "ios:build": "npx expo prebuild --clean && npx expo run:ios",
+    "ios:build": "npx expo prebuild --clean && npx expo run:ios --scheme BsuirTime",
+    "ios:watch": "bash scripts/ios-watch.sh",
     "android:eas": "eas build --platform android --profile production",
     "android:build": "npx expo prebuild --clean && npx expo run:android",
     "prepare": "husky",
@@ -45,7 +50,7 @@
     "@react-navigation/native": "^7.1.8",
     "@react-navigation/native-stack": "^7.3.16",
     "@shopify/flash-list": "2.0.2",
-    "axios": "^1.15.0",
+    "axios": "^1.18.1",
     "date-fns": "^4.1.0",
     "expo": "~54.0.33",
     "expo-accessibility-plus": "^0.1.2",
@@ -63,7 +68,7 @@
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
     "expo-notifications": "~0.32.17",
-    "expo-router": "~6.0.23",
+    "expo-router": "~6.0.24",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-store-review": "~9.0.9",
@@ -90,6 +95,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
@@ -102,6 +108,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-native": "^5.0.0",
     "husky": "^9.1.7",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
     "lint-staged": "^17.1.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.2"
@@ -123,5 +131,9 @@
         ]
       }
     }
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "postcss": "^8.5.10"
   }
 }

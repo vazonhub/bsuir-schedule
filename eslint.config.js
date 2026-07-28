@@ -16,6 +16,8 @@ module.exports = [
       'android/',
       'babel.config.js',
       'eslint.config.js',
+      'jest.config.js',
+      'jest.setup.js',
       'services/',
       'scripts/',
     ],

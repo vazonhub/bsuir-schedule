@@ -2,14 +2,56 @@
 
 Полная модель веток и пайплайнов — в `docs/plans/CICD_PLAN.md`.
 
+## 0. Одноразовая настройка watch-таргетов (только владелец)
+
+Apple Watch-приложение и его complication встроены в основное iOS-приложение
+(config-плагины `withWatchApp` / `withWatchComplication`), поэтому при EAS-сборке
+схемы `BsuirTime` они **автоматически попадают в архив** — отдельная EAS-сборка
+не нужна, `eas.json` менять не нужно. Проверено: Release-архив содержит
+`BsuirTime.app/Watch/BsuirWatch.app/PlugIns/BsuirWatchComplication.appex`.
+
+Что нужно сделать один раз перед первым релизом с часами:
+
+1. **Зарегистрировать App IDs** в Apple Developer (Certificates, IDs & Profiles)
+   с включённой capability **App Groups**:
+   - `by.vazon.bsuirschedule.watchapp` (watch-приложение);
+   - `by.vazon.bsuirschedule.watchapp.complications` (complication).
+     (`by.vazon.bsuirschedule` и `.widget` уже заведены.)
+     NB: НЕ используем namespace `…watchkitapp.*` — Apple его резервирует и не
+     даёт зарегистрировать App ID («identifier is not available»). Поэтому
+     watch-приложение живёт на `.watchapp`, а complication вложен в него как
+     `.watchapp.complications` (обязан начинаться с id watch-приложения).
+2. **App Group** `group.by.vazon.bsuirschedule` — добавить к обоим новым App ID
+   (тот же, что у основного приложения и виджета).
+3. **Провижининг**: `eas credentials -p ios` (или первый `eas build`) обнаруживает
+   встроенные таргеты по пребилду и заводит distribution-профили на каждый bundle
+   id. Дать EAS создать/обновить профили для двух новых id.
+4. **App Store Connect**: watch-приложение публикуется в составе основного —
+   отдельной записи не требуется.
+
+Версии watch/complication/виджета берут `MARKETING_VERSION` из версии приложения
+и `CURRENT_PROJECT_VERSION` из `ios.buildNumber` (app.json) на этапе prebuild.
+
+**Версионирование — `local` (см. eas.json).** `appVersionSource: local`, без
+`autoIncrement`: build-номера живут в `app.json` (`ios.buildNumber`,
+`android.versionCode`) и коммитятся. Это обязательно: EAS remote autoIncrement
+инкрементил только основной таргет, а расширения оставались на старом номере →
+Apple отклоняет архив («CFBundleVersion of an app extension must match the parent
+app»). При local все таргеты пекут один и тот же номер на prebuild.
+
 ## 1. Подготовка версии (в develop)
 
 ```bash
 git checkout develop && git pull
-npm run bump:patch   # или bump:minor / bump:major
+npm run bump:patch   # или bump:minor / bump:major — бампит и версию, и build-номера
 git commit -am "chore: bump version to vX.Y.Z"
 git push
 ```
+
+`bump:patch|minor|major` двигают marketing-версию (package.json) и одновременно
+инкрементят `ios.buildNumber` + `android.versionCode` (через `scripts/bump-build.js`).
+Пересобираешь ту же версию (напр. hotfix того же `vX.Y.Z`)? Подними только
+build-номера: `npm run bump:build` — иначе стор отклонит дубликат.
 
 ## 2. PR в testing
 
@@ -21,7 +63,7 @@ git push
 
 - iOS: TestFlight.
 - Android: Google Play → Internal testing.
-- Нашёлся баг → фикс в `develop` → новый PR `develop → testing` с **той же** версией (buildNumber инкрементится сам).
+- Нашёлся баг → фикс в `develop` → подними build-номера `npm run bump:build` → новый PR `develop → testing` с **той же** marketing-версией.
 
 ## 4. PR в master
 

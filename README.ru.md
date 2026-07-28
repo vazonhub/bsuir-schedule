@@ -7,7 +7,7 @@
 
 [English](README.md) · **Русский**
 
-![Expo](https://img.shields.io/badge/Expo_SDK-54%2B-000020)
+![Expo](https://img.shields.io/badge/Expo_SDK-54-000020)
 [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react&logoColor=white)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Платформы](https://img.shields.io/badge/platforms-iOS%2015.1%2B%20%7C%20Android-8E8E93)](#getting-started)

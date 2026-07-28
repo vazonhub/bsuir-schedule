@@ -7,7 +7,7 @@
 
 **English** · [Русский](README.ru.md)
 
-![Expo](https://img.shields.io/badge/Expo_SDK-54%2B-000020)
+![Expo](https://img.shields.io/badge/Expo_SDK-54-000020)
 [![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react&logoColor=white)](https://reactnative.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Platforms](https://img.shields.io/badge/platforms-iOS%2015.1%2B%20%7C%20Android-8E8E93)](#getting-started)
@@ -46,6 +46,9 @@
   activity calendar and an evening reminder.
 - 🧩 **Home & Lock Screen widgets** — WidgetKit on iOS (including Lock Screen
   accessories) and Glance-style widgets on Android, with deep links into the app.
+- ⌚ **Apple Watch app** — browse the pinned group's schedule on the wrist
+  (today + days/weeks). Synced from the phone via WatchConnectivity, with a
+  direct-API fallback when the phone isn't reachable.
 - ☁️ **Cloud sync** — iCloud on iOS, Google Drive on Android; offline-first
   with cached schedules as a fallback data source.
 - 🎨 **Personalization** — light/dark themes, custom lesson-type colors,
@@ -95,8 +98,9 @@ src/
 ├── components/       reusable UI without business logic
 ├── widgets/          Android widget UI
 └── theme/ utils/ …   design tokens and helpers
-targets/              native iOS widget (WidgetKit) & Unity banner view
-plugins/              Expo config plugins (widgets, StoreKit, icons, …)
+targets/              native iOS widget (WidgetKit), watchOS app & Unity banner view
+modules/              local Expo native modules (watch-bridge — WatchConnectivity)
+plugins/              Expo config plugins (widgets, watch app, StoreKit, icons, …)
 services/auditory-api Cloudflare Worker + crawler for room occupancy
 ```
 

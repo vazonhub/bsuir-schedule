@@ -20,6 +20,10 @@ concurrency:
   group: eas-testing-${{ github.ref }}
   cancel-in-progress: false
 
+# Least-privilege token: the build job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: EAS build & submit
@@ -64,12 +68,19 @@ jobs:
       - name: Start EAS build + submit
         env:
           HEAD_MESSAGE: ${{ github.event.head_commit.message || 'Manual testing build' }}
+          # app.config.ts injects extra.eas.projectId / owner from these — .env is not committed.
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+          EXPO_OWNER: ${{ secrets.EXPO_OWNER }}
+          # Don't let EAS auto-patch Apple capabilities in CI: with API-key auth it
+          # can't sync App Group identifiers and fails the build. Capabilities are
+          # configured once by hand in the Apple Developer portal instead.
+          EXPO_NO_CAPABILITY_SYNC: '1'
         run: |
           MESSAGE=$(printf '%s' "$HEAD_MESSAGE" | head -1 | cut -c1-1024)
           eas build \
-            --profile testing \
+            --profile production \
             --platform "${{ steps.platform.outputs.platform }}" \
-            --auto-submit \
+            --auto-submit-with-profile testing \
             --non-interactive \
             --no-wait \
             --message "$MESSAGE"
