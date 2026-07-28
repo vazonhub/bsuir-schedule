@@ -29,18 +29,29 @@ Apple Watch-приложение и его complication встроены в ос
 4. **App Store Connect**: watch-приложение публикуется в составе основного —
    отдельной записи не требуется.
 
-Версии watch/complication синхронизируются с основным приложением так же, как у
-виджета (`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` из версии приложения) —
-отдельных действий не требует.
+Версии watch/complication/виджета берут `MARKETING_VERSION` из версии приложения
+и `CURRENT_PROJECT_VERSION` из `ios.buildNumber` (app.json) на этапе prebuild.
+
+**Версионирование — `local` (см. eas.json).** `appVersionSource: local`, без
+`autoIncrement`: build-номера живут в `app.json` (`ios.buildNumber`,
+`android.versionCode`) и коммитятся. Это обязательно: EAS remote autoIncrement
+инкрементил только основной таргет, а расширения оставались на старом номере →
+Apple отклоняет архив («CFBundleVersion of an app extension must match the parent
+app»). При local все таргеты пекут один и тот же номер на prebuild.
 
 ## 1. Подготовка версии (в develop)
 
 ```bash
 git checkout develop && git pull
-npm run bump:patch   # или bump:minor / bump:major
+npm run bump:patch   # или bump:minor / bump:major — бампит и версию, и build-номера
 git commit -am "chore: bump version to vX.Y.Z"
 git push
 ```
+
+`bump:patch|minor|major` двигают marketing-версию (package.json) и одновременно
+инкрементят `ios.buildNumber` + `android.versionCode` (через `scripts/bump-build.js`).
+Пересобираешь ту же версию (напр. hotfix того же `vX.Y.Z`)? Подними только
+build-номера: `npm run bump:build` — иначе стор отклонит дубликат.
 
 ## 2. PR в testing
 
@@ -52,7 +63,7 @@ git push
 
 - iOS: TestFlight.
 - Android: Google Play → Internal testing.
-- Нашёлся баг → фикс в `develop` → новый PR `develop → testing` с **той же** версией (buildNumber инкрементится сам).
+- Нашёлся баг → фикс в `develop` → подними build-номера `npm run bump:build` → новый PR `develop → testing` с **той же** marketing-версией.
 
 ## 4. PR в master
 
