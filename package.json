@@ -15,9 +15,10 @@
   "main": "./index.ts",
   "private": true,
   "scripts": {
-    "bump:patch": "npm version patch --no-git-tag-version",
-    "bump:minor": "npm version minor --no-git-tag-version",
-    "bump:major": "npm version major --no-git-tag-version",
+    "bump:patch": "npm version patch --no-git-tag-version && npm run bump:build",
+    "bump:minor": "npm version minor --no-git-tag-version && npm run bump:build",
+    "bump:major": "npm version major --no-git-tag-version && npm run bump:build",
+    "bump:build": "node scripts/bump-build.js",
     "start": "expo start",
     "ios": "expo run:ios --scheme BsuirTime",
     "android": "expo run:android",
