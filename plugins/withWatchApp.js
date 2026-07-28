@@ -30,13 +30,15 @@ function withWatchApp(config) {
     const proj = mod.modResults;
     const projectRoot = mod.modRequest.projectRoot;
     const appBundleId = mod.ios?.bundleIdentifier ?? 'by.vazon.bsuirschedule';
-    // NB: `.watch`, NOT `.watchkitapp`. Apple reserves the whole
+    // NB: `.watchapp`, NOT `.watchkitapp`. Apple reserves the whole
     // `<app>.watchkitapp.*` namespace and refuses to register any App ID under
     // it, so the complication (which MUST be prefixed by the watch app id to
     // embed) could not live there. A modern WKApplication watch app does not
     // require the `.watchkitapp` suffix — any main-app-prefixed id works — so we
-    // use `.watch` and nest the complication as `.watch.complication`.
-    const watchBundleId = appBundleId + '.watch';
+    // use `.watchapp` and nest the complication as `.watchapp.complications`.
+    // These two App IDs are registered by hand in the Apple Developer portal
+    // (see RELEASE.md §0); keep the strings in exact sync with what's there.
+    const watchBundleId = appBundleId + '.watchapp';
     const appVersion = mod.version ?? '0.1.0';
     const buildNumber = mod.ios?.buildNumber ?? '1';
 
