@@ -248,7 +248,14 @@ function withWatchApp(config) {
       PRODUCT_BUNDLE_IDENTIFIER: `"${watchBundleId}"`,
       PRODUCT_NAME: '"$(TARGET_NAME)"',
       SDKROOT: 'watchos',
-      SKIP_INSTALL: 'NO',
+      // YES — the watch app is embedded into the iOS app via the "Embed Watch
+      // Content" copy phase; it must NOT also be installed as a standalone
+      // product. With NO it lands in the archive's top-level Applications/
+      // alongside BsuirTime.app, so xcodebuild sees two apps, can't pick the
+      // primary, classifies the archive as "Generic Xcode Archive" and refuses
+      // to export (exportArchive: "expected one of {}" — an empty method set).
+      // The embed copy reads BUILT_PRODUCTS_DIR and is unaffected by this flag.
+      SKIP_INSTALL: 'YES',
       SWIFT_EMIT_LOC_STRINGS: 'YES',
       SWIFT_VERSION: '5.0',
       TARGETED_DEVICE_FAMILY: '4',
