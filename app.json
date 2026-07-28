@@ -580,27 +580,6 @@
                   "entitlements": {
                     "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
-                },
-                {
-                  "targetName": "ScheduleWidget",
-                  "bundleIdentifier": "by.vazon.bsuirschedule.widget",
-                  "entitlements": {
-                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
-                  }
-                },
-                {
-                  "targetName": "BsuirWatch",
-                  "bundleIdentifier": "by.vazon.bsuirschedule.watchapp",
-                  "entitlements": {
-                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
-                  }
-                },
-                {
-                  "targetName": "BsuirWatchComplication",
-                  "bundleIdentifier": "by.vazon.bsuirschedule.watchapp.complications",
-                  "entitlements": {
-                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
-                  }
                 }
               ]
             }
