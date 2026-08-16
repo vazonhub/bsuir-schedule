@@ -131,6 +131,7 @@ export const ru = {
   // Schedule
   schedule: {
     notFound: 'Расписание не найдено',
+    notFoundHint: 'Потяните вниз, чтобы обновить',
     exams: 'Экзамены',
     goToToday: 'Перейти к сегодня',
     goToExams: 'Перейти к экзаменам',

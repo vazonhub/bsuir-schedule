@@ -76,6 +76,14 @@ export const computeWeekForDate = (
   return (idx + 1) as WeekNumber;
 };
 
+/**
+ * True if a day-keyed schedule map holds at least one lesson. A `null` map,
+ * an empty object, or a map made only of empty arrays all count as "no lessons".
+ */
+const hasScheduledLessons = (
+  map: Partial<Record<DayNameRu, LessonDto[]>> | null | undefined,
+): boolean => !!map && Object.values(map).some((day) => !!day && day.length > 0);
+
 const compareLessonsAsc = (a: NormalizedLesson, b: NormalizedLesson): number => {
   const t = a.date.getTime() - b.date.getTime();
   if (t !== 0) return t;
@@ -125,7 +133,14 @@ export const flattenSchedule = (
   today: Date,
   options: FlattenOptions = {},
 ): NormalizedLesson[] => {
-  if (!schedule.schedules) return [];
+  // Between semesters the API empties `schedules` and moves the upcoming term
+  // into `nextSchedules`, with the top-level `startDate`/`endDate` already
+  // pointing at that new term. Fall back to it so an active schedule doesn't
+  // collapse into an empty "not found" screen during the transition window.
+  const effectiveSchedules = hasScheduledLessons(schedule.schedules)
+    ? schedule.schedules
+    : schedule.nextSchedules;
+  if (!effectiveSchedules) return [];
 
   const startDate = parseBsuirDate(schedule.startDate);
   const endDate = parseBsuirDate(schedule.endDate);
@@ -136,7 +151,7 @@ export const flattenSchedule = (
 
   const out: NormalizedLesson[] = [];
 
-  for (const [dayNameStr, dayLessons] of Object.entries(schedule.schedules)) {
+  for (const [dayNameStr, dayLessons] of Object.entries(effectiveSchedules)) {
     if (!dayLessons || dayLessons.length === 0) continue;
     const dayName = dayNameStr as DayNameRu;
     const targetDow = DAY_NAME_TO_DOW[dayName];

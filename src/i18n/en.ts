@@ -125,6 +125,7 @@ export const en: TranslationKeys = {
 
   schedule: {
     notFound: 'Schedule not found',
+    notFoundHint: 'Pull down to refresh',
     exams: 'Exams',
     goToToday: 'Go to today',
     goToExams: 'Go to exams',
