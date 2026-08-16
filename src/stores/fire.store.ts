@@ -7,6 +7,7 @@ import {
   WEEKLY_FREEZES,
   emptyFireCore,
   evaluateCore,
+  grantFreezeCore,
   markActivityCore,
   mergeFireCores,
   mondayOfISO,
@@ -32,6 +33,8 @@ interface FireStore extends FireCore {
   evaluate(now: Date, isLessonDay: (iso: string) => boolean): void;
   /** Register today's activity. Called by the controller. */
   markActivity(now: Date, isLessonDay: (iso: string) => boolean): void;
+  /** Grant one extra freeze (rewarded ad). Capped. Called by the controller. */
+  grantFreeze(now: Date): void;
   /** Reset the celebration request after it has played. */
   consumeCelebration(): void;
 
@@ -85,6 +88,10 @@ export const useFireStore = create<FireStore>()(
           patch.pendingCelebration = { kind: 'milestone', value: event.milestone };
         }
         set(patch);
+      },
+
+      grantFreeze: (now) => {
+        set(grantFreezeCore(pickCore(get()), toLocalISO(now)));
       },
 
       consumeCelebration: () => set({ pendingCelebration: null }),
