@@ -17,11 +17,7 @@
       "buildNumber": "50",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleLocalizations": [
-          "en",
-          "ru",
-          "be"
-        ],
+        "CFBundleLocalizations": ["en", "ru", "be"],
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "ppxm28t8ap.skadnetwork"
@@ -254,9 +250,7 @@
         ]
       },
       "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.by.vazon.bsuirschedule"
-        ]
+        "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
       }
     },
     "android": {
@@ -269,9 +263,7 @@
       "icon": "./assets/android-icon.png",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "com.google.android.gms.permission.AD_ID"
-      ],
+      "permissions": ["com.google.android.gms.permission.AD_ID"],
       "blockedPermissions": []
     },
     "web": {
@@ -512,10 +504,7 @@
           }
         }
       ],
-      [
-        "./plugins/withAndroidAccentColor",
-        "#0A84FF"
-      ],
+      ["./plugins/withAndroidAccentColor", "#0A84FF"],
       [
         "react-native-android-widget",
         {
@@ -575,27 +564,21 @@
                   "targetName": "ScheduleWidget",
                   "bundleIdentifier": "by.vazon.bsuirschedule.widget",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.by.vazon.bsuirschedule"
-                    ]
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
                 },
                 {
                   "targetName": "BsuirWatch",
                   "bundleIdentifier": "by.vazon.bsuirschedule.watchapp",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.by.vazon.bsuirschedule"
-                    ]
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
                 },
                 {
                   "targetName": "BsuirWatchComplication",
                   "bundleIdentifier": "by.vazon.bsuirschedule.watchapp.complications",
                   "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.by.vazon.bsuirschedule"
-                    ]
+                    "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
                   }
                 }
               ]
