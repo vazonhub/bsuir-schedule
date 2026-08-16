@@ -6,6 +6,7 @@ import {
   parseBsuirDate,
   startOfLocalDay,
 } from './date';
+import { resolveEmployeePhotoLink } from './employee';
 import type { DayNameRu, LessonDto, ScheduleDto, WeekNumber } from '@models/dto';
 
 /**
@@ -253,7 +254,18 @@ const buildNormalized = (
   dayName,
   isCurrentWeek: week === currentWeek,
   isPast: date.getTime() < todayStart.getTime(),
-  raw: lesson,
+  // Repair the broken `photoLink` the schedule payload returns for embedded
+  // employees (origin serialized as literal "null") so avatars resolve in
+  // lesson cards, the details sheet and widgets. See `resolveEmployeePhotoLink`.
+  raw: lesson.employees?.length
+    ? {
+        ...lesson,
+        employees: lesson.employees.map((emp) => ({
+          ...emp,
+          photoLink: resolveEmployeePhotoLink(emp) ?? emp.photoLink,
+        })),
+      }
+    : lesson,
 });
 
 /** Group flat lessons into `[{ date, week, data }]` sections by calendar day. */
