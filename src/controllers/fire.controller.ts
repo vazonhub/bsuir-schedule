@@ -91,4 +91,14 @@ export const FireController = {
   registerHomework(now: Date = new Date()): void {
     register(now);
   },
+
+  /**
+   * The user watched a rewarded ad for an extra freeze. Grants one (capped in
+   * the store) and best-effort pushes the updated core to the cloud, so the
+   * view never touches the cloud service directly.
+   */
+  rewardFreeze(now: Date = new Date()): void {
+    useFireStore.getState().grantFreeze(now);
+    void pushFireToCloud(selectFireCore(useFireStore.getState()));
+  },
 };
