@@ -7,6 +7,7 @@ import { SkeletonSchedule } from '@components/Skeleton';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { usePalette } from '@hooks/usePalette';
 import { useScheduleStore } from '@stores/schedule.store';
+import { resolveEmployeePhotoLink } from '@utils/employee';
 
 import { ScheduleView } from './ScheduleView';
 
@@ -61,7 +62,11 @@ export const EmployeeScheduleScreen = () => {
           ? `${schedule.employeeDto.lastName} ${schedule.employeeDto.firstName?.[0] ?? ''}.${schedule.employeeDto.middleName?.[0] ? schedule.employeeDto.middleName[0] + '.' : ''}`
           : undefined)
       }
-      avatarUri={schedule.employeeDto?.photoLink}
+      avatarUri={
+        schedule.employeeDto
+          ? (resolveEmployeePhotoLink(schedule.employeeDto) ?? undefined)
+          : undefined
+      }
       onRefresh={load}
       refreshing={isLoading}
     />
