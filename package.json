@@ -58,7 +58,7 @@
     "expo-alternate-app-icons": "^8.0.0",
     "expo-application": "~7.0.8",
     "expo-background-fetch": "~14.0.9",
-    "expo-blur": "~15.0.8",
+    "expo-blur": "~57.0.2",
     "expo-build-properties": "~1.0.10",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
