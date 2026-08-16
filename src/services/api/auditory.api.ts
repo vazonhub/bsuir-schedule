@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance } from 'axios';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 
 import type { AuditoryIndexDto } from '@models/dto';
 
@@ -24,7 +23,9 @@ const getClient = (): AxiosInstance | null => {
   _client = axios.create({
     baseURL,
     timeout: 20_000,
-    adapter: Platform.OS === 'android' ? 'xhr' : 'fetch',
+    // See http.ts: prefer the fetch adapter (reliable on both platforms under
+    // RN 0.81 + New Architecture), fall back to xhr where fetch is unsupported.
+    adapter: ['fetch', 'xhr'],
     headers: { Accept: 'application/json' },
   });
   return _client;
