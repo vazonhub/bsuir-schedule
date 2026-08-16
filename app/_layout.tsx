@@ -84,10 +84,12 @@ export default function RootLayout() {
     }
   }, [language, i18n]);
 
-  // Widget tap. Home Screen widget emits `bsuirtime://` (root). Lock Screen
-  // accessory widgets emit `bsuirtime://lesson?id=<encoded blockId>` — we
-  // stash the id in deepLinkStore so `ScheduleView` (default group) can
-  // auto-open the sheet once its schedule is mounted.
+  // Widget tap. Home Screen widgets emit `bsuirtime://` (root). Lock Screen
+  // accessory widgets emit `bsuirtime://lesson?id=<encoded blockId>` — we stash
+  // the id in deepLinkStore so `ScheduleView` (default group) can auto-open the
+  // sheet once its schedule is mounted. Routing to the tabs is handled by
+  // `app/+native-intent.ts` (which wins the cold-start race); here we only need
+  // the raw URL to recover the lesson id.
   useEffect(() => {
     const handle = (url: string | null) => {
       if (!url || !url.startsWith('bsuirtime://')) return;

@@ -812,6 +812,11 @@ struct ScheduleWidgetEntryView: View {
     let entry: ScheduleEntry
 
     var body: some View {
+        content.widgetURL(widgetDeepLink(for: entry, family: family))
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .systemSmall:
             SmallWidgetView(entry: entry)
@@ -836,13 +841,24 @@ struct ScheduleWidgetEntryView: View {
 
 // MARK: - Widget declaration
 
-/// Build a deep-link URL for the given entry. Points to the "upcoming" lesson
-/// via `bsuirtime://lesson?id=<encoded blockId>` if available, else the root
-/// `bsuirtime://`. The blockId contains ":", spaces and Cyrillic characters,
-/// so it is percent-encoded as a query value.
-private func widgetDeepLink(for entry: ScheduleEntry) -> URL? {
+/// Build a deep-link URL for the given entry.
+///
+/// Only accessory (Lock Screen) families feature a single "upcoming" lesson, so
+/// only they deep-link to it via `bsuirtime://lesson?id=<encoded blockId>` (the
+/// app then auto-opens that lesson's details sheet). Home Screen families show
+/// the full day, so tapping them just opens the app at the root `bsuirtime://`
+/// (the "My" tab) — otherwise every Home Screen tap would pop the lesson modal.
+/// The blockId contains ":", spaces and Cyrillic characters, so it is
+/// percent-encoded as a query value.
+private func widgetDeepLink(for entry: ScheduleEntry, family: WidgetFamily) -> URL? {
     let root = URL(string: "bsuirtime://")
-    guard let blockId = entry.snapshot?.upcoming?.blockId else { return root }
+    let isAccessory: Bool
+    if #available(iOSApplicationExtension 16.0, *) {
+        isAccessory = [.accessoryInline, .accessoryCircular, .accessoryRectangular].contains(family)
+    } else {
+        isAccessory = false
+    }
+    guard isAccessory, let blockId = entry.snapshot?.upcoming?.blockId else { return root }
     let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&=?#+/"))
     let encoded = blockId.addingPercentEncoding(withAllowedCharacters: allowed) ?? blockId
     return URL(string: "bsuirtime://lesson?id=\(encoded)") ?? root
@@ -864,12 +880,10 @@ struct ScheduleWidget: Widget {
             if #available(iOS 17, *) {
                 ScheduleWidgetEntryView(entry: entry)
                     .containerBackground(.fill.tertiary, for: .widget)
-                    .widgetURL(widgetDeepLink(for: entry))
             } else {
                 ScheduleWidgetEntryView(entry: entry)
                     .padding(12)
                     .background()
-                    .widgetURL(widgetDeepLink(for: entry))
             }
         }
         .configurationDisplayName("Bsuir Time")
