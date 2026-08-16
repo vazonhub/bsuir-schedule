@@ -127,6 +127,7 @@ export const be: TranslationKeys = {
 
   schedule: {
     notFound: 'Няма вынікаў пошуку',
+    notFoundHint: 'Пацягніце ўніз, каб абнавіць',
     exams: 'Экзамены',
     goToToday: 'Перайсці да сёння',
     goToExams: 'Перайсці да экзаменаў',
