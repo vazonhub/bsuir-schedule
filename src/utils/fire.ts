@@ -22,6 +22,13 @@ import { FIRE_COLORS, FIRE_TIERS } from '@theme/colors';
 /** How many freezes are granted per week. */
 export const WEEKLY_FREEZES = 2;
 
+/**
+ * Hard cap on the freeze pool. The weekly refill grants `WEEKLY_FREEZES`, but a
+ * rewarded ad can top the pool up above that — never past this ceiling, so the
+ * ad can't be farmed into an infinite freeze stash.
+ */
+export const MAX_FREEZES = 5;
+
 /** Milestones at which the celebration animation plays. */
 export const MILESTONES: readonly number[] = [7, 30, 100];
 
@@ -211,6 +218,21 @@ export const markActivityCore = (
   c.history = pruneHistory(c.history);
 
   return { core: c, event: { delta: 1, recordBeaten, milestone } };
+};
+
+/**
+ * Grant one extra freeze (rewarded ad). Caps the pool at `MAX_FREEZES` and, if
+ * the pool has never been anchored to a week, stamps the current week so the
+ * next `refilledFreezes` doesn't wipe the grant on the same day. Returns the
+ * same core reference when already at the cap (no-op).
+ */
+export const grantFreezeCore = (core: FireCore, todayISO: string): FireCore => {
+  if (core.freezes >= MAX_FREEZES) return core;
+  return {
+    ...core,
+    freezes: Math.min(core.freezes + 1, MAX_FREEZES),
+    freezeWeekStart: core.freezeWeekStart ?? mondayOfISO(todayISO),
+  };
 };
 
 /** The fire is "burning" if the streak is alive. */

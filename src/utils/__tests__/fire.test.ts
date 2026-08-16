@@ -1,10 +1,12 @@
 import {
+  MAX_FREEZES,
   MILESTONES,
   WEEKLY_FREEZES,
   buildLessonDayChecker,
   emptyFireCore,
   evaluateCore,
   getFlameColor,
+  grantFreezeCore,
   isFireCore,
   isFireHot,
   markActivityCore,
@@ -160,6 +162,30 @@ describe('markActivityCore', () => {
     expect(core.current).toBe(7);
     expect(event.milestone).toBe(7);
     expect(MILESTONES).toContain(event.milestone);
+  });
+});
+
+describe('grantFreezeCore', () => {
+  const base = (over: Partial<FireCore>): FireCore => ({ ...emptyFireCore(), ...over });
+
+  it('adds one freeze', () => {
+    const c = grantFreezeCore(base({ freezes: 1, freezeWeekStart: '2025-09-01' }), '2025-09-03');
+    expect(c.freezes).toBe(2);
+  });
+
+  it('caps the pool at MAX_FREEZES and returns the same reference (no-op)', () => {
+    const input = base({ freezes: MAX_FREEZES, freezeWeekStart: '2025-09-01' });
+    const c = grantFreezeCore(input, '2025-09-03');
+    expect(c).toBe(input);
+    expect(c.freezes).toBe(MAX_FREEZES);
+  });
+
+  it('anchors the freeze week when the pool has none, without touching an existing one', () => {
+    const fresh = grantFreezeCore(base({ freezes: 0, freezeWeekStart: null }), '2025-09-03');
+    expect(fresh.freezeWeekStart).toBe('2025-09-01'); // Monday of that week
+
+    const kept = grantFreezeCore(base({ freezes: 1, freezeWeekStart: '2025-09-01' }), '2025-09-10');
+    expect(kept.freezeWeekStart).toBe('2025-09-01'); // unchanged
   });
 });
 
