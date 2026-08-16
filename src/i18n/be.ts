@@ -62,6 +62,8 @@ export const be: TranslationKeys = {
     days: '{{n}} дн.',
     freezes: 'Замарозкі',
     freezesLeft: 'засталося {{n}} з {{max}}',
+    getFreeze: 'Замарозка за рэкламу',
+    freezeMaxed: 'Максімум замарозак',
     calendarTitle: 'Актыўнасць',
     legendActive: 'Гарэла',
     legendFrozen: 'Замарозка',
