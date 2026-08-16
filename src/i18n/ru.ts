@@ -63,6 +63,8 @@ export const ru = {
     days: '{{n}} дн.',
     freezes: 'Заморозки',
     freezesLeft: 'осталось {{n}} из {{max}}',
+    getFreeze: 'Заморозка за рекламу',
+    freezeMaxed: 'Максимум заморозок',
     calendarTitle: 'Активность',
     legendActive: 'Горело',
     legendFrozen: 'Заморозка',
@@ -131,6 +133,7 @@ export const ru = {
   // Schedule
   schedule: {
     notFound: 'Расписание не найдено',
+    notFoundHint: 'Потяните вниз, чтобы обновить',
     exams: 'Экзамены',
     goToToday: 'Перейти к сегодня',
     goToExams: 'Перейти к экзаменам',

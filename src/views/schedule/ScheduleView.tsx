@@ -12,6 +12,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -713,9 +714,23 @@ export const ScheduleView = ({
           defaultGroupName={isDefaultSchedule ? defaultLabel : undefined}
           onChangeDefaultGroup={isDefaultSchedule ? handleChangeDefaultGroup : undefined}
         />
-        <View style={styles.center}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={[styles.center, listWrapStyle]}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={Palette.textTertiary}
+                progressViewOffset={BAR_CLEARANCE}
+              />
+            ) : undefined
+          }
+        >
           <Text style={styles.empty}>{t('schedule.notFound')}</Text>
-        </View>
+          {onRefresh ? <Text style={styles.emptyHint}>{t('schedule.notFoundHint')}</Text> : null}
+        </ScrollView>
       </View>
     );
   }
@@ -922,6 +937,7 @@ const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
+    flex: { flex: 1 },
     scheduleBannerWrap: {
       alignItems: 'center',
       paddingVertical: Spacing.md,
@@ -947,6 +963,12 @@ const makeStyles = (Palette: PaletteType) =>
     },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxxl },
     empty: { color: Palette.textSecondary, textAlign: 'center', fontSize: 15 },
+    emptyHint: {
+      color: Palette.textTertiary,
+      textAlign: 'center',
+      fontSize: 13,
+      marginTop: Spacing.sm,
+    },
     examsSeparator: {
       flexDirection: 'row',
       alignItems: 'center',

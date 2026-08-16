@@ -1,17 +1,19 @@
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { FlameIcon } from '@components/fire/FlameIcon';
+import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
+import { showRewardedAd } from '@services/ads';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
 import { Radius, Spacing } from '@theme';
 import { FIRE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
-import { WEEKLY_FREEZES, getFlameColor } from '@utils/fire';
+import { MAX_FREEZES, WEEKLY_FREEZES, getFlameColor } from '@utils/fire';
 
 import { ActivityCalendar } from './ActivityCalendar';
 
@@ -33,6 +35,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
   const sheetRef = useRef<BottomSheetModal>(null);
   const core = useFireStore(useShallow(selectFireCore));
   const snapPoints = useMemo(() => ['70%'], []);
+  const [loadingFreeze, setLoadingFreeze] = useState(false);
 
   useImperativeHandle(ref, () => ({
     present: () => sheetRef.current?.present(),
@@ -41,6 +44,19 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
 
   const accentColor = getFlameColor(core.current);
   const hasHistory = Object.keys(core.history).length > 0;
+  const freezeMaxed = core.freezes >= MAX_FREEZES;
+
+  const handleGetFreeze = useCallback(async () => {
+    if (loadingFreeze) return;
+    setLoadingFreeze(true);
+    try {
+      const rewarded = await showRewardedAd();
+      if (!rewarded) return;
+      FireController.rewardFreeze();
+    } finally {
+      setLoadingFreeze(false);
+    }
+  }, [loadingFreeze]);
 
   return (
     <BottomSheetModal
@@ -79,6 +95,33 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
             value={t('fire.freezesLeft', { n: core.freezes, max: WEEKLY_FREEZES })}
           />
         </View>
+
+        {/* ── Rewarded ad → extra freeze ── */}
+        <Pressable
+          onPress={handleGetFreeze}
+          disabled={freezeMaxed || loadingFreeze}
+          style={({ pressed }) => [
+            styles.freezeBtn,
+            pressed && styles.freezeBtnPressed,
+            freezeMaxed && styles.freezeBtnDisabled,
+          ]}
+        >
+          {loadingFreeze ? (
+            <ActivityIndicator size="small" color={FIRE_COLORS.frozen} />
+          ) : (
+            <Ionicons
+              name="snow-outline"
+              size={18}
+              color={freezeMaxed ? Palette.textTertiary : FIRE_COLORS.frozen}
+            />
+          )}
+          <Text
+            {...textProps('headline')}
+            style={[styles.freezeBtnLabel, freezeMaxed && styles.freezeBtnLabelDisabled]}
+          >
+            {freezeMaxed ? t('fire.freezeMaxed') : t('fire.getFreeze')}
+          </Text>
+        </Pressable>
 
         {/* ── Calendar ── */}
         <View style={styles.section}>
@@ -165,6 +208,28 @@ const makeStyles = (Palette: PaletteType) =>
     statValue: {
       color: Palette.textPrimary,
       fontWeight: '700',
+    },
+    freezeBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.sm,
+      paddingVertical: Spacing.lg,
+      borderRadius: Radius.md,
+      backgroundColor: Palette.background,
+    },
+    freezeBtnPressed: {
+      backgroundColor: Palette.cardPressed,
+    },
+    freezeBtnDisabled: {
+      opacity: 0.6,
+    },
+    freezeBtnLabel: {
+      color: Palette.textPrimary,
+      fontWeight: '600',
+    },
+    freezeBtnLabelDisabled: {
+      color: Palette.textTertiary,
     },
     section: {
       gap: Spacing.sm,

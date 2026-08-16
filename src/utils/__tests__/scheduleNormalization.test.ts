@@ -84,6 +84,29 @@ describe('flattenSchedule', () => {
     expect(flattenSchedule(makeSchedule({ schedules: null }), 1, MONDAY)).toEqual([]);
   });
 
+  it('falls back to nextSchedules when schedules is empty (between semesters)', () => {
+    // API contract during the term rollover: `schedules` is null and the
+    // upcoming term lives in `nextSchedules`, with start/endDate already
+    // pointing at it. Without the fallback this collapses to "not found".
+    const s = makeSchedule({
+      schedules: null,
+      nextSchedules: { Понедельник: [makeLesson()] },
+    });
+    const result = flattenSchedule(s, 1, MONDAY);
+    expect(result).toHaveLength(5);
+    expect(result.map((l) => l.date.getDate())).toEqual([1, 8, 15, 22, 29]);
+  });
+
+  it('prefers schedules over nextSchedules when both are present', () => {
+    const s = makeSchedule({
+      schedules: { Понедельник: [makeLesson()] },
+      nextSchedules: { Вторник: [makeLesson()] },
+    });
+    const result = flattenSchedule(s, 1, MONDAY);
+    // Only Mondays from `schedules`, not Tuesdays from `nextSchedules`.
+    expect(result.map((l) => l.dayName)).toEqual(Array(5).fill('Понедельник'));
+  });
+
   it('returns [] when startDate/endDate are missing', () => {
     const s = makeSchedule({ startDate: null, schedules: { Понедельник: [makeLesson()] } });
     expect(flattenSchedule(s, 1, MONDAY)).toEqual([]);

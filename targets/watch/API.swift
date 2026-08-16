@@ -28,6 +28,8 @@ private struct APISchedule: Decodable {
   let startDate: String?
   let endDate: String?
   let schedules: [String: [APILesson]]?
+  /// Upcoming term, populated by the API between semesters while `schedules` is empty.
+  let nextSchedules: [String: [APILesson]]?
 }
 
 private struct APIGroupListItem: Decodable {
@@ -258,6 +260,11 @@ enum BsuirAPI {
     let start = schedule.startDate.flatMap(parseBsuir)
     let end = schedule.endDate.flatMap(parseBsuir)
 
+    // Between semesters the API empties `schedules` and moves the upcoming term
+    // into `nextSchedules`; fall back to it so the watch doesn't show an empty day.
+    let hasCurrent = schedule.schedules?.contains { !$0.value.isEmpty } ?? false
+    let effectiveSchedules = hasCurrent ? schedule.schedules : schedule.nextSchedules
+
     var days: [WatchDayBlock] = []
     for offset in 0..<windowDays {
       guard let date = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
@@ -265,7 +272,7 @@ enum BsuirAPI {
       let week = computeWeek(for: date, today: today, currentWeek: currentWeek)
 
       let dayName = dayNameToDow.first(where: { $0.value == dow })?.key
-      let dayLessons = dayName.flatMap { schedule.schedules?[$0] } ?? []
+      let dayLessons = dayName.flatMap { effectiveSchedules?[$0] } ?? []
 
       var lessons: [WatchLesson] = []
       for lesson in dayLessons {

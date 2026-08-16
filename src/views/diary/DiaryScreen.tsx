@@ -9,6 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
+import { UnityBanner } from '@components/UnityBanner';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
@@ -260,6 +261,11 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
               );
             }}
             ItemSeparatorComponent={() => <View style={styles.gap} />}
+            ListFooterComponent={
+              <View style={styles.bannerWrap}>
+                <UnityBanner />
+              </View>
+            }
             contentContainerStyle={contentContainerStyle}
             refreshControl={
               <RefreshControl
@@ -436,6 +442,10 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
+    bannerWrap: {
+      alignItems: 'center',
+      marginTop: Spacing.xl,
+    },
     hiddenHeaderWrap: {
       paddingTop: Spacing.xl,
       paddingBottom: Spacing.sectionBottom,
