@@ -225,12 +225,10 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
             {/* Auditory */}
             {auditories.length > 0 && (
               <View style={styles.auditoryBlock}>
-                <View style={styles.infoRow}>
-                  <Ionicons name={locationIcon as never} size={18} color={Palette.textSecondary} />
-                  <Text {...textProps('callout')} style={styles.infoText}>
-                    {auditories}
-                  </Text>
-                </View>
+                <Ionicons name={locationIcon as never} size={18} color={Palette.textSecondary} />
+                <Text {...textProps('callout')} style={styles.auditoryText}>
+                  {auditories}
+                </Text>
                 {statusColor && statusLabel && (
                   <View
                     style={[styles.statusChip, { backgroundColor: statusColor + '1A' }]}
@@ -513,18 +511,28 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
       gap: Spacing.md,
     },
+    // Icon + auditory number + free/busy chip on one wrapping row. The chip must
+    // keep its intrinsic width, so the number text shrinks (not the chip).
     auditoryBlock: {
-      gap: Spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: Spacing.md,
+    },
+    auditoryText: {
+      flexShrink: 1,
+      fontSize: 15,
+      color: Palette.textSecondary,
     },
     statusChip: {
-      alignSelf: 'flex-start',
+      flexShrink: 0,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.lg,
       paddingVertical: Spacing.sm,
       borderRadius: Radius.pill,
       gap: Spacing.sm,
-      marginLeft: 18 + Spacing.md,
     },
     statusDot: {
       width: 6,
