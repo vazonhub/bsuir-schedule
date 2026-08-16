@@ -140,11 +140,16 @@
   текущему поведению приложения (реворд как «мягкий» гейт), менять не будем.
 - **Новых нативных модулей/плагинов нет** — prebuild не требуется.
 
+## Статус: реализовано ✅
+
+Все шаги выполнены. `typecheck` / `lint` (0 warnings) / `format:check` — чисто,
+`fire.test.ts` — 32/32 зелёные.
+
 ## Коммиты (все от лица владельца, без co-author)
 
-1. `docs: add diary ads plan`
-2. `feat(diary): banner ad in list footer`
-3. `feat(fire): grantFreeze store action with cap`
-4. `feat(fire): rewardFreeze controller method`
-5. `feat(fire): watch rewarded ad for +1 freeze in FireSheet`
-6. `chore(diary): polish ads integration` (при необходимости)
+1. `docs: add diary ads plan` ✅
+2. `feat(diary): banner ad in list footer` ✅
+3. `feat(fire): grantFreeze store action with cap` ✅
+4. `feat(fire): rewardFreeze controller method` ✅
+5. `feat(fire): watch rewarded ad for +1 freeze in FireSheet` ✅
+6. `test(fire): cover grantFreezeCore cap and week anchoring` ✅
