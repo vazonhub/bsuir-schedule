@@ -63,6 +63,8 @@ export const ru = {
     days: '{{n}} дн.',
     freezes: 'Заморозки',
     freezesLeft: 'осталось {{n}} из {{max}}',
+    getFreeze: 'Заморозка за рекламу',
+    freezeMaxed: 'Максимум заморозок',
     calendarTitle: 'Активность',
     legendActive: 'Горело',
     legendFrozen: 'Заморозка',

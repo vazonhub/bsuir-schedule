@@ -62,6 +62,8 @@ export const en: TranslationKeys = {
     days: '{{n}} d.',
     freezes: 'Freezes',
     freezesLeft: '{{n}} of {{max}} left',
+    getFreeze: 'Watch ad for a freeze',
+    freezeMaxed: 'Freezes maxed out',
     calendarTitle: 'Activity',
     legendActive: 'Active',
     legendFrozen: 'Freeze',
