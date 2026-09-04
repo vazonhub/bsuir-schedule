@@ -36,6 +36,11 @@ export const useAppBootstrap = () => {
     void prefetchPinned().then(() => {
       updateWidgetSnapshot();
       void updateWatchSnapshot();
+      // Credit the streak on cold launch too — after prefetch the defaultGroup
+      // schedule and currentWeek are in the store, so the lesson-day check is
+      // reliable. Without this, a cold start relied on ScheduleView firing
+      // before the schedule loaded, so the day was later counted as a miss.
+      void FireController.onAppActive();
     });
     void registerWidgetBackgroundFetch();
     void trackUsageAndMaybeRequestReview();
