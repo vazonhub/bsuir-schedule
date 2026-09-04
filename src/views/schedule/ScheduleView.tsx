@@ -145,6 +145,16 @@ export const ScheduleView = ({
     if (avatarUri) setFullscreenPhoto(true);
   }, [avatarUri]);
 
+  // Full ФИО shown under the full-screen photo (falls back to the short title).
+  const employeeFullName = useMemo(() => {
+    const emp = schedule.employeeDto;
+    if (emp) {
+      const full = [emp.lastName, emp.firstName, emp.middleName].filter(Boolean).join(' ');
+      if (full) return full;
+    }
+    return title ?? null;
+  }, [schedule.employeeDto, title]);
+
   // When a dismiss animation is still in flight, present() is silently
   // ignored by BottomSheetModal.  We force-dismiss first, then re-present
   // once the animation finishes (onDismiss fires).
@@ -896,6 +906,7 @@ export const ScheduleView = ({
               cachePolicy="memory-disk"
               accessibilityIgnoresInvertColors
             />
+            {employeeFullName ? <Text style={styles.photoCaption}>{employeeFullName}</Text> : null}
           </Pressable>
         </Modal>
       ) : null}
@@ -947,6 +958,7 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
 
 const DATE_PICKER_BACKDROP_BG = 'rgba(0,0,0,0.4)';
 const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
+const PHOTO_CAPTION_COLOR = '#FFFFFF';
 
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
@@ -1042,5 +1054,13 @@ const makeStyles = (Palette: PaletteType) =>
     photoFull: {
       width: Dimensions.get('window').width,
       height: Dimensions.get('window').width,
+    },
+    photoCaption: {
+      marginTop: Spacing.xl,
+      paddingHorizontal: Spacing.xl,
+      color: PHOTO_CAPTION_COLOR,
+      fontSize: 17,
+      fontWeight: '600',
+      textAlign: 'center',
     },
   });

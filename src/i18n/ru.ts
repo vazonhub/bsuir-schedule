@@ -388,6 +388,7 @@ export const ru = {
     alphabetJumpTo: 'Перейти к букве {{letter}}',
     photo: 'Фото {{name}}',
     closePhoto: 'Закрыть фото',
+    openPhoto: 'Открыть фото',
     closeModal: 'Закрыть',
     datePicker: 'Выбрать дату',
     lessonOngoing: 'Сейчас идёт',

@@ -370,6 +370,7 @@ export const en: TranslationKeys = {
     alphabetJumpTo: 'Jump to letter {{letter}}',
     photo: 'Photo of {{name}}',
     closePhoto: 'Close photo',
+    openPhoto: 'Open photo',
     closeModal: 'Close',
     datePicker: 'Select date',
     lessonOngoing: 'Ongoing',

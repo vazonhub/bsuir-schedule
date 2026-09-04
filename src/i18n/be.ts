@@ -374,6 +374,7 @@ export const be: TranslationKeys = {
     alphabetJumpTo: 'Перайсці да літары {{letter}}',
     photo: 'Фота {{name}}',
     closePhoto: 'Зачыніць фота',
+    openPhoto: 'Адкрыць фота',
     closeModal: 'Зачыніць',
     datePicker: 'Выбраць дату',
     lessonOngoing: 'Зараз ідзе',
