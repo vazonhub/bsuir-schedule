@@ -31,7 +31,6 @@ import { textProps } from '@theme/typography';
 import { extractDiarySubjects } from '@utils/diary';
 import type { DiarySubject } from '@utils/diary';
 
-import { DiaryStats } from './DiaryStats';
 import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
 import { NoteSheet } from './NoteSheet';
@@ -237,7 +236,6 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             data={listData}
             onScroll={handleScroll}
             scrollEventThrottle={16}
-            ListHeaderComponent={<DiaryStats groupName={groupName} subjects={visible} />}
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
               return `${item.kind}:${item.subject.subject}`;

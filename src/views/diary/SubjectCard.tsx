@@ -228,6 +228,7 @@ export const SubjectCard = ({
                     <TaskGrid
                       count={count}
                       completed={tprog.completed}
+                      compact={taskTypes.length > 1}
                       noted={
                         tprog.notes ? new Set(Object.keys(tprog.notes).map(Number)) : undefined
                       }
@@ -282,9 +283,12 @@ const CounterPill = ({
       {subCount > 0 && (
         <View style={styles.subChip}>
           <Text {...textProps('subhead')} style={[styles.subLabel, { color }]}>
-            {subCount}
+            ({subCount}
           </Text>
           <Ionicons name={subgroupIcon as never} size={11} color={color} />
+          <Text {...textProps('subhead')} style={[styles.subLabel, { color }]}>
+            )
+          </Text>
         </View>
       )}
     </View>

@@ -15,6 +15,8 @@ interface Props {
   onPressTask(index: number): void;
   /** 1-based indices that have a note attached (shown with a small dot). */
   noted?: ReadonlySet<number>;
+  /** Half-width layout (ЛР and ПЗ side by side): fewer cells per row. */
+  compact?: boolean;
 }
 
 const GAP = Spacing.sm;
@@ -22,22 +24,23 @@ const CELL_HEIGHT = 32;
 
 /**
  * Number of cells per row, chosen to keep cells readable at any N.
- * ≤10 → single row (up to N cells wide). >10 → 6–8 per row multi-row grid.
+ * Full width: ≤10 → single row, otherwise 7–8 per row.
+ * Compact (half width, ЛР+ПЗ side by side): at most 4 per row so cells don't
+ * get too small.
  */
-const cellsPerRow = (count: number): number => {
-  if (count <= 5) return count;
+const cellsPerRow = (count: number, compact: boolean): number => {
+  if (compact) return Math.min(count, 4);
   if (count <= 10) return count;
-  if (count <= 16) return 8;
   if (count <= 24) return 8;
   return 7;
 };
 
-export const TaskGrid = ({ count, completed, onPressTask, noted }: Props) => {
+export const TaskGrid = ({ count, completed, onPressTask, noted, compact = false }: Props) => {
   const Palette = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(Palette, isDark), [Palette, isDark]);
   const completedSet = useMemo(() => new Set(completed), [completed]);
-  const perRow = cellsPerRow(count);
+  const perRow = cellsPerRow(count, compact);
 
   const rows = useMemo(() => {
     const out: number[][] = [];
