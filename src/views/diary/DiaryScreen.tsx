@@ -10,6 +10,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
 import { UnityBanner } from '@components/UnityBanner';
+import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
@@ -336,7 +337,7 @@ const TutorialRunner = ({
   // Trigger for the first showing (and a re-run after the flag is reset).
   // Gated on focus — so the tutorial doesn't start while the tab is in the background.
   useEffect(() => {
-    if (!isFocused || !hydrated || seen || !hasSubjects || active) return;
+    if (!ONBOARDING_ENABLED || !isFocused || !hydrated || seen || !hasSubjects || active) return;
     const timer = setTimeout(() => start(), 450);
     return () => clearTimeout(timer);
   }, [isFocused, hydrated, seen, hasSubjects, active, start]);
