@@ -25,8 +25,12 @@ interface Props {
 export const Avatar = ({ uri, initials, size = 44, maxChars = 2 }: Props) => {
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
-  const [errored, setErrored] = useState(false);
-  const showImage = Boolean(uri) && !errored;
+  // Track *which* uri failed instead of a plain boolean, so when the source
+  // changes (e.g. a recycled FlashList cell reused for a different teacher) the
+  // error state resets automatically without an effect and the new photo is
+  // attempted instead of keeping the previous "?" fallback.
+  const [erroredUri, setErroredUri] = useState<string | null>(null);
+  const showImage = Boolean(uri) && erroredUri !== uri;
   const label =
     maxChars === 2 ? (initials ?? '?').slice(0, 2).toUpperCase() : (initials ?? '?').toUpperCase();
   const fontSize =
@@ -38,8 +42,11 @@ export const Avatar = ({ uri, initials, size = 44, maxChars = 2 }: Props) => {
       {showImage && (
         <Image
           source={uri ?? undefined}
+          // Tie the decoded image to its URL so a recycled cell never keeps
+          // displaying the previous teacher's photo until the new one decodes.
+          recyclingKey={uri ?? undefined}
           style={[styles.image, { borderRadius: size / 2 }]}
-          onError={() => setErrored(true)}
+          onError={() => setErroredUri(uri ?? null)}
           contentFit="cover"
           cachePolicy="memory-disk"
           transition={120}

@@ -727,22 +727,26 @@ struct LargeWidgetView: View {
 
 // MARK: - Lock Screen (accessory) widgets
 
-/// One-liner above the clock. Format: "{typeAbbrev} · {subject} · {startTime}".
-/// iOS will auto-truncate with an ellipsis; we don't shorten anything in JS.
+/// One-liner above the clock. Format: "{subject} · {startTime} · {room}"
+/// (room omitted when there is none). iOS auto-truncates with an ellipsis.
 @available(iOSApplicationExtension 16.0, *)
 struct InlineWidgetView: View {
     let entry: ScheduleEntry
 
     var body: some View {
         if let up = entry.snapshot?.upcoming {
-            Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+            if up.lesson.auditories.isEmpty {
+                Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+            } else {
+                Text("\(up.lesson.subject) · \(up.lesson.startTime) · \(up.lesson.auditories.joined(separator: ", "))")
+            }
         } else {
             Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
         }
     }
 }
 
-/// Circular complication — icon centred, start time small below.
+/// Circular complication — icon, start time, and the room below it.
 /// Subject text does not fit into ~57×57 pt; icon carries the meaning.
 @available(iOSApplicationExtension 16.0, *)
 struct CircularWidgetView: View {
@@ -754,11 +758,17 @@ struct CircularWidgetView: View {
             if let up = entry.snapshot?.upcoming {
                 VStack(spacing: 1) {
                     Image(systemName: up.lesson.typeSymbolName)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .widgetAccentable()
                     Text(up.lesson.startTime)
                         .font(.system(size: 10, weight: .medium))
                         .monospacedDigit()
+                    if let room = up.lesson.auditories.first {
+                        Text(room)
+                            .font(.system(size: 8, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
                 }
             } else {
                 Image(systemName: "calendar")
@@ -769,8 +779,8 @@ struct CircularWidgetView: View {
     }
 }
 
-/// Rectangular widget (~120×47 pt). Layout: [icon] on the right, subject
-/// (top) + time (bottom) on the left. Auditory appended to time if it fits.
+/// Rectangular widget (~120×47 pt). Layout: [icon] on the left, then subject
+/// with the room next to it (top) + time (bottom).
 @available(iOSApplicationExtension 16.0, *)
 struct RectangularWidgetView: View {
     let entry: ScheduleEntry
@@ -782,12 +792,21 @@ struct RectangularWidgetView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .widgetAccentable()
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(up.lesson.subject)
-                        .font(.headline)
-                        .lineLimit(2)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(up.lesson.subject)
+                            .font(.headline)
+                            .lineLimit(1)
+                        if let room = up.lesson.auditories.first {
+                            Text(room)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
                     Text("\(up.lesson.startTime)–\(up.lesson.endTime)")
                         .font(.caption2)
                         .monospacedDigit()
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }

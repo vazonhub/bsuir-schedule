@@ -21,6 +21,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { useIsDark, usePalette } from '@hooks/usePalette';
+import type { DiaryTaskType } from '@stores/diary.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 
@@ -29,6 +30,8 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Payload {
   subject: string;
   subjectFullName: string;
+  /** Which task type (ЛР / ПЗ) the count is being entered for. */
+  type: DiaryTaskType;
   initial: number | null;
 }
 
@@ -38,7 +41,7 @@ export interface EnterTaskCountSheetRef {
 }
 
 interface Props {
-  onSubmit(subject: string, count: number): void;
+  onSubmit(subject: string, type: DiaryTaskType, count: number): void;
 }
 
 const MIN = 1;
@@ -87,7 +90,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
 
     const handleSave = useCallback(() => {
       if (!payload || parsed == null) return;
-      onSubmit(payload.subject, parsed);
+      onSubmit(payload.subject, payload.type, parsed);
       Keyboard.dismiss();
       sheetRef.current?.dismiss();
     }, [payload, parsed, onSubmit]);
@@ -103,7 +106,11 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
-        keyboardBehavior="interactive"
+        // The numeric keyboard covered the whole 30% sheet (input + Save, and
+        // number-pad has no return key). Ride the sheet up above the keyboard
+        // so everything stays reachable, and restore the 30% height on blur.
+        keyboardBehavior="fillParent"
+        keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
         backgroundStyle={{ backgroundColor: Palette.card }}
         handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
@@ -118,7 +125,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
           </Text>
           {payload && (
             <Text {...textProps('subhead')} style={styles.subtitle} numberOfLines={2}>
-              {payload.subjectFullName}
+              {payload.type} · {payload.subjectFullName}
             </Text>
           )}
 

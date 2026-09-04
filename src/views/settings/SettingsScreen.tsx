@@ -20,6 +20,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { UnityBanner } from '@components/UnityBanner';
+import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
@@ -328,25 +329,27 @@ export const SettingsScreen = () => {
           </View>
         </View>
 
-        <View style={styles.navSection}>
-          <Text {...textProps('footnote')} style={styles.sectionTitle}>
-            {t('onboarding.diarySection')}
-          </Text>
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
-              onPress={handleReplayTutorial}
-              accessibilityRole="button"
-              accessibilityLabel={t('onboarding.replay')}
-            >
-              <Ionicons name="school-outline" size={20} color={Palette.accent} />
-              <Text {...textProps('body')} style={styles.navLabel}>
-                {t('onboarding.replay')}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
-            </Pressable>
+        {ONBOARDING_ENABLED && (
+          <View style={styles.navSection}>
+            <Text {...textProps('footnote')} style={styles.sectionTitle}>
+              {t('onboarding.diarySection')}
+            </Text>
+            <View style={styles.card}>
+              <Pressable
+                style={({ pressed }) => [styles.navRow, pressed && styles.navRowPressed]}
+                onPress={handleReplayTutorial}
+                accessibilityRole="button"
+                accessibilityLabel={t('onboarding.replay')}
+              >
+                <Ionicons name="school-outline" size={20} color={Palette.accent} />
+                <Text {...textProps('body')} style={styles.navLabel}>
+                  {t('onboarding.replay')}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={Palette.textTertiary} />
+              </Pressable>
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.navSection}>
           <Text {...textProps('footnote')} style={styles.sectionTitle}>

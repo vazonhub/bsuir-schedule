@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useIsDark, usePalette } from '@hooks/usePalette';
-import { useDiaryStore } from '@stores/diary.store';
+import { useDiaryStore, DIARY_TASK_TYPES } from '@stores/diary.store';
+import type { DiaryTaskType } from '@stores/diary.store';
 import { Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
@@ -18,6 +19,7 @@ interface PresentPayload {
   /** If provided, sheet opens in edit mode with this item pre-selected. */
   editingId?: string;
   editingSubject?: string;
+  editingType?: DiaryTaskType;
   editingTaskIndex?: number;
 }
 
@@ -71,28 +73,37 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
       dismiss: () => sheetRef.current?.dismiss(),
     }));
 
-    // Subjects that have a taskCount set (planner needs indices to point to).
+    // Subjects that have a taskCount set for at least one type (planner needs
+    // indices to point to).
     const eligibleSubjects = useMemo(
       () =>
         subjects.filter((s) => {
           const p = progress?.[s.subject];
-          return p && p.taskCount != null && p.taskCount > 0;
+          return (
+            p && DIARY_TASK_TYPES.some((tp) => p[tp]?.taskCount != null && p[tp].taskCount > 0)
+          );
         }),
       [subjects, progress],
     );
 
     const subjectProgress = selectedSubject ? progress?.[selectedSubject] : undefined;
-    const taskCount = subjectProgress?.taskCount ?? 0;
-    const completedSet = useMemo(
-      () => new Set(subjectProgress?.completed ?? []),
-      [subjectProgress?.completed],
+    // Task types available for the selected subject (those with a count set).
+    const availableTypes = useMemo(
+      () =>
+        DIARY_TASK_TYPES.filter((tp) => {
+          const c = subjectProgress?.[tp]?.taskCount;
+          return c != null && c > 0;
+        }),
+      [subjectProgress],
     );
+
+    // "already in planner" set keyed by `${type}#${index}`.
     const inPlannerSet = useMemo(() => {
-      const set = new Set<number>();
+      const set = new Set<string>();
       for (const it of planner ?? []) {
         // In edit mode, don't count our OWN slot as "already in planner".
         if (editingId && it.id === editingId) continue;
-        if (it.subject === selectedSubject) set.add(it.taskIndex);
+        if (it.subject === selectedSubject) set.add(`${it.type}#${it.taskIndex}`);
       }
       return set;
     }, [planner, selectedSubject, editingId]);
@@ -102,14 +113,14 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
       setStep('index');
     };
 
-    const handleIndexPick = (index: number) => {
+    const handleIndexPick = (type: DiaryTaskType, index: number) => {
       if (!selectedSubject) return;
-      if (inPlannerSet.has(index)) return;
+      if (inPlannerSet.has(`${type}#${index}`)) return;
       void hapticSuccess();
       if (editingId) {
-        replacePlannerItem(groupName, editingId, selectedSubject, index);
+        replacePlannerItem(groupName, editingId, selectedSubject, type, index);
       } else {
-        addPlannerItem(groupName, selectedSubject, index);
+        addPlannerItem(groupName, selectedSubject, type, index);
       }
       sheetRef.current?.dismiss();
       onAdded?.();
@@ -173,36 +184,52 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
           </BottomSheetScrollView>
         ) : (
           <BottomSheetScrollView contentContainerStyle={styles.content}>
-            <View style={styles.indexGrid}>
-              {Array.from({ length: taskCount }, (_, i) => i + 1).map((idx) => {
-                const done = completedSet.has(idx);
-                const inPlanner = inPlannerSet.has(idx);
-                return (
-                  <Pressable
-                    key={idx}
-                    onPress={() => handleIndexPick(idx)}
-                    disabled={inPlanner}
-                    style={({ pressed }) => [
-                      styles.indexCell,
-                      done && styles.indexCellDone,
-                      inPlanner && styles.indexCellInPlanner,
-                      pressed && !inPlanner && styles.indexCellPressed,
-                    ]}
-                  >
-                    <Text
-                      {...textProps('body')}
-                      style={[
-                        styles.indexText,
-                        done && styles.indexTextDone,
-                        inPlanner && styles.indexTextInPlanner,
-                      ]}
-                    >
-                      {idx}
+            {availableTypes.map((type) => {
+              const typeProgress = subjectProgress?.[type];
+              const taskCount = typeProgress?.taskCount ?? 0;
+              const completedSet = new Set(typeProgress?.completed ?? []);
+              const color = LESSON_TYPE_COLORS[type];
+              return (
+                <View key={type} style={styles.typeBlock}>
+                  <View style={[styles.typeTag, { backgroundColor: color + '1F' }]}>
+                    <View style={[styles.typeDot, { backgroundColor: color }]} />
+                    <Text {...textProps('subhead')} style={[styles.typeTagLabel, { color }]}>
+                      {type}
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                  </View>
+                  <View style={styles.indexGrid}>
+                    {Array.from({ length: taskCount }, (_, i) => i + 1).map((idx) => {
+                      const done = completedSet.has(idx);
+                      const inPlanner = inPlannerSet.has(`${type}#${idx}`);
+                      return (
+                        <Pressable
+                          key={idx}
+                          onPress={() => handleIndexPick(type, idx)}
+                          disabled={inPlanner}
+                          style={({ pressed }) => [
+                            styles.indexCell,
+                            done && styles.indexCellDone,
+                            inPlanner && styles.indexCellInPlanner,
+                            pressed && !inPlanner && styles.indexCellPressed,
+                          ]}
+                        >
+                          <Text
+                            {...textProps('body')}
+                            style={[
+                              styles.indexText,
+                              done && styles.indexTextDone,
+                              inPlanner && styles.indexTextInPlanner,
+                            ]}
+                          >
+                            {idx}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })}
           </BottomSheetScrollView>
         )}
       </BottomSheetModal>
@@ -270,6 +297,28 @@ const makeStyles = (Palette: PaletteType, isDark: boolean) =>
     subjectFull: {
       flex: 1,
       color: Palette.textSecondary,
+    },
+    typeBlock: {
+      gap: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    typeTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 3,
+      borderRadius: Radius.pill,
+    },
+    typeDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    typeTagLabel: {
+      fontSize: 13,
+      fontWeight: '700',
     },
     indexGrid: {
       flexDirection: 'row',
