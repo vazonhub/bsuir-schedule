@@ -39,6 +39,7 @@ export const be: TranslationKeys = {
     noteAttachFile: 'Файл',
     noteAttachError: 'Не ўдалося прымацаваць укладанне',
     noteOpenLinkError: 'Не ўдалося адкрыць спасылку',
+    taskDone: 'Выканана',
     enterTaskCountTitle: 'Колькі заданняў?',
     enterTaskCountHint: 'Ад {{min}} да {{max}}',
     actionsTitle: 'Дзеянні',

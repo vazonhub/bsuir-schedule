@@ -11,9 +11,8 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Props {
   count: number;
   completed: number[];
-  onToggle(index: number): void;
-  /** Long-press a cell — used to open the task's note. */
-  onLongPress?(index: number): void;
+  /** Tap a cell — opens the task's note / assignment. */
+  onPressTask(index: number): void;
   /** 1-based indices that have a note attached (shown with a small dot). */
   noted?: ReadonlySet<number>;
 }
@@ -33,7 +32,7 @@ const cellsPerRow = (count: number): number => {
   return 7;
 };
 
-export const TaskGrid = ({ count, completed, onToggle, onLongPress, noted }: Props) => {
+export const TaskGrid = ({ count, completed, onPressTask, noted }: Props) => {
   const Palette = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(Palette, isDark), [Palette, isDark]);
@@ -62,10 +61,8 @@ export const TaskGrid = ({ count, completed, onToggle, onLongPress, noted }: Pro
                 key={idx}
                 onPress={() => {
                   void hapticLight();
-                  onToggle(idx);
+                  onPressTask(idx);
                 }}
-                onLongPress={onLongPress ? () => onLongPress(idx) : undefined}
-                delayLongPress={300}
                 style={({ pressed }) => [
                   styles.cell,
                   done ? styles.cellDone : styles.cellIdle,

@@ -39,6 +39,7 @@ export const en: TranslationKeys = {
     noteAttachFile: 'File',
     noteAttachError: 'Could not attach the file',
     noteOpenLinkError: 'Could not open the link',
+    taskDone: 'Done',
     enterTaskCountTitle: 'How many tasks?',
     enterTaskCountHint: 'From {{min}} to {{max}}',
     actionsTitle: 'Actions',

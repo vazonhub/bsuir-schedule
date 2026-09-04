@@ -36,6 +36,8 @@ import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
 import { NoteSheet } from './NoteSheet';
 import type { NoteSheetRef } from './NoteSheet';
+import { SubjectLessonsSheet } from '@views/lesson/SubjectLessonsSheet';
+import type { SubjectLessonsSheetRef } from '@views/lesson/SubjectLessonsSheet';
 import { HiddenSubjectStrip } from './HiddenSubjectStrip';
 import { StreakBadge } from './StreakBadge';
 import { SubjectCard } from './SubjectCard';
@@ -71,6 +73,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
   const noteSheetRef = useRef<NoteSheetRef>(null);
+  const nearestSheetRef = useRef<SubjectLessonsSheetRef>(null);
   const listRef = useRef<FlatList<ListItem>>(null);
   const scrollOffsetRef = useRef(0);
   const setOnboardingSeen = usePreferencesStore((s) => s.setDiaryOnboardingSeen);
@@ -155,6 +158,10 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
     },
     [],
   );
+
+  const handleRequestNearest = useCallback((subject: string) => {
+    nearestSheetRef.current?.present(subject);
+  }, []);
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
@@ -244,6 +251,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
                     subgroup={subgroup}
                     onRequestEnterCount={handleRequestEnterCount}
                     onRequestNote={handleRequestNote}
+                    onRequestNearest={handleRequestNearest}
                     isTutorialTarget={index === 0}
                   />
                 );
@@ -282,6 +290,11 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
           />
           <EnterTaskCountSheet ref={sheetRef} onSubmit={handleSubmitCount} />
           <NoteSheet ref={noteSheetRef} groupName={groupName} />
+          <SubjectLessonsSheet
+            ref={nearestSheetRef}
+            schedule={schedule}
+            currentWeek={currentWeek}
+          />
         </SafeAreaView>
         <TutorialRunner
           hasSubjects={visible.length > 0}

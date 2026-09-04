@@ -11,6 +11,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Markdown from 'react-native-markdown-display';
 
+import { FireController } from '@controllers/fire.controller';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useDiaryStore } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
@@ -49,11 +50,13 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const mdStyles = useMemo(() => makeMarkdownStyles(Palette), [Palette]);
   const setTaskNote = useDiaryStore((s) => s.setTaskNote);
+  const toggleTask = useDiaryStore((s) => s.toggleTask);
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const [payload, setPayload] = useState<Payload | null>(null);
   const [text, setText] = useState('');
   const [editing, setEditing] = useState(false);
+  const [done, setDone] = useState(false);
   const snapPoints = useMemo(() => ['92%'], []);
 
   const save = useCallback(
@@ -66,10 +69,11 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
 
   useImperativeHandle(ref, () => ({
     present: (p) => {
-      const note =
-        useDiaryStore.getState().progress[groupName]?.[p.subject]?.[p.type]?.notes?.[p.index] ?? '';
+      const entry = useDiaryStore.getState().progress[groupName]?.[p.subject]?.[p.type];
+      const note = entry?.notes?.[p.index] ?? '';
       setPayload(p);
       setText(note);
+      setDone(entry?.completed.includes(p.index) ?? false);
       setEditing(note.trim().length === 0); // new note → open straight into edit
       sheetRef.current?.present();
     },
@@ -80,6 +84,17 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
     save(text);
     setEditing(false);
   }, [save, text]);
+
+  const handleToggleDone = useCallback(() => {
+    if (!payload) return;
+    void hapticLight();
+    toggleTask(groupName, payload.subject, payload.type, payload.index);
+    setDone((prev) => {
+      // Marking done = activity for the fire streak (un-checking is not).
+      if (!prev) FireController.registerHomework();
+      return !prev;
+    });
+  }, [payload, groupName, toggleTask]);
 
   const handleAttach = useCallback(
     async (kind: 'image' | 'file') => {
@@ -142,6 +157,29 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
               </Text>
             </Pressable>
           </View>
+
+          <Pressable
+            onPress={handleToggleDone}
+            style={({ pressed }) => [
+              styles.doneToggle,
+              done && styles.doneToggleActive,
+              pressed && styles.doneTogglePressed,
+            ]}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: done }}
+          >
+            <Ionicons
+              name={done ? 'checkmark-circle' : 'ellipse-outline'}
+              size={20}
+              color={done ? DONE_ACCENT : Palette.textTertiary}
+            />
+            <Text
+              {...textProps('body')}
+              style={[styles.doneToggleLabel, done && styles.doneToggleLabelActive]}
+            >
+              {t('diary.taskDone')}
+            </Text>
+          </Pressable>
 
           {editing ? (
             <View style={styles.flex}>
@@ -236,11 +274,28 @@ const ToolbarButton = ({
   );
 };
 
+const DONE_ACCENT = '#3FB36F';
+
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     flex: { flex: 1 },
     background: { backgroundColor: Palette.card, borderRadius: Radius.xl },
     handle: { backgroundColor: Palette.textTertiary, width: 36 },
+    doneToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.xl,
+      marginBottom: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: Spacing.md,
+      borderRadius: Radius.md,
+      backgroundColor: Palette.background,
+    },
+    doneToggleActive: { backgroundColor: DONE_ACCENT + '1F' },
+    doneTogglePressed: { opacity: 0.7 },
+    doneToggleLabel: { color: Palette.textSecondary, fontWeight: '600' },
+    doneToggleLabelActive: { color: DONE_ACCENT },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',

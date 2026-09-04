@@ -10,8 +10,8 @@ import Animated, {
 import { useTranslation } from 'react-i18next';
 
 import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
-import { FireController } from '@controllers/fire.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
+import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectSubjectProgress, DIARY_TASK_TYPES } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
@@ -38,8 +38,10 @@ interface Props {
     type: DiaryTaskType,
     initial: number | null,
   ): void;
-  /** Open the markdown note for a specific task (long-press on a grid cell). */
+  /** Open the markdown note for a specific task (tap on a grid cell). */
   onRequestNote(subject: string, subjectFullName: string, type: DiaryTaskType, index: number): void;
+  /** Open the "nearest pairs of this subject" sheet (icon by the subject name). */
+  onRequestNearest(subject: string): void;
   /** Register this card as a tutorial target (first visible card only). */
   isTutorialTarget?: boolean;
 }
@@ -50,6 +52,7 @@ export const SubjectCard = ({
   subgroup,
   onRequestEnterCount,
   onRequestNote,
+  onRequestNearest,
   isTutorialTarget = false,
 }: Props) => {
   const { t } = useTranslation();
@@ -57,7 +60,6 @@ export const SubjectCard = ({
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const reduceMotion = useReduceMotion();
   const progress = useDiaryStore(selectSubjectProgress(groupName, subject.subject));
-  const toggleTask = useDiaryStore((s) => s.toggleTask);
   const resetSubject = useDiaryStore((s) => s.resetSubject);
   const toggleHidden = useDiaryStore((s) => s.toggleHidden);
 
@@ -71,18 +73,6 @@ export const SubjectCard = ({
     const c = progress[tp].taskCount;
     return c != null && c > 0;
   });
-
-  // Shared vs subgroup breakdown of remaining lessons — only shown when a
-  // subgroup is selected and the subject has subgroup-specific lessons (labs,
-  // sometimes practicals). One compact line per type, so the card stays light.
-  const splitLines = useMemo(() => {
-    if (subgroup === 0) return [];
-    return DIARY_LESSON_TYPES.filter((tp) => subject.remainingSubgroup[tp] > 0).map((tp) => ({
-      type: tp,
-      shared: subject.remainingShared[tp],
-      sub: subject.remainingSubgroup[tp],
-    }));
-  }, [subgroup, subject.remainingShared, subject.remainingSubgroup]);
 
   // ── Tutorial targets (first visible card only) ──
   const cardTutorialRef = useTutorialTarget('subjectCard', isTutorialTarget);
@@ -172,30 +162,29 @@ export const SubjectCard = ({
               <Text {...textProps('title')} style={styles.subjectCode} numberOfLines={1}>
                 {subject.subject}
               </Text>
+              <Pressable
+                hitSlop={8}
+                onPress={() => onRequestNearest(subject.subject)}
+                accessibilityRole="button"
+                accessibilityLabel={t('lesson.nearestOfSubject')}
+              >
+                <Ionicons name="albums-outline" size={18} color={Palette.textTertiary} />
+              </Pressable>
               <View style={styles.countersBlock}>
                 {DIARY_LESSON_TYPES.map((type) => {
                   const remaining = subject.remaining[type];
                   const total = subject.total[type];
                   if (total === 0) return null;
-                  return <CounterPill key={type} type={type} value={remaining} />;
+                  const subCount = subgroup !== 0 ? subject.remainingSubgroup[type] : 0;
+                  return (
+                    <CounterPill key={type} type={type} value={remaining} subCount={subCount} />
+                  );
                 })}
               </View>
             </View>
             <Text {...textProps('footnote')} style={styles.subjectFull} numberOfLines={2}>
               {subject.subjectFullName}
             </Text>
-            {splitLines.length > 0 && (
-              <View style={styles.splitBlock}>
-                {splitLines.map(({ type, shared, sub }) => (
-                  <Text key={type} {...textProps('footnote')} style={styles.splitLine}>
-                    <Text style={[styles.splitType, { color: LESSON_TYPE_COLORS[type] }]}>
-                      {type}
-                    </Text>{' '}
-                    {t('diary.subgroupSplit', { shared, sub })}
-                  </Text>
-                ))}
-              </View>
-            )}
           </View>
 
           {taskTypes.length > 0 && <View style={styles.separator} />}
@@ -242,15 +231,9 @@ export const SubjectCard = ({
                       noted={
                         tprog.notes ? new Set(Object.keys(tprog.notes).map(Number)) : undefined
                       }
-                      onLongPress={(idx) =>
+                      onPressTask={(idx) =>
                         onRequestNote(subject.subject, subject.subjectFullName, type, idx)
                       }
-                      onToggle={(idx) => {
-                        const wasDone = tprog.completed.includes(idx);
-                        toggleTask(groupName, subject.subject, type, idx);
-                        // Marking a task as done = activity for the fire streak.
-                        if (!wasDone) FireController.registerHomework();
-                      }}
                     />
                   ) : (
                     <Pressable
@@ -276,9 +259,19 @@ export const SubjectCard = ({
 
 // ─────────────────────────────────────────────────────────────
 
-const CounterPill = ({ type, value }: { type: DiaryLessonType; value: number }) => {
+const CounterPill = ({
+  type,
+  value,
+  subCount = 0,
+}: {
+  type: DiaryLessonType;
+  value: number;
+  /** How many of `value` are subgroup-specific — shown as "(N <subgroup icon>)". */
+  subCount?: number;
+}) => {
   const Palette = usePalette();
   const color = LESSON_TYPE_COLORS[type];
+  const subgroupIcon = useIconName('subgroup');
   const styles = useMemo(() => makePillStyles(Palette), [Palette]);
   return (
     <View style={[styles.pill, { backgroundColor: color + '1F' }]}>
@@ -286,6 +279,14 @@ const CounterPill = ({ type, value }: { type: DiaryLessonType; value: number }) 
       <Text {...textProps('subhead')} style={[styles.label, { color }]}>
         {type} {value}
       </Text>
+      {subCount > 0 && (
+        <View style={styles.subChip}>
+          <Text {...textProps('subhead')} style={[styles.subLabel, { color }]}>
+            {subCount}
+          </Text>
+          <Ionicons name={subgroupIcon as never} size={11} color={color} />
+        </View>
+      )}
     </View>
   );
 };
@@ -306,6 +307,17 @@ const makePillStyles = (_Palette: PaletteType) =>
       borderRadius: 3,
     },
     label: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    subChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 1,
+      marginLeft: 1,
+      opacity: 0.85,
+    },
+    subLabel: {
       fontSize: 13,
       fontWeight: '700',
     },
@@ -342,16 +354,6 @@ const makeStyles = (Palette: PaletteType) =>
     subjectFull: {
       color: Palette.textSecondary,
     },
-    splitBlock: {
-      marginTop: 2,
-      gap: 1,
-    },
-    splitLine: {
-      color: Palette.textTertiary,
-    },
-    splitType: {
-      fontWeight: '700',
-    },
     countersBlock: {
       flex: 1,
       flexDirection: 'row',
@@ -364,9 +366,12 @@ const makeStyles = (Palette: PaletteType) =>
       backgroundColor: Palette.separator,
     },
     typeSections: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
       gap: Spacing.lg,
     },
     typeSection: {
+      flex: 1,
       gap: Spacing.sm,
     },
     typeHeaderRow: {

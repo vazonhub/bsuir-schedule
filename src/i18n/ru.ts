@@ -40,6 +40,7 @@ export const ru = {
     noteAttachFile: 'Файл',
     noteAttachError: 'Не удалось прикрепить вложение',
     noteOpenLinkError: 'Не удалось открыть ссылку',
+    taskDone: 'Выполнено',
     enterTaskCountTitle: 'Сколько заданий?',
     enterTaskCountHint: 'От {{min}} до {{max}}',
     actionsTitle: 'Действия',
