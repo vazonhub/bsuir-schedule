@@ -18,10 +18,9 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FloatingTopBar } from '@components/FloatingTopBar';
 import { UnityBanner } from '@components/UnityBanner';
 import { FireController } from '@controllers/fire.controller';
@@ -93,9 +92,12 @@ const EMPTY_HOLIDAYS: Holiday[] = [];
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 1, minimumViewTime: 0 };
 
 // Height of the floating `FloatingTopBar` BELOW the safe area (38pt button + gap).
-// Added to the stable notch inset to form `TOP_CLEARANCE`, which drives the
-// content padding, the `viewOffset` of programmatic scrolls and the
-// RefreshControl's `progressViewOffset`.
+// Goes into `contentContainerStyle.paddingTop`, into the `viewOffset` of
+// programmatic scrolls and into the RefreshControl's `progressViewOffset`. The
+// safe area itself (the notch) is given to a separate list wrapper
+// (`paddingTop: insets.top`) so the scroll view doesn't slide under the notch —
+// otherwise, when returning from another tab, iOS re-adds the safe area on top
+// of our padding and the inset doubles.
 const BAR_CLEARANCE = 38 + Spacing.lg;
 
 // Bottom clearance under the native tab bar — a STABLE constant from
@@ -103,16 +105,9 @@ const BAR_CLEARANCE = 38 + Spacing.lg;
 // from `useSafeAreaInsets`, because on a tab screen its bottom inset "floats":
 // on the first frame the bar isn't accounted for yet (too small), and after
 // returning from another tab the system re-applies the bar's safe area (too
-// big) — hence the inset jumps. It goes into the content padding so the last row
-// can rest above the bar while the list itself extends behind it (bottom fade).
+// big) — hence the inset jumps. The clearance goes into the list wrapper, so
+// the scroll view ends ABOVE the bar and there's nothing for the system to re-apply.
 const BOTTOM_CLEARANCE = (initialWindowMetrics?.insets.bottom ?? 0) + TAB_BAR_HEIGHT;
-
-// Top gap from the very top of the screen to the first row (safe-area notch +
-// floating bar). Taken from the STABLE `initialWindowMetrics` — NOT from
-// `useSafeAreaInsets()`, whose value jumps when returning from another tab and
-// would double our content padding. With `contentInsetAdjustmentBehavior="never"`
-// this constant is the single source of the top inset.
-const TOP_CLEARANCE = (initialWindowMetrics?.insets.top ?? 0) + BAR_CLEARANCE;
 
 // Pre-render ~1.5 screens ahead/behind: fewer "white gaps" during a fast fling
 // through a long list (a whole semester is hundreds of rows). FlashList's
@@ -134,6 +129,7 @@ export const ScheduleView = ({
 }: Props) => {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<FlashListRef<ScheduleRow>>(null);
@@ -398,19 +394,17 @@ export const ScheduleView = ({
   // neither the notch nor the tab bar — then the system doesn't "glue on" insets
   // when returning from a tab (neither top nor bottom), and the paddings don't
   // jump. The header is an absolute sibling.
-  // The list fills the whole screen so content scrolls UNDER the notch/floating
-  // bar and under the tab bar, fading out behind the top/bottom gradients
-  // instead of being hard-clipped between them.
-  const listWrapStyle = useMemo(() => ({ flex: 1 }), []);
+  const listWrapStyle = useMemo(
+    () => ({ flex: 1, paddingTop: insets.top, paddingBottom: BOTTOM_CLEARANCE }),
+    [insets.top],
+  );
 
-  // The list is full-height, so its own content padding provides the top gap
-  // (notch + floating bar) and the bottom gap (tab bar), letting content pass
-  // behind both bars. Both gaps are stable constants, so nothing jumps on tab
-  // return.
+  // Inside the scroll view (already between the notch and the tab bar) — only
+  // the header gap on top and a small padding at the bottom.
   const contentStyle = useMemo(
     () => ({
-      paddingTop: TOP_CLEARANCE,
-      paddingBottom: BOTTOM_CLEARANCE + Spacing.md,
+      paddingTop: BAR_CLEARANCE,
+      paddingBottom: Spacing.md,
     }),
     [],
   );
@@ -433,12 +427,7 @@ export const ScheduleView = ({
       // FlashList v2 ADDS viewOffset to the scroll offset (RN SectionList
       // subtracted it), so a NEGATIVE offset lands the day header just below
       // the floating bar instead of ~2×BAR_CLEARANCE above the viewport.
-      ?.scrollToIndex({
-        index: rowIndex,
-        viewOffset: -TOP_CLEARANCE,
-        viewPosition: 0,
-        animated,
-      })
+      ?.scrollToIndex({ index: rowIndex, viewOffset: -BAR_CLEARANCE, viewPosition: 0, animated })
       .catch(() => {
         /* list not laid out yet */
       });
@@ -644,7 +633,7 @@ export const ScheduleView = ({
       void listRef.current
         ?.scrollToIndex({
           index: idx,
-          viewOffset: -TOP_CLEARANCE,
+          viewOffset: -BAR_CLEARANCE,
           viewPosition: 0.4,
           animated: true,
         })
@@ -758,7 +747,7 @@ export const ScheduleView = ({
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 tintColor={Palette.textTertiary}
-                progressViewOffset={TOP_CLEARANCE}
+                progressViewOffset={BAR_CLEARANCE}
               />
             ) : undefined
           }
@@ -792,10 +781,6 @@ export const ScheduleView = ({
           extraData={extraData}
           drawDistance={DRAW_DISTANCE}
           contentContainerStyle={contentStyle}
-          // We control the notch/tab-bar gaps via contentStyle padding; disable
-          // the automatic safe-area inset so it isn't added on top (which used
-          // to double the inset when returning from another tab).
-          contentInsetAdjustmentBehavior="never"
           ListHeaderComponent={
             hasPastToReveal ? (
               <LoadPastButton
@@ -814,20 +799,12 @@ export const ScheduleView = ({
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 tintColor={Palette.textTertiary}
-                progressViewOffset={TOP_CLEARANCE}
+                progressViewOffset={BAR_CLEARANCE}
               />
             ) : undefined
           }
         />
       </View>
-      {/* Bottom haze: content scrolls under the tab bar and fades into the
-          background before it, mirroring the top FloatingTopBar gradient. */}
-      <LinearGradient
-        colors={[Palette.background + '00', Palette.background, Palette.background]}
-        locations={[0, 0.55, 1]}
-        style={styles.bottomFade}
-        pointerEvents="none"
-      />
       <FloatingTopBar
         pinned={isPinned}
         onTogglePin={handleTogglePin}
@@ -987,13 +964,6 @@ const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
-    bottomFade: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: BOTTOM_CLEARANCE + Spacing.xxl,
-    },
     scheduleBannerWrap: {
       alignItems: 'center',
       paddingVertical: Spacing.md,
