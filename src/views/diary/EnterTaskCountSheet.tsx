@@ -103,7 +103,11 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
-        keyboardBehavior="interactive"
+        // The numeric keyboard covered the whole 30% sheet (input + Save, and
+        // number-pad has no return key). Ride the sheet up above the keyboard
+        // so everything stays reachable, and restore the 30% height on blur.
+        keyboardBehavior="fillParent"
+        keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
         backgroundStyle={{ backgroundColor: Palette.card }}
         handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
