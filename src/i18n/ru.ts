@@ -52,6 +52,8 @@ export const ru = {
     plannerNoEligible: 'Задайте количество заданий у предмета, чтобы добавить его в планер',
     upcomingTitle: 'Ближайшие',
     upcomingEmpty: 'Нет',
+    completedTitle: 'Выполнено',
+    completedEmpty: 'Пока ничего',
     whenToday: 'Сегодня',
     whenTomorrow: 'Завтра',
     shortDayNames: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
@@ -175,6 +177,8 @@ export const ru = {
   // Lesson details
   lesson: {
     subgroup: '{{n}} подгруппа',
+    nearestOfSubject: 'Ближайшие пары предмета',
+    nearestOfSubjectEmpty: 'Ближайших пар нет',
     weekLabel: 'неделя',
     teacher: 'Преподаватель',
     teachers: 'Преподаватели',

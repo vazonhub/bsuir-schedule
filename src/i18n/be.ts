@@ -51,6 +51,8 @@ export const be: TranslationKeys = {
     plannerNoEligible: 'Задайце колькасць заданняў у прадмета, каб дадаць яго ў планер',
     upcomingTitle: 'Найбліжэйшыя',
     upcomingEmpty: 'Няма',
+    completedTitle: 'Выканана',
+    completedEmpty: 'Пакуль нічога',
     whenToday: 'Сёння',
     whenTomorrow: 'Заўтра',
     shortDayNames: ['Нд', 'Пн', 'Аў', 'Ср', 'Чц', 'Пт', 'Сб'],
@@ -167,6 +169,8 @@ export const be: TranslationKeys = {
 
   lesson: {
     subgroup: '{{n}} падгрупа',
+    nearestOfSubject: 'Бліжэйшыя пары прадмета',
+    nearestOfSubjectEmpty: 'Бліжэйшых пар няма',
     weekLabel: 'тыдзень',
     teacher: 'Выкладчык',
     teachers: 'Выкладчыкі',

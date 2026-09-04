@@ -220,16 +220,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             data={listData}
             onScroll={handleScroll}
             scrollEventThrottle={16}
-            ListHeaderComponent={
-              <DiaryStats
-                groupName={groupName}
-                schedule={schedule}
-                currentWeek={currentWeek}
-                subgroup={subgroup}
-                blocked={blocked}
-                subjects={visible}
-              />
-            }
+            ListHeaderComponent={<DiaryStats groupName={groupName} subjects={visible} />}
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
               return `${item.kind}:${item.subject.subject}`;

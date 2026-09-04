@@ -56,6 +56,8 @@ import type { ScheduleRow, ScheduleSection } from '@utils/scheduleNormalization'
 import { DayHeader } from '@views/lesson/DayHeader';
 import { LessonCard } from '@views/lesson/LessonCard';
 import { LessonDetailsSheet } from '@views/lesson/LessonDetailsSheet';
+import { SubjectLessonsSheet } from '@views/lesson/SubjectLessonsSheet';
+import type { SubjectLessonsSheetRef } from '@views/lesson/SubjectLessonsSheet';
 import type { NormalizedLesson } from '@utils/scheduleNormalization';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -134,6 +136,7 @@ export const ScheduleView = ({
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<FlashListRef<ScheduleRow>>(null);
   const sheetRef = useRef<BottomSheetModal>(null);
+  const subjectSheetRef = useRef<SubjectLessonsSheetRef>(null);
   // Lesson data lives in a ref so it's always available synchronously when
   // the sheet renders — no dependency on React's async state batching.
   const lessonRef = useRef<NormalizedLesson | null>(null);
@@ -161,6 +164,11 @@ export const ScheduleView = ({
   const pendingLessonRef = useRef<NormalizedLesson | null>(null);
   const sheetOpenRef = useRef(false);
   const scrollToLessonFnRef = useRef<(lesson: NormalizedLesson) => void>(() => {});
+
+  const handleSubjectPress = useCallback((subject: string) => {
+    void hapticLight();
+    subjectSheetRef.current?.present(subject);
+  }, []);
 
   const handleLessonPress = useCallback((lesson: NormalizedLesson) => {
     void hapticLight();
@@ -678,6 +686,7 @@ export const ScheduleView = ({
                     : null
               }
               onPress={() => handleLessonPress(l)}
+              onSubjectPress={handleSubjectPress}
             />
           );
         }
@@ -698,6 +707,7 @@ export const ScheduleView = ({
       entityType,
       now,
       handleLessonPress,
+      handleSubjectPress,
       styles,
     ],
   );
@@ -875,6 +885,7 @@ export const ScheduleView = ({
           />
         )
       )}
+      <SubjectLessonsSheet ref={subjectSheetRef} schedule={schedule} currentWeek={currentWeek} />
       <LessonDetailsSheet
         ref={sheetRef}
         lesson={selectedLesson}

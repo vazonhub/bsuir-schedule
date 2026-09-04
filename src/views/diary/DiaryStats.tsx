@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useMemo, useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -7,16 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
 import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
-import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
-import { useDiaryStore, selectPlanner, selectSubjectProgress } from '@stores/diary.store';
-import type { PlannerItem } from '@stores/diary.store';
-import type { SubgroupChoice } from '@stores/preferences.store';
+import {
+  useDiaryStore,
+  selectPlanner,
+  selectSubjectProgress,
+  DIARY_TASK_TYPES,
+} from '@stores/diary.store';
+import type { DiaryTaskType, PlannerItem } from '@stores/diary.store';
 import { Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
-import { formatBsuirDate } from '@utils/date';
 import type { DiarySubject } from '@utils/diary';
-import { extractUpcomingSubmissions, formatDiaryWhen } from '@utils/diary';
 import { hapticLight } from '@utils/haptics';
 
 import { AddPlannerSheet } from './AddPlannerSheet';
@@ -27,46 +27,52 @@ type PaletteType = ReturnType<typeof usePalette>;
 
 const PLANNER_ITEM_HEIGHT = 52;
 const PLANNER_GAP = 6;
-const UPCOMING_LIMIT = 5;
 
 interface Props {
   groupName: string;
-  schedule: ScheduleDto;
-  currentWeek: CurrentWeekNumber;
-  subgroup: SubgroupChoice;
-  blocked: string[];
   subjects: DiarySubject[];
 }
 
-export const DiaryStats = ({
-  groupName,
-  schedule,
-  currentWeek,
-  subgroup,
-  blocked,
-  subjects,
-}: Props) => {
+/** One checked-off task shown in the "Completed" column. */
+interface CompletedTask {
+  subject: string;
+  type: DiaryTaskType;
+  index: number;
+}
+
+export const DiaryStats = ({ groupName, subjects }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
-  const router = useRouter();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const addSheetRef = useRef<AddPlannerSheetRef>(null);
   const plannerRef = useTutorialTarget('planner');
-  const upcomingRef = useTutorialTarget('upcoming');
 
   const planner = useDiaryStore(selectPlanner(groupName));
+  const progress = useDiaryStore((s) => s.progress[groupName]);
   const reorderPlanner = useDiaryStore((s) => s.reorderPlanner);
   const removePlannerItem = useDiaryStore((s) => s.removePlannerItem);
   const toggleTask = useDiaryStore((s) => s.toggleTask);
 
-  const upcoming = useMemo(() => {
-    const blockedSet: ReadonlySet<string> = new Set<string>(blocked);
-    return extractUpcomingSubmissions(schedule, currentWeek, new Date(), {
-      subgroup,
-      blockedIds: blockedSet,
-      limit: UPCOMING_LIMIT,
-    });
-  }, [schedule, currentWeek, subgroup, blocked]);
+  // Flattened list of every completed task across the group's subjects, sorted
+  // by subject → type → index, for the right "Completed" column.
+  const completed = useMemo<CompletedTask[]>(() => {
+    if (!progress) return [];
+    const out: CompletedTask[] = [];
+    for (const [subject, entry] of Object.entries(progress)) {
+      for (const type of DIARY_TASK_TYPES) {
+        for (const index of entry[type]?.completed ?? []) {
+          out.push({ subject, type, index });
+        }
+      }
+    }
+    out.sort(
+      (a, b) =>
+        a.subject.localeCompare(b.subject, 'ru', { sensitivity: 'base' }) ||
+        a.type.localeCompare(b.type) ||
+        a.index - b.index,
+    );
+    return out;
+  }, [progress]);
 
   const handleReorder = (next: PlannerItem[]) => {
     void hapticLight();
@@ -95,13 +101,6 @@ export const DiaryStats = ({
       },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
-  };
-
-  const handleUpcomingPress = (dateISO: string) => {
-    router.push({
-      pathname: '/(tabs)/(amy)',
-      params: { scrollDate: dateISO },
-    });
   };
 
   return (
@@ -152,26 +151,28 @@ export const DiaryStats = ({
           </Pressable>
         </View>
 
-        {/* ── Right: Upcoming ── */}
-        <View ref={upcomingRef} style={styles.column}>
+        {/* ── Right: Completed ── */}
+        <View style={styles.column}>
           <Text {...textProps('footnote')} style={styles.columnTitle}>
-            {t('diary.upcomingTitle')}
+            {t('diary.completedTitle')}
           </Text>
-          {upcoming.length === 0 ? (
+          {completed.length === 0 ? (
             <View style={styles.plannerEmpty}>
               <Text {...textProps('footnote')} style={styles.plannerEmptyText}>
-                {t('diary.upcomingEmpty')}
+                {t('diary.completedEmpty')}
               </Text>
             </View>
           ) : (
-            <View style={styles.upcomingList}>
-              {upcoming.map((lesson) => (
-                <UpcomingCard
-                  key={lesson.key}
-                  subject={lesson.raw.subject}
-                  type={lesson.raw.lessonTypeAbbrev ?? ''}
-                  whenLabel={formatDiaryWhen(lesson.date, lesson.startTime, new Date())}
-                  onPress={() => handleUpcomingPress(formatBsuirDate(lesson.date))}
+            <View style={styles.completedList}>
+              {completed.map((task) => (
+                <CompletedCard
+                  key={`${task.subject}#${task.type}#${task.index}`}
+                  task={task}
+                  onPress={() => {
+                    void hapticLight();
+                    // Tapping un-completes the task (moves it back out of here).
+                    toggleTask(groupName, task.subject, task.type, task.index);
+                  }}
                 />
               ))}
             </View>
@@ -205,6 +206,7 @@ const PlannerCard = ({
   const styles = useMemo(() => makeMiniCardStyles(Palette), [Palette]);
   const progress = useDiaryStore(selectSubjectProgress(groupName, item.subject));
   const done = progress[item.type].completed.includes(item.taskIndex);
+  const typeColor = LESSON_TYPE_COLORS[item.type];
 
   return (
     <Pressable
@@ -214,9 +216,14 @@ const PlannerCard = ({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.plannerRow}>
-        <Text {...textProps('body')} style={styles.subject} numberOfLines={1}>
-          {item.subject}
-        </Text>
+        <View style={styles.plannerInfo}>
+          <Text {...textProps('body')} style={styles.subject} numberOfLines={1}>
+            {item.subject}
+          </Text>
+          <Text {...textProps('footnote')} style={[styles.itemType, { color: typeColor }]}>
+            {item.type}
+          </Text>
+        </View>
         <TaskCell
           number={item.taskIndex}
           done={done}
@@ -226,6 +233,37 @@ const PlannerCard = ({
             if (!done) FireController.registerHomework();
           }}
         />
+      </View>
+    </Pressable>
+  );
+};
+
+const CompletedCard = ({ task, onPress }: { task: CompletedTask; onPress(): void }) => {
+  const Palette = usePalette();
+  const styles = useMemo(() => makeMiniCardStyles(Palette), [Palette]);
+  const typeColor = LESSON_TYPE_COLORS[task.type];
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        { height: PLANNER_ITEM_HEIGHT },
+        pressed && styles.cardPressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ checked: true }}
+      accessibilityLabel={`${task.subject} ${task.type} №${task.index}`}
+    >
+      <View style={styles.plannerRow}>
+        <View style={styles.plannerInfo}>
+          <Text {...textProps('body')} style={styles.subject} numberOfLines={1}>
+            {task.subject}
+          </Text>
+          <Text {...textProps('footnote')} style={[styles.itemType, { color: typeColor }]}>
+            {task.type} №{task.index}
+          </Text>
+        </View>
+        <Ionicons name="checkmark-circle" size={22} color={DONE_ACCENT} />
       </View>
     </Pressable>
   );
@@ -267,46 +305,9 @@ const TaskCell = ({
   );
 };
 
-const UpcomingCard = ({
-  subject,
-  type,
-  whenLabel,
-  onPress,
-}: {
-  subject: string;
-  type: string;
-  whenLabel: string;
-  onPress(): void;
-}) => {
-  const Palette = usePalette();
-  const styles = useMemo(() => makeMiniCardStyles(Palette), [Palette]);
-  const accent = (LESSON_TYPE_COLORS as Record<string, string>)[type] ?? Palette.textSecondary;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { height: PLANNER_ITEM_HEIGHT },
-        pressed && styles.cardPressed,
-      ]}
-    >
-      <View style={styles.upcomingHeader}>
-        <Text {...textProps('body')} style={styles.subject} numberOfLines={1}>
-          {subject}
-        </Text>
-        <View style={[styles.typeDot, { backgroundColor: accent }]} />
-        <Text {...textProps('footnote')} style={[styles.type, { color: accent }]}>
-          {type}
-        </Text>
-      </View>
-      <Text {...textProps('footnote')} style={styles.hint} numberOfLines={1}>
-        {whenLabel}
-      </Text>
-    </Pressable>
-  );
-};
-
 // ─────────────────────────────────────────────────────────────
+
+const DONE_ACCENT = '#3FB36F';
 
 const makeMiniCardStyles = (Palette: PaletteType) =>
   StyleSheet.create({
@@ -325,28 +326,16 @@ const makeMiniCardStyles = (Palette: PaletteType) =>
       alignItems: 'center',
       gap: Spacing.sm,
     },
-    subject: {
+    plannerInfo: {
       flex: 1,
+      gap: 1,
+    },
+    subject: {
       fontSize: 14,
       fontWeight: '700',
       color: Palette.textPrimary,
     },
-    hint: {
-      fontSize: 12,
-      color: Palette.textSecondary,
-    },
-    upcomingHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    typeDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      marginLeft: 2,
-    },
-    type: {
+    itemType: {
       fontSize: 11,
       fontWeight: '700',
     },
@@ -399,6 +388,7 @@ const makeStyles = (Palette: PaletteType) =>
     columns: {
       flexDirection: 'row',
       gap: Spacing.cardGap,
+      alignItems: 'flex-start',
     },
     column: {
       flex: 1,
@@ -442,7 +432,7 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 13,
       fontWeight: '600',
     },
-    upcomingList: {
+    completedList: {
       gap: PLANNER_GAP,
     },
     divider: {

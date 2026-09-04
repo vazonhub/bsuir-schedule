@@ -51,6 +51,8 @@ export const en: TranslationKeys = {
     plannerNoEligible: 'Set a task count on a subject to add it to the planner',
     upcomingTitle: 'Upcoming',
     upcomingEmpty: 'None',
+    completedTitle: 'Completed',
+    completedEmpty: 'Nothing yet',
     whenToday: 'Today',
     whenTomorrow: 'Tomorrow',
     shortDayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -165,6 +167,8 @@ export const en: TranslationKeys = {
 
   lesson: {
     subgroup: 'Subgroup {{n}}',
+    nearestOfSubject: 'Upcoming pairs of this subject',
+    nearestOfSubjectEmpty: 'No upcoming pairs',
     weekLabel: 'week',
     teacher: 'Teacher',
     teachers: 'Teachers',
