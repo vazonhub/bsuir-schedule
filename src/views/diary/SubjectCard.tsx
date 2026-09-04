@@ -38,6 +38,8 @@ interface Props {
     type: DiaryTaskType,
     initial: number | null,
   ): void;
+  /** Open the markdown note for a specific task (long-press on a grid cell). */
+  onRequestNote(subject: string, subjectFullName: string, type: DiaryTaskType, index: number): void;
   /** Register this card as a tutorial target (first visible card only). */
   isTutorialTarget?: boolean;
 }
@@ -47,6 +49,7 @@ export const SubjectCard = ({
   groupName,
   subgroup,
   onRequestEnterCount,
+  onRequestNote,
   isTutorialTarget = false,
 }: Props) => {
   const { t } = useTranslation();
@@ -236,6 +239,12 @@ export const SubjectCard = ({
                     <TaskGrid
                       count={count}
                       completed={tprog.completed}
+                      noted={
+                        tprog.notes ? new Set(Object.keys(tprog.notes).map(Number)) : undefined
+                      }
+                      onLongPress={(idx) =>
+                        onRequestNote(subject.subject, subject.subjectFullName, type, idx)
+                      }
                       onToggle={(idx) => {
                         const wasDone = tprog.completed.includes(idx);
                         toggleTask(groupName, subject.subject, type, idx);

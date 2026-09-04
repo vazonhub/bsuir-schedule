@@ -34,6 +34,8 @@ import type { DiarySubject } from '@utils/diary';
 import { DiaryStats } from './DiaryStats';
 import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
+import { NoteSheet } from './NoteSheet';
+import type { NoteSheetRef } from './NoteSheet';
 import { HiddenSubjectStrip } from './HiddenSubjectStrip';
 import { StreakBadge } from './StreakBadge';
 import { SubjectCard } from './SubjectCard';
@@ -68,6 +70,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
+  const noteSheetRef = useRef<NoteSheetRef>(null);
   const listRef = useRef<FlatList<ListItem>>(null);
   const scrollOffsetRef = useRef(0);
   const setOnboardingSeen = usePreferencesStore((s) => s.setDiaryOnboardingSeen);
@@ -144,6 +147,13 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
       setTaskCount(groupName, subject, type, count);
     },
     [groupName, setTaskCount],
+  );
+
+  const handleRequestNote = useCallback(
+    (subject: string, subjectFullName: string, type: DiaryTaskType, index: number) => {
+      noteSheetRef.current?.present({ subject, subjectFullName, type, index });
+    },
+    [],
   );
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -233,6 +243,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
                     groupName={groupName}
                     subgroup={subgroup}
                     onRequestEnterCount={handleRequestEnterCount}
+                    onRequestNote={handleRequestNote}
                     isTutorialTarget={index === 0}
                   />
                 );
@@ -270,6 +281,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             }
           />
           <EnterTaskCountSheet ref={sheetRef} onSubmit={handleSubmitCount} />
+          <NoteSheet ref={noteSheetRef} groupName={groupName} />
         </SafeAreaView>
         <TutorialRunner
           hasSubjects={visible.length > 0}

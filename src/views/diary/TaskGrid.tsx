@@ -12,6 +12,10 @@ interface Props {
   count: number;
   completed: number[];
   onToggle(index: number): void;
+  /** Long-press a cell — used to open the task's note. */
+  onLongPress?(index: number): void;
+  /** 1-based indices that have a note attached (shown with a small dot). */
+  noted?: ReadonlySet<number>;
 }
 
 const GAP = Spacing.sm;
@@ -29,7 +33,7 @@ const cellsPerRow = (count: number): number => {
   return 7;
 };
 
-export const TaskGrid = ({ count, completed, onToggle }: Props) => {
+export const TaskGrid = ({ count, completed, onToggle, onLongPress, noted }: Props) => {
   const Palette = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(Palette, isDark), [Palette, isDark]);
@@ -52,6 +56,7 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
         <View key={rowIndex} style={styles.row}>
           {row.map((idx) => {
             const done = completedSet.has(idx);
+            const hasNote = noted?.has(idx) ?? false;
             return (
               <Pressable
                 key={idx}
@@ -59,6 +64,8 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
                   void hapticLight();
                   onToggle(idx);
                 }}
+                onLongPress={onLongPress ? () => onLongPress(idx) : undefined}
+                delayLongPress={300}
                 style={({ pressed }) => [
                   styles.cell,
                   done ? styles.cellDone : styles.cellIdle,
@@ -67,7 +74,7 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
                 ]}
                 accessibilityRole="button"
                 accessibilityState={{ checked: done }}
-                accessibilityLabel={`Задание ${idx}${done ? ', выполнено' : ''}`}
+                accessibilityLabel={`Задание ${idx}${done ? ', выполнено' : ''}${hasNote ? ', есть заметка' : ''}`}
               >
                 <Text
                   {...textProps('subhead')}
@@ -75,6 +82,7 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
                 >
                   {idx}
                 </Text>
+                {hasNote && <View style={[styles.noteDot, done && styles.noteDotDone]} />}
               </Pressable>
             );
           })}
@@ -135,5 +143,17 @@ const makeStyles = (Palette: PaletteType, isDark: boolean) =>
     },
     cellTextDone: {
       color: isDark ? DONE_TEXT_DARK : DONE_TEXT_LIGHT,
+    },
+    noteDot: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: Palette.accent,
+    },
+    noteDotDone: {
+      backgroundColor: isDark ? DONE_TEXT_DARK : DONE_TEXT_LIGHT,
     },
   });
