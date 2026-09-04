@@ -34,11 +34,6 @@ interface Props {
   timeStatus?: LessonTimeStatus | null;
   /** Schedule type — for an employee we show groups instead of the avatar. */
   entityType?: 'group' | 'employee';
-  /**
-   * When provided, an icon is shown to the right of the subject name; tapping
-   * it opens the list of nearest pairs of the same subject.
-   */
-  onSubjectPress?(subject: string): void;
 }
 
 // Semi-transparent gray "veil" for past lessons / the elapsed part of an ongoing lesson.
@@ -76,7 +71,6 @@ export const LessonCard = React.memo(
     blocked = false,
     timeStatus,
     entityType = 'group',
-    onSubjectPress,
   }: Props) => {
     const { t } = useTranslation();
     const Palette = usePalette();
@@ -272,22 +266,9 @@ export const LessonCard = React.memo(
           />
 
           <View style={styles.body}>
-            <View style={styles.subjectRow}>
-              <Text {...textProps('headline')} style={styles.subject} numberOfLines={2}>
-                {lesson.raw.subject}
-              </Text>
-              {onSubjectPress && (
-                <Pressable
-                  onPress={() => onSubjectPress(lesson.raw.subject)}
-                  hitSlop={8}
-                  style={styles.subjectIconBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('lesson.nearestOfSubject')}
-                >
-                  <Ionicons name="albums-outline" size={16} color={Palette.textTertiary} />
-                </Pressable>
-              )}
-            </View>
+            <Text {...textProps('headline')} style={styles.subject} numberOfLines={2}>
+              {lesson.raw.subject}
+            </Text>
             {showMetaRow && (
               <View style={styles.metaRow}>
                 {isAnnouncement && (
@@ -452,14 +433,6 @@ const makeStyles = (Palette: PaletteType) =>
       paddingRight: Spacing.lg,
       gap: 3,
     },
-    subjectRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: Spacing.sm,
-    },
-    subjectIconBtn: {
-      paddingTop: 2,
-    },
     metaRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -513,7 +486,6 @@ const makeStyles = (Palette: PaletteType) =>
       letterSpacing: 0.3,
     },
     subject: {
-      flex: 1,
       fontSize: 16,
       fontWeight: '600',
       color: Palette.textPrimary,
