@@ -746,7 +746,7 @@ struct InlineWidgetView: View {
     }
 }
 
-/// Circular complication — icon centred, start time small below.
+/// Circular complication — icon, start time, and the room below it.
 /// Subject text does not fit into ~57×57 pt; icon carries the meaning.
 @available(iOSApplicationExtension 16.0, *)
 struct CircularWidgetView: View {
@@ -758,11 +758,17 @@ struct CircularWidgetView: View {
             if let up = entry.snapshot?.upcoming {
                 VStack(spacing: 1) {
                     Image(systemName: up.lesson.typeSymbolName)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .widgetAccentable()
                     Text(up.lesson.startTime)
                         .font(.system(size: 10, weight: .medium))
                         .monospacedDigit()
+                    if let room = up.lesson.auditories.first {
+                        Text(room)
+                            .font(.system(size: 8, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
                 }
             } else {
                 Image(systemName: "calendar")
@@ -773,8 +779,8 @@ struct CircularWidgetView: View {
     }
 }
 
-/// Rectangular widget (~120×47 pt). Layout: [icon] on the right, subject
-/// (top) + time (bottom) on the left. Auditory appended to time if it fits.
+/// Rectangular widget (~120×47 pt). Layout: [icon] on the left, then subject
+/// with the room next to it (top) + time (bottom).
 @available(iOSApplicationExtension 16.0, *)
 struct RectangularWidgetView: View {
     let entry: ScheduleEntry
@@ -786,17 +792,21 @@ struct RectangularWidgetView: View {
                     .font(.system(size: 22, weight: .semibold))
                     .widgetAccentable()
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(up.lesson.subject)
-                        .font(.headline)
-                        .lineLimit(2)
-                    Text(
-                        up.lesson.auditories.isEmpty
-                            ? "\(up.lesson.startTime)–\(up.lesson.endTime)"
-                            : "\(up.lesson.startTime)–\(up.lesson.endTime) · \(up.lesson.auditories.joined(separator: ", "))"
-                    )
-                    .font(.caption2)
-                    .monospacedDigit()
-                    .lineLimit(1)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(up.lesson.subject)
+                            .font(.headline)
+                            .lineLimit(1)
+                        if let room = up.lesson.auditories.first {
+                            Text(room)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Text("\(up.lesson.startTime)–\(up.lesson.endTime)")
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
