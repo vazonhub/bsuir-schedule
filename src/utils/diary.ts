@@ -24,6 +24,14 @@ export interface DiarySubject {
   remaining: LessonTypeCounts;
   /** Total occurrences over the semester (past + future). */
   total: LessonTypeCounts;
+  /**
+   * Split of `remaining` when a subgroup is selected: how many are shared
+   * (numSubgroup=0) vs specific to the chosen subgroup. When no subgroup is
+   * selected everything falls into `shared`. Used to show "N общих · M в
+   * подгруппе" for labs/practicals.
+   */
+  remainingShared: LessonTypeCounts;
+  remainingSubgroup: LessonTypeCounts;
 }
 
 interface Options {
@@ -77,6 +85,8 @@ export const extractDiarySubjects = (
       subjectFullName: string;
       remaining: LessonTypeCounts;
       total: LessonTypeCounts;
+      remainingShared: LessonTypeCounts;
+      remainingSubgroup: LessonTypeCounts;
     }
   >();
 
@@ -99,6 +109,8 @@ export const extractDiarySubjects = (
         subjectFullName: raw.subjectFullName || raw.subject,
         remaining: emptyCounts(),
         total: emptyCounts(),
+        remainingShared: emptyCounts(),
+        remainingSubgroup: emptyCounts(),
       };
       bySubject.set(key, entry);
     }
@@ -107,6 +119,9 @@ export const extractDiarySubjects = (
 
     if (!isLessonFinished(lesson, today) && !blockedIds.has(buildLessonBlockId(lesson))) {
       entry.remaining[type] += 1;
+      // Shared (whole-group) vs subgroup-specific split of the remaining count.
+      if (raw.numSubgroup === 0) entry.remainingShared[type] += 1;
+      else entry.remainingSubgroup[type] += 1;
     }
   }
 

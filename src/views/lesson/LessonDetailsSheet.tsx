@@ -23,6 +23,7 @@ const AUDITORY_STATUS_FREE_COLOR = '#34C759';
 const AUDITORY_STATUS_BUSY_COLOR = '#FF9500';
 const WEEK_CURRENT_TEXT_COLOR = '#FFFFFF';
 const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
+const PHOTO_CAPTION_COLOR = '#FFFFFF';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -48,10 +49,12 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
 
-    const [fullscreenPhoto, setFullscreenPhoto] = useState<string | null>(null);
+    const [fullscreenPhoto, setFullscreenPhoto] = useState<{ uri: string; name: string } | null>(
+      null,
+    );
 
-    const handleAvatarPress = useCallback((photoLink: string) => {
-      if (photoLink) setFullscreenPhoto(photoLink);
+    const handleAvatarPress = useCallback((photoLink: string, name: string) => {
+      if (photoLink) setFullscreenPhoto({ uri: photoLink, name });
     }, []);
 
     const handleEmployeePress = useCallback(
@@ -329,7 +332,14 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
                         accessibilityHint={t('a11y.openEmployeeSchedule')}
                       >
                         <Pressable
-                          onPress={() => handleAvatarPress(emp.photoLink)}
+                          onPress={() =>
+                            handleAvatarPress(
+                              emp.photoLink,
+                              [emp.lastName, emp.firstName, emp.middleName]
+                                .filter(Boolean)
+                                .join(' '),
+                            )
+                          }
                           importantForAccessibility="no"
                         >
                           <Avatar
@@ -421,12 +431,15 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
             accessibilityViewIsModal
           >
             <Image
-              source={fullscreenPhoto ?? undefined}
+              source={fullscreenPhoto?.uri ?? undefined}
               style={styles.photoFull}
               contentFit="contain"
               cachePolicy="memory-disk"
               accessibilityIgnoresInvertColors
             />
+            {fullscreenPhoto?.name ? (
+              <Text style={styles.photoCaption}>{fullscreenPhoto.name}</Text>
+            ) : null}
           </Pressable>
         </Modal>
       </BottomSheetModal>
@@ -660,5 +673,13 @@ const makeStyles = (Palette: PaletteType) =>
     photoFull: {
       width: Dimensions.get('window').width,
       height: Dimensions.get('window').width,
+    },
+    photoCaption: {
+      marginTop: Spacing.xl,
+      paddingHorizontal: Spacing.xl,
+      color: PHOTO_CAPTION_COLOR,
+      fontSize: 17,
+      fontWeight: '600',
+      textAlign: 'center',
     },
   });

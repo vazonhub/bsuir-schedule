@@ -11,7 +11,12 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Props {
   count: number;
   completed: number[];
-  onToggle(index: number): void;
+  /** Tap a cell — opens the task's note / assignment. */
+  onPressTask(index: number): void;
+  /** 1-based indices that have a note attached (shown with a small dot). */
+  noted?: ReadonlySet<number>;
+  /** Half-width layout (ЛР and ПЗ side by side): fewer cells per row. */
+  compact?: boolean;
 }
 
 const GAP = Spacing.sm;
@@ -19,22 +24,23 @@ const CELL_HEIGHT = 32;
 
 /**
  * Number of cells per row, chosen to keep cells readable at any N.
- * ≤10 → single row (up to N cells wide). >10 → 6–8 per row multi-row grid.
+ * Full width: ≤10 → single row, otherwise 7–8 per row.
+ * Compact (half width, ЛР+ПЗ side by side): at most 4 per row so cells don't
+ * get too small.
  */
-const cellsPerRow = (count: number): number => {
-  if (count <= 5) return count;
+const cellsPerRow = (count: number, compact: boolean): number => {
+  if (compact) return Math.min(count, 4);
   if (count <= 10) return count;
-  if (count <= 16) return 8;
   if (count <= 24) return 8;
   return 7;
 };
 
-export const TaskGrid = ({ count, completed, onToggle }: Props) => {
+export const TaskGrid = ({ count, completed, onPressTask, noted, compact = false }: Props) => {
   const Palette = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(Palette, isDark), [Palette, isDark]);
   const completedSet = useMemo(() => new Set(completed), [completed]);
-  const perRow = cellsPerRow(count);
+  const perRow = cellsPerRow(count, compact);
 
   const rows = useMemo(() => {
     const out: number[][] = [];
@@ -52,12 +58,13 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
         <View key={rowIndex} style={styles.row}>
           {row.map((idx) => {
             const done = completedSet.has(idx);
+            const hasNote = noted?.has(idx) ?? false;
             return (
               <Pressable
                 key={idx}
                 onPress={() => {
                   void hapticLight();
-                  onToggle(idx);
+                  onPressTask(idx);
                 }}
                 style={({ pressed }) => [
                   styles.cell,
@@ -67,7 +74,7 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
                 ]}
                 accessibilityRole="button"
                 accessibilityState={{ checked: done }}
-                accessibilityLabel={`Задание ${idx}${done ? ', выполнено' : ''}`}
+                accessibilityLabel={`Задание ${idx}${done ? ', выполнено' : ''}${hasNote ? ', есть заметка' : ''}`}
               >
                 <Text
                   {...textProps('subhead')}
@@ -75,6 +82,7 @@ export const TaskGrid = ({ count, completed, onToggle }: Props) => {
                 >
                   {idx}
                 </Text>
+                {hasNote && <View style={[styles.noteDot, done && styles.noteDotDone]} />}
               </Pressable>
             );
           })}
@@ -135,5 +143,17 @@ const makeStyles = (Palette: PaletteType, isDark: boolean) =>
     },
     cellTextDone: {
       color: isDark ? DONE_TEXT_DARK : DONE_TEXT_LIGHT,
+    },
+    noteDot: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: Palette.accent,
+    },
+    noteDotDone: {
+      backgroundColor: isDark ? DONE_TEXT_DARK : DONE_TEXT_LIGHT,
     },
   });

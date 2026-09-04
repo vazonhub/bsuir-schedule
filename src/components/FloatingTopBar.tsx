@@ -163,10 +163,14 @@ export const FloatingTopBar = React.memo(
 
           {!isDefaultSchedule && title ? (
             <GlassButton
+              // When an avatar is present (employee schedule) tapping the
+              // name chip opens the full-screen photo, mirroring the avatar tap.
+              onPress={avatarUri ? onAvatarPress : undefined}
               height={38}
               shape="pill"
               style={styles.dayLabelChip}
               accessibilityLabel={title}
+              accessibilityHint={avatarUri ? t('a11y.openPhoto') : undefined}
             >
               <Text
                 maxFontSizeMultiplier={1}

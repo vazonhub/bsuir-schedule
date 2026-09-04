@@ -54,6 +54,7 @@ const pickCore = (s: FireStore): FireCore => ({
   freezes: s.freezes,
   freezeWeekStart: s.freezeWeekStart,
   history: s.history,
+  openDays: s.openDays ?? [],
 });
 
 /** Legacy shape of a single streak entry in `diary-v1`. */
@@ -151,6 +152,7 @@ export const useFireStore = create<FireStore>()(
         freezes: state.freezes,
         freezeWeekStart: state.freezeWeekStart,
         history: state.history,
+        openDays: state.openDays,
         migratedFromDiary: state.migratedFromDiary,
       }),
       onRehydrateStorage: () => (state) => {

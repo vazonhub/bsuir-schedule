@@ -94,6 +94,29 @@ describe('evaluateCore', () => {
     expect(c.history).toEqual({});
   });
 
+  it('credits opened lesson days retroactively instead of burning freezes', () => {
+    const c = evaluateCore(
+      settled({ current: 5, freezes: 2, openDays: ['2025-09-02', '2025-09-03'] }),
+      '2025-09-04',
+      alwaysLesson,
+    );
+    expect(c.current).toBe(7); // both days were opened → +1 each
+    expect(c.freezes).toBe(2); // no freeze spent
+    expect(c.history['2025-09-02']).toBe('active');
+    expect(c.history['2025-09-03']).toBe('active');
+  });
+
+  it('only penalizes lesson days the app was NOT opened', () => {
+    const c = evaluateCore(
+      settled({ current: 5, freezes: 0, openDays: ['2025-09-02'] }),
+      '2025-09-04',
+      alwaysLesson,
+    );
+    expect(c.history['2025-09-02']).toBe('active'); // opened → credited
+    expect(c.history['2025-09-03']).toBe('missed'); // not opened → miss
+    expect(c.current).toBe(5); // +1 then -1
+  });
+
   it('never drops the streak below zero', () => {
     const c = evaluateCore(settled({ current: 1, freezes: 0 }), '2025-09-04', alwaysLesson);
     expect(c.current).toBe(0);
@@ -125,6 +148,11 @@ describe('markActivityCore', () => {
     const { core, event } = markActivityCore(emptyFireCore(), '2025-09-01', neverLesson);
     expect(core.current).toBe(0);
     expect(event.delta).toBe(0);
+  });
+
+  it('records the open day even when nothing is credited', () => {
+    const { core } = markActivityCore(emptyFireCore(), '2025-09-01', neverLesson);
+    expect(core.openDays).toContain('2025-09-01');
   });
 
   it('does not double-count the same day', () => {

@@ -60,6 +60,11 @@ export const ScheduleController = {
       }
       store.setCurrentWeek(week as 1 | 2 | 3 | 4);
     } catch (e) {
+      // Network/server failure: if we already have a cached week (rotated from
+      // the last known value on rehydration), keep it so the cached schedule
+      // still renders offline. Only surface an error when there is nothing to
+      // fall back to.
+      if (store.currentWeek != null) return;
       store.setError(
         e instanceof Error ? e.message : 'Не удалось получить текущую неделю',
         classifyError(e),

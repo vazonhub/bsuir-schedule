@@ -102,9 +102,14 @@ const makeStyles = (Palette: PaletteType) =>
     },
     input: {
       fontSize: 16,
+      // Match the placeholder's line box exactly so the caret sits on the same
+      // baseline as the placeholder text instead of drifting up onto the first
+      // placeholder glyph.
+      lineHeight: 20,
       color: Palette.textPrimary,
       paddingVertical: 0,
       includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     placeholderOverlay: {
       ...StyleSheet.absoluteFillObject,
@@ -112,6 +117,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     placeholder: {
       fontSize: 16,
+      lineHeight: 20,
       color: Palette.searchPlaceholder,
       includeFontPadding: false,
     },

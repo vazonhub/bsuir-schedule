@@ -17,6 +17,13 @@ import { FIRE_COLORS, FIRE_TIERS } from '@theme/colors';
  * - Non-lesson day → neutral.
  * - Freezes: WEEKLY_FREEZES per week, the pool refills on Monday.
  * - The penalty is applied retroactively on the next `evaluate`.
+ *
+ * "Was the app opened that day?" is tracked separately in `openDays`, because
+ * activity cannot always be credited on the day itself (the schedule may not
+ * be loaded yet at the moment the app registers activity, so we don't yet know
+ * it is a lesson day). When a later `evaluate` finds a past lesson day the user
+ * actually opened, it is credited retroactively instead of burning a freeze —
+ * otherwise days the user was present would be wrongly counted as misses.
  */
 
 /** How many freezes are granted per week. */
@@ -54,6 +61,12 @@ export interface FireCore {
   freezeWeekStart: string | null;
   /** Status history per lesson day (for the calendar). */
   history: Record<string, FireDayStatus>;
+  /**
+   * ISO days on which the app registered activity (was opened), regardless of
+   * whether it was a lesson day or whether the schedule was loaded at the time.
+   * Used to retroactively credit lesson days the user was actually present for.
+   */
+  openDays: string[];
 }
 
 /** What happened when activity was credited — for the celebration. */
@@ -77,6 +90,7 @@ export const emptyFireCore = (): FireCore => ({
   freezes: WEEKLY_FREEZES,
   freezeWeekStart: null,
   history: {},
+  openDays: [],
 });
 
 // ─── Date ↔ ISO ──────────────────────────────────────────────────────────────
@@ -135,6 +149,13 @@ const pruneHistory = (history: Record<string, FireDayStatus>): Record<string, Fi
   return next;
 };
 
+/** Add a day to the "app was opened" set (deduped, sorted, pruned). */
+const addOpenDay = (openDays: string[], iso: string): string[] => {
+  if (openDays.includes(iso)) return openDays;
+  const next = [...openDays, iso].sort();
+  return next.length > HISTORY_LIMIT ? next.slice(next.length - HISTORY_LIMIT) : next;
+};
+
 // ─── Reducers ────────────────────────────────────────────────────────────────
 
 /**
@@ -160,6 +181,7 @@ export const evaluateCore = (
     return c;
   }
 
+  const opened = new Set(c.openDays);
   let cursor = nextDayISO(c.lastEvalDate);
   while (cursor < todayISO) {
     const r = refilledFreezes(c, cursor);
@@ -167,7 +189,15 @@ export const evaluateCore = (
     c.freezeWeekStart = r.freezeWeekStart;
 
     if (isLessonDay(cursor)) {
-      if (c.freezes > 0) {
+      if (opened.has(cursor)) {
+        // The user actually opened the app that day — activity just could not
+        // be credited then (schedule not loaded yet). Credit it now instead of
+        // burning a freeze or counting a miss.
+        c.current += 1;
+        if (c.current > c.longest) c.longest = c.current;
+        c.lastActiveDate = maxISO(c.lastActiveDate, cursor);
+        c.history[cursor] = 'active';
+      } else if (c.freezes > 0) {
         c.freezes -= 1;
         c.history[cursor] = 'frozen';
       } else {
@@ -197,6 +227,10 @@ export const markActivityCore = (
   isLessonDay: (iso: string) => boolean,
 ): { core: FireCore; event: FireEvent } => {
   let c = evaluateCore(core, todayISO, isLessonDay);
+  // Always remember the app was opened today, even before the schedule is known
+  // — a later evaluate uses this to credit today if it turns out to be a lesson
+  // day that could not be counted right now.
+  c = { ...c, openDays: addOpenDay(c.openDays, todayISO) };
 
   if (!isLessonDay(todayISO) || c.lastActiveDate === todayISO) {
     return { core: c, event: NO_EVENT };
@@ -296,6 +330,9 @@ export const mergeFireCores = (local: FireCore, remote: FireCore): FireCore => {
     freezes = local.freezeWeekStart ? local.freezes : remote.freezes;
   }
 
+  // Union the "opened" days from both devices (old cores may lack the field).
+  const mergedOpen = [...new Set([...(local.openDays ?? []), ...(remote.openDays ?? [])])].sort();
+
   return {
     current: Math.max(local.current, remote.current),
     longest: Math.max(local.longest, remote.longest),
@@ -304,6 +341,10 @@ export const mergeFireCores = (local: FireCore, remote: FireCore): FireCore => {
     freezes,
     freezeWeekStart,
     history: mergeHistory(local.history, remote.history),
+    openDays:
+      mergedOpen.length > HISTORY_LIMIT
+        ? mergedOpen.slice(mergedOpen.length - HISTORY_LIMIT)
+        : mergedOpen,
   };
 };
 
@@ -319,7 +360,9 @@ export const isFireCore = (x: unknown): x is FireCore => {
     typeof c.freezes === 'number' &&
     (c.freezeWeekStart === null || typeof c.freezeWeekStart === 'string') &&
     typeof c.history === 'object' &&
-    c.history != null
+    c.history != null &&
+    // openDays was added later — tolerate cores from older app versions.
+    (c.openDays === undefined || Array.isArray(c.openDays))
   );
 };
 

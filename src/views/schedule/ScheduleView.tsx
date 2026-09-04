@@ -145,6 +145,16 @@ export const ScheduleView = ({
     if (avatarUri) setFullscreenPhoto(true);
   }, [avatarUri]);
 
+  // Full ФИО shown under the full-screen photo (falls back to the short title).
+  const employeeFullName = useMemo(() => {
+    const emp = schedule.employeeDto;
+    if (emp) {
+      const full = [emp.lastName, emp.firstName, emp.middleName].filter(Boolean).join(' ');
+      if (full) return full;
+    }
+    return title ?? null;
+  }, [schedule.employeeDto, title]);
+
   // When a dismiss animation is still in flight, present() is silently
   // ignored by BottomSheetModal.  We force-dismiss first, then re-present
   // once the animation finishes (onDismiss fires).
@@ -693,7 +703,21 @@ export const ScheduleView = ({
   );
 
   const keyExtractor = useCallback((item: ScheduleRow) => item.key, []);
-  const getItemType = useCallback((item: ScheduleRow) => item.type, []);
+  // Encode the visual variant of a lesson (full / compact / blocked) in the
+  // recycle type. Otherwise FlashList reuses one pool for all lessons and, on
+  // Android, a recycled cell keeps a stale height when a full card is reused as
+  // a compact one (or vice versa) — the "all pairs vanish except subgroup ones"
+  // bug when switching subgroup or fling-scrolling.
+  const getItemType = useCallback(
+    (item: ScheduleRow) => {
+      if (item.type !== 'lesson') return item.type;
+      const l = item.lesson;
+      if (isLessonBlocked(l)) return 'lesson-blocked';
+      if (!isMineSubgroup(l.raw.numSubgroup)) return 'lesson-compact';
+      return 'lesson';
+    },
+    [isLessonBlocked, isMineSubgroup],
+  );
 
   // extraData: forces FlashList to re-render visible rows when the subgroup /
   // blocked set / time tick changes (progress of the ongoing lesson).
@@ -882,6 +906,7 @@ export const ScheduleView = ({
               cachePolicy="memory-disk"
               accessibilityIgnoresInvertColors
             />
+            {employeeFullName ? <Text style={styles.photoCaption}>{employeeFullName}</Text> : null}
           </Pressable>
         </Modal>
       ) : null}
@@ -933,6 +958,7 @@ const ExamsSeparator = ({ Palette }: ExamsSeparatorProps) => {
 
 const DATE_PICKER_BACKDROP_BG = 'rgba(0,0,0,0.4)';
 const PHOTO_BACKDROP_BG = 'rgba(0,0,0,0.9)';
+const PHOTO_CAPTION_COLOR = '#FFFFFF';
 
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
@@ -1028,5 +1054,13 @@ const makeStyles = (Palette: PaletteType) =>
     photoFull: {
       width: Dimensions.get('window').width,
       height: Dimensions.get('window').width,
+    },
+    photoCaption: {
+      marginTop: Spacing.xl,
+      paddingHorizontal: Spacing.xl,
+      color: PHOTO_CAPTION_COLOR,
+      fontSize: 17,
+      fontWeight: '600',
+      textAlign: 'center',
     },
   });
