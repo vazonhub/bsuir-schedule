@@ -32,6 +32,7 @@ export const ru = {
     emptySubjectsTitle: 'Нет предметов',
     emptySubjectsSubtitle: 'В расписании этой группы не нашлось лекций, ПЗ или ЛР',
     enterTaskCount: 'Ввести количество заданий',
+    subgroupSplit: '{{shared}} общих · {{sub}} в подгруппе',
     enterTaskCountTitle: 'Сколько заданий?',
     enterTaskCountHint: 'От {{min}} до {{max}}',
     actionsTitle: 'Действия',

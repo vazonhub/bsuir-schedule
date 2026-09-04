@@ -15,6 +15,7 @@ import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectSubjectProgress, DIARY_TASK_TYPES } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
+import type { SubgroupChoice } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
@@ -29,6 +30,8 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Props {
   subject: DiarySubject;
   groupName: string;
+  /** Selected subgroup (0 = all). Enables the "shared vs subgroup" split line. */
+  subgroup: SubgroupChoice;
   onRequestEnterCount(
     subject: string,
     subjectFullName: string,
@@ -42,6 +45,7 @@ interface Props {
 export const SubjectCard = ({
   subject,
   groupName,
+  subgroup,
   onRequestEnterCount,
   isTutorialTarget = false,
 }: Props) => {
@@ -64,6 +68,18 @@ export const SubjectCard = ({
     const c = progress[tp].taskCount;
     return c != null && c > 0;
   });
+
+  // Shared vs subgroup breakdown of remaining lessons — only shown when a
+  // subgroup is selected and the subject has subgroup-specific lessons (labs,
+  // sometimes practicals). One compact line per type, so the card stays light.
+  const splitLines = useMemo(() => {
+    if (subgroup === 0) return [];
+    return DIARY_LESSON_TYPES.filter((tp) => subject.remainingSubgroup[tp] > 0).map((tp) => ({
+      type: tp,
+      shared: subject.remainingShared[tp],
+      sub: subject.remainingSubgroup[tp],
+    }));
+  }, [subgroup, subject.remainingShared, subject.remainingSubgroup]);
 
   // ── Tutorial targets (first visible card only) ──
   const cardTutorialRef = useTutorialTarget('subjectCard', isTutorialTarget);
@@ -165,6 +181,18 @@ export const SubjectCard = ({
             <Text {...textProps('footnote')} style={styles.subjectFull} numberOfLines={2}>
               {subject.subjectFullName}
             </Text>
+            {splitLines.length > 0 && (
+              <View style={styles.splitBlock}>
+                {splitLines.map(({ type, shared, sub }) => (
+                  <Text key={type} {...textProps('footnote')} style={styles.splitLine}>
+                    <Text style={[styles.splitType, { color: LESSON_TYPE_COLORS[type] }]}>
+                      {type}
+                    </Text>{' '}
+                    {t('diary.subgroupSplit', { shared, sub })}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
 
           {taskTypes.length > 0 && <View style={styles.separator} />}
@@ -304,6 +332,16 @@ const makeStyles = (Palette: PaletteType) =>
     },
     subjectFull: {
       color: Palette.textSecondary,
+    },
+    splitBlock: {
+      marginTop: 2,
+      gap: 1,
+    },
+    splitLine: {
+      color: Palette.textTertiary,
+    },
+    splitType: {
+      fontWeight: '700',
     },
     countersBlock: {
       flex: 1,

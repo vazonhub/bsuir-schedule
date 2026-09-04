@@ -31,6 +31,7 @@ export const en: TranslationKeys = {
     emptySubjectsTitle: 'No subjects',
     emptySubjectsSubtitle: "No lectures, PS or LR were found in this group's schedule",
     enterTaskCount: 'Enter task count',
+    subgroupSplit: '{{shared}} shared · {{sub}} in subgroup',
     enterTaskCountTitle: 'How many tasks?',
     enterTaskCountHint: 'From {{min}} to {{max}}',
     actionsTitle: 'Actions',

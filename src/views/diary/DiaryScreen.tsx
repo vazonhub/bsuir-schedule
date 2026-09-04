@@ -240,6 +240,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
                   <SubjectCard
                     subject={item.subject}
                     groupName={groupName}
+                    subgroup={subgroup}
                     onRequestEnterCount={handleRequestEnterCount}
                     isTutorialTarget={index === 0}
                   />

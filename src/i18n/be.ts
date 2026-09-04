@@ -31,6 +31,7 @@ export const be: TranslationKeys = {
     emptySubjectsTitle: 'Няма прадметаў',
     emptySubjectsSubtitle: 'У раскладзе гэтай групы не знойдзена лекцый, ПЗ або ЛР',
     enterTaskCount: 'Увесці колькасць заданняў',
+    subgroupSplit: '{{shared}} агульных · {{sub}} у падгрупе',
     enterTaskCountTitle: 'Колькі заданняў?',
     enterTaskCountHint: 'Ад {{min}} да {{max}}',
     actionsTitle: 'Дзеянні',
