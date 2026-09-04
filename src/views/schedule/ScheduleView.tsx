@@ -693,7 +693,21 @@ export const ScheduleView = ({
   );
 
   const keyExtractor = useCallback((item: ScheduleRow) => item.key, []);
-  const getItemType = useCallback((item: ScheduleRow) => item.type, []);
+  // Encode the visual variant of a lesson (full / compact / blocked) in the
+  // recycle type. Otherwise FlashList reuses one pool for all lessons and, on
+  // Android, a recycled cell keeps a stale height when a full card is reused as
+  // a compact one (or vice versa) — the "all pairs vanish except subgroup ones"
+  // bug when switching subgroup or fling-scrolling.
+  const getItemType = useCallback(
+    (item: ScheduleRow) => {
+      if (item.type !== 'lesson') return item.type;
+      const l = item.lesson;
+      if (isLessonBlocked(l)) return 'lesson-blocked';
+      if (!isMineSubgroup(l.raw.numSubgroup)) return 'lesson-compact';
+      return 'lesson';
+    },
+    [isLessonBlocked, isMineSubgroup],
+  );
 
   // extraData: forces FlashList to re-render visible rows when the subgroup /
   // blocked set / time tick changes (progress of the ongoing lesson).
