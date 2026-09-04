@@ -727,15 +727,19 @@ struct LargeWidgetView: View {
 
 // MARK: - Lock Screen (accessory) widgets
 
-/// One-liner above the clock. Format: "{typeAbbrev} · {subject} · {startTime}".
-/// iOS will auto-truncate with an ellipsis; we don't shorten anything in JS.
+/// One-liner above the clock. Format: "{subject} · {startTime} · {room}"
+/// (room omitted when there is none). iOS auto-truncates with an ellipsis.
 @available(iOSApplicationExtension 16.0, *)
 struct InlineWidgetView: View {
     let entry: ScheduleEntry
 
     var body: some View {
         if let up = entry.snapshot?.upcoming {
-            Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+            if up.lesson.auditories.isEmpty {
+                Text("\(up.lesson.subject) · \(up.lesson.startTime)–\(up.lesson.endTime)")
+            } else {
+                Text("\(up.lesson.subject) · \(up.lesson.startTime) · \(up.lesson.auditories.joined(separator: ", "))")
+            }
         } else {
             Text(entry.snapshot?.strings?.noClasses ?? "Нет пар")
         }
@@ -785,9 +789,14 @@ struct RectangularWidgetView: View {
                     Text(up.lesson.subject)
                         .font(.headline)
                         .lineLimit(2)
-                    Text("\(up.lesson.startTime)–\(up.lesson.endTime)")
-                        .font(.caption2)
-                        .monospacedDigit()
+                    Text(
+                        up.lesson.auditories.isEmpty
+                            ? "\(up.lesson.startTime)–\(up.lesson.endTime)"
+                            : "\(up.lesson.startTime)–\(up.lesson.endTime) · \(up.lesson.auditories.joined(separator: ", "))"
+                    )
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
