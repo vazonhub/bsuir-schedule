@@ -2,21 +2,33 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { asyncStorageAdapter } from '@services/cache/asyncStorage';
-import { sanitizeDiaryFields } from '@utils/diarySync';
+import { migrateDiaryPersisted, sanitizeDiaryFields } from '@utils/diarySync';
 import type { DiaryRemoteFields } from '@utils/diarySync';
 
-export interface SubjectProgress {
-  /** Total task count for this subject. `null` means the user hasn't entered one yet. */
+/** Submission lesson types that can carry tasks in the diary (ЛР — labs, ПЗ — practicals). */
+export const DIARY_TASK_TYPES = ['ЛР', 'ПЗ'] as const;
+export type DiaryTaskType = (typeof DIARY_TASK_TYPES)[number];
+
+/** Progress for a single task type of a subject. */
+export interface TypeProgress {
+  /** Total task count for this type. `null` means the user hasn't entered one yet. */
   taskCount: number | null;
   /** 1-based indices of tasks marked as done. */
   completed: number[];
+  /** Markdown note per 1-based task index (added in the notes feature). */
+  notes?: Record<number, string>;
 }
+
+/** Per-subject progress, split by task type (ЛР / ПЗ). */
+export type SubjectProgress = Record<DiaryTaskType, TypeProgress>;
 
 export interface PlannerItem {
   /** Stable id survives reordering. */
   id: string;
   subject: string;
-  /** 1-based task index within `progress[group][subject].taskCount`. */
+  /** Which task type this slot points at (ЛР / ПЗ). */
+  type: DiaryTaskType;
+  /** 1-based task index within `progress[group][subject][type].taskCount`. */
   taskIndex: number;
 }
 
@@ -30,16 +42,29 @@ interface DiaryState {
   /** ms epoch of the last local mutation — LWW key for cloud sync. */
   updatedAt: number;
 
-  setTaskCount(groupName: string, subject: string, count: number): void;
-  toggleTask(groupName: string, subject: string, index: number): void;
+  setTaskCount(groupName: string, subject: string, type: DiaryTaskType, count: number): void;
+  toggleTask(groupName: string, subject: string, type: DiaryTaskType, index: number): void;
+  setTaskNote(
+    groupName: string,
+    subject: string,
+    type: DiaryTaskType,
+    index: number,
+    note: string,
+  ): void;
   resetSubject(groupName: string, subject: string): void;
   toggleHidden(groupName: string, subject: string): void;
 
-  addPlannerItem(groupName: string, subject: string, taskIndex: number): void;
+  addPlannerItem(groupName: string, subject: string, type: DiaryTaskType, taskIndex: number): void;
   removePlannerItem(groupName: string, id: string): void;
   reorderPlanner(groupName: string, newOrder: PlannerItem[]): void;
-  /** Rewrite an existing planner slot's subject/taskIndex, preserving order. */
-  replacePlannerItem(groupName: string, id: string, subject: string, taskIndex: number): void;
+  /** Rewrite an existing planner slot's subject/type/taskIndex, preserving order. */
+  replacePlannerItem(
+    groupName: string,
+    id: string,
+    subject: string,
+    type: DiaryTaskType,
+    taskIndex: number,
+  ): void;
 
   /**
    * Stamp the LWW timestamp for a mutation made OUTSIDE this store
@@ -55,8 +80,17 @@ interface DiaryState {
   applyRemoteSnapshot(snapshot: DiaryRemoteFields): void;
 }
 
+/** Fresh empty progress for one task type. */
+export const emptyTypeProgress = (): TypeProgress => ({ taskCount: null, completed: [] });
+
+/** Fresh empty progress for a subject (both task types). */
+export const emptySubjectProgress = (): SubjectProgress => ({
+  ЛР: emptyTypeProgress(),
+  ПЗ: emptyTypeProgress(),
+});
+
 const getEntry = (state: DiaryState, group: string, subject: string): SubjectProgress =>
-  state.progress[group]?.[subject] ?? { taskCount: null, completed: [] };
+  state.progress[group]?.[subject] ?? emptySubjectProgress();
 
 const genId = (): string =>
   `p_${Math.random().toString(36).slice(2, 9)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -66,6 +100,9 @@ const prunePlanner = (
   planner: PlannerItem[],
   predicate: (item: PlannerItem) => boolean,
 ): PlannerItem[] => planner.filter(predicate);
+
+/** Persist schema version — bump when the persisted shape changes. */
+const DIARY_PERSIST_VERSION = 2;
 
 export const useDiaryStore = create<DiaryState>()(
   persist(
@@ -86,6 +123,17 @@ export const useDiaryStore = create<DiaryState>()(
         });
       };
 
+      /** Write one subject's SubjectProgress back into the progress map. */
+      const withSubject = (
+        s: DiaryState,
+        groupName: string,
+        subject: string,
+        next: SubjectProgress,
+      ): DiaryState['progress'] => ({
+        ...s.progress,
+        [groupName]: { ...(s.progress[groupName] ?? {}), [subject]: next },
+      });
+
       return {
         progress: {},
         hidden: {},
@@ -102,24 +150,30 @@ export const useDiaryStore = create<DiaryState>()(
           });
         },
 
-        setTaskCount: (groupName, subject, count) => {
+        setTaskCount: (groupName, subject, type, count) => {
           const clamped = Math.max(0, Math.min(99, Math.floor(count)));
           setStamped((s) => {
-            const prev = getEntry(s, groupName, subject);
-            const nextCompleted = prev.completed.filter((i) => i >= 1 && i <= clamped);
+            const entry = getEntry(s, groupName, subject);
+            const prevType = entry[type];
+            const nextNotes = prevType.notes
+              ? Object.fromEntries(
+                  Object.entries(prevType.notes).filter(
+                    ([k]) => Number(k) >= 1 && Number(k) <= clamped,
+                  ),
+                )
+              : undefined;
+            const nextType: TypeProgress = {
+              taskCount: clamped,
+              completed: prevType.completed.filter((i) => i >= 1 && i <= clamped),
+              ...(nextNotes && Object.keys(nextNotes).length > 0 ? { notes: nextNotes } : {}),
+            };
             const groupPlanner = s.planner[groupName] ?? [];
             const nextPlanner = prunePlanner(
               groupPlanner,
-              (it) => it.subject !== subject || it.taskIndex <= clamped,
+              (it) => it.subject !== subject || it.type !== type || it.taskIndex <= clamped,
             );
             return {
-              progress: {
-                ...s.progress,
-                [groupName]: {
-                  ...(s.progress[groupName] ?? {}),
-                  [subject]: { taskCount: clamped, completed: nextCompleted },
-                },
-              },
+              progress: withSubject(s, groupName, subject, { ...entry, [type]: nextType }),
               planner:
                 nextPlanner === groupPlanner
                   ? s.planner
@@ -128,16 +182,17 @@ export const useDiaryStore = create<DiaryState>()(
           });
         },
 
-        toggleTask: (groupName, subject, index) => {
+        toggleTask: (groupName, subject, type, index) => {
           setStamped((s) => {
-            const prev = getEntry(s, groupName, subject);
-            if (prev.taskCount == null || index < 1 || index > prev.taskCount) return s;
-            const has = prev.completed.includes(index);
+            const entry = getEntry(s, groupName, subject);
+            const prevType = entry[type];
+            if (prevType.taskCount == null || index < 1 || index > prevType.taskCount) return s;
+            const has = prevType.completed.includes(index);
             const nextCompleted = has
-              ? prev.completed.filter((i) => i !== index)
-              : [...prev.completed, index];
+              ? prevType.completed.filter((i) => i !== index)
+              : [...prevType.completed, index];
 
-            // If we just marked (subject, index) as done, drop any planner
+            // If we just marked (subject, type, index) as done, drop any planner
             // entry pointing to it. Do NOT re-add on un-check — the planner
             // is a manual backlog, not a mirror of the grid.
             let nextPlanner = s.planner;
@@ -145,7 +200,7 @@ export const useDiaryStore = create<DiaryState>()(
               const groupPlanner = s.planner[groupName] ?? [];
               const filtered = prunePlanner(
                 groupPlanner,
-                (it) => !(it.subject === subject && it.taskIndex === index),
+                (it) => !(it.subject === subject && it.type === type && it.taskIndex === index),
               );
               if (filtered.length !== groupPlanner.length) {
                 nextPlanner = { ...s.planner, [groupName]: filtered };
@@ -153,14 +208,34 @@ export const useDiaryStore = create<DiaryState>()(
             }
 
             return {
-              progress: {
-                ...s.progress,
-                [groupName]: {
-                  ...(s.progress[groupName] ?? {}),
-                  [subject]: { ...prev, completed: nextCompleted },
-                },
-              },
+              progress: withSubject(s, groupName, subject, {
+                ...entry,
+                [type]: { ...prevType, completed: nextCompleted },
+              }),
               planner: nextPlanner,
+            };
+          });
+        },
+
+        setTaskNote: (groupName, subject, type, index, note) => {
+          setStamped((s) => {
+            const entry = getEntry(s, groupName, subject);
+            const prevType = entry[type];
+            if (prevType.taskCount == null || index < 1 || index > prevType.taskCount) return s;
+            const notes = { ...(prevType.notes ?? {}) };
+            const trimmed = note.trim();
+            if (trimmed.length === 0) {
+              delete notes[index];
+            } else {
+              notes[index] = note;
+            }
+            const nextType: TypeProgress = {
+              taskCount: prevType.taskCount,
+              completed: prevType.completed,
+              ...(Object.keys(notes).length > 0 ? { notes } : {}),
+            };
+            return {
+              progress: withSubject(s, groupName, subject, { ...entry, [type]: nextType }),
             };
           });
         },
@@ -183,14 +258,18 @@ export const useDiaryStore = create<DiaryState>()(
           });
         },
 
-        addPlannerItem: (groupName, subject, taskIndex) => {
+        addPlannerItem: (groupName, subject, type, taskIndex) => {
           setStamped((s) => {
             const groupPlanner = s.planner[groupName] ?? [];
-            // Ignore duplicates (same subject + index).
-            if (groupPlanner.some((it) => it.subject === subject && it.taskIndex === taskIndex)) {
+            // Ignore duplicates (same subject + type + index).
+            if (
+              groupPlanner.some(
+                (it) => it.subject === subject && it.type === type && it.taskIndex === taskIndex,
+              )
+            ) {
               return s;
             }
-            const next: PlannerItem = { id: genId(), subject, taskIndex };
+            const next: PlannerItem = { id: genId(), subject, type, taskIndex };
             return {
               planner: { ...s.planner, [groupName]: [...groupPlanner, next] },
             };
@@ -210,15 +289,19 @@ export const useDiaryStore = create<DiaryState>()(
           setStamped((s) => ({ planner: { ...s.planner, [groupName]: newOrder } }));
         },
 
-        replacePlannerItem: (groupName, id, subject, taskIndex) => {
+        replacePlannerItem: (groupName, id, subject, type, taskIndex) => {
           setStamped((s) => {
             const groupPlanner = s.planner[groupName] ?? [];
             const idx = groupPlanner.findIndex((it) => it.id === id);
             if (idx < 0) return s;
-            // If the new (subject, taskIndex) matches a DIFFERENT existing slot,
+            // If the new (subject, type, taskIndex) matches a DIFFERENT existing slot,
             // drop this one to avoid duplicates.
             const collision = groupPlanner.findIndex(
-              (it) => it.id !== id && it.subject === subject && it.taskIndex === taskIndex,
+              (it) =>
+                it.id !== id &&
+                it.subject === subject &&
+                it.type === type &&
+                it.taskIndex === taskIndex,
             );
             if (collision >= 0) {
               return {
@@ -229,7 +312,7 @@ export const useDiaryStore = create<DiaryState>()(
               };
             }
             const next = [...groupPlanner];
-            next[idx] = { id, subject, taskIndex };
+            next[idx] = { id, subject, type, taskIndex };
             return { planner: { ...s.planner, [groupName]: next } };
           });
         },
@@ -245,7 +328,11 @@ export const useDiaryStore = create<DiaryState>()(
     },
     {
       name: 'diary-v1',
+      version: DIARY_PERSIST_VERSION,
       storage: createJSONStorage(() => asyncStorageAdapter),
+      // Upgrade the pre-v2 flat `{ taskCount, completed }` shape into the
+      // per-type `{ ЛР, ПЗ }` shape (old counts were labs) and tag planner items.
+      migrate: (persisted, version) => migrateDiaryPersisted(persisted, version) as DiaryState,
       partialize: (state) => ({
         progress: state.progress,
         hidden: state.hidden,
@@ -256,7 +343,7 @@ export const useDiaryStore = create<DiaryState>()(
   ),
 );
 
-const EMPTY: SubjectProgress = { taskCount: null, completed: [] };
+const EMPTY: SubjectProgress = emptySubjectProgress();
 
 /** Selector helper: progress for a specific (group, subject). */
 export const selectSubjectProgress =

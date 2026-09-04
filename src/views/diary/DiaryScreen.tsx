@@ -17,6 +17,7 @@ import { ScheduleController } from '@controllers/schedule.controller';
 import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
+import type { DiaryTaskType } from '@stores/diary.store';
 import {
   usePreferencesStore,
   selectBlockedLessons,
@@ -132,15 +133,15 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   );
 
   const handleRequestEnterCount = useCallback(
-    (subject: string, subjectFullName: string, initial: number | null) => {
-      sheetRef.current?.present({ subject, subjectFullName, initial });
+    (subject: string, subjectFullName: string, type: DiaryTaskType, initial: number | null) => {
+      sheetRef.current?.present({ subject, subjectFullName, type, initial });
     },
     [],
   );
 
   const handleSubmitCount = useCallback(
-    (subject: string, count: number) => {
-      setTaskCount(groupName, subject, count);
+    (subject: string, type: DiaryTaskType, count: number) => {
+      setTaskCount(groupName, subject, type, count);
     },
     [groupName, setTaskCount],
   );

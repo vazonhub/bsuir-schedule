@@ -81,12 +81,13 @@ export const DiaryStats = ({
     addSheetRef.current?.present({
       editingId: item.id,
       editingSubject: item.subject,
+      editingType: item.type,
       editingTaskIndex: item.taskIndex,
     });
   };
 
   const handleLongPressAction = (item: PlannerItem) => {
-    Alert.alert(t('diary.actionsTitle'), `${item.subject} №${item.taskIndex}`, [
+    Alert.alert(t('diary.actionsTitle'), `${item.subject} ${item.type} №${item.taskIndex}`, [
       {
         text: t('diary.plannerRemove'),
         style: 'destructive',
@@ -123,7 +124,9 @@ export const DiaryStats = ({
                   groupName={groupName}
                   onEdit={() => handleEditItem(item)}
                   onLongPressAction={() => handleLongPressAction(item)}
-                  onToggleTask={() => toggleTask(groupName, item.subject, item.taskIndex)}
+                  onToggleTask={() =>
+                    toggleTask(groupName, item.subject, item.type, item.taskIndex)
+                  }
                 />
               )}
             />
@@ -201,7 +204,7 @@ const PlannerCard = ({
   const Palette = usePalette();
   const styles = useMemo(() => makeMiniCardStyles(Palette), [Palette]);
   const progress = useDiaryStore(selectSubjectProgress(groupName, item.subject));
-  const done = progress.completed.includes(item.taskIndex);
+  const done = progress[item.type].completed.includes(item.taskIndex);
 
   return (
     <Pressable

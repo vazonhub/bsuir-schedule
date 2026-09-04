@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -12,7 +13,8 @@ import { useTutorialTarget } from '@components/onboarding/useTutorialTarget';
 import { FireController } from '@controllers/fire.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
-import { useDiaryStore, selectSubjectProgress } from '@stores/diary.store';
+import { useDiaryStore, selectSubjectProgress, DIARY_TASK_TYPES } from '@stores/diary.store';
+import type { DiaryTaskType } from '@stores/diary.store';
 import { Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
@@ -27,7 +29,12 @@ type PaletteType = ReturnType<typeof usePalette>;
 interface Props {
   subject: DiarySubject;
   groupName: string;
-  onRequestEnterCount(subject: string, subjectFullName: string, initial: number | null): void;
+  onRequestEnterCount(
+    subject: string,
+    subjectFullName: string,
+    type: DiaryTaskType,
+    initial: number | null,
+  ): void;
   /** Register this card as a tutorial target (first visible card only). */
   isTutorialTarget?: boolean;
 }
@@ -47,7 +54,16 @@ export const SubjectCard = ({
   const resetSubject = useDiaryStore((s) => s.resetSubject);
   const toggleHidden = useDiaryStore((s) => s.toggleHidden);
 
-  const hasCount = progress.taskCount != null && progress.taskCount > 0;
+  // Task types worth showing for this subject: those that occur in the schedule
+  // or already have a count entered by the user.
+  const taskTypes = useMemo(
+    () => DIARY_TASK_TYPES.filter((tp) => subject.total[tp] > 0 || progress[tp].taskCount != null),
+    [subject.total, progress],
+  );
+  const hasCount = taskTypes.some((tp) => {
+    const c = progress[tp].taskCount;
+    return c != null && c > 0;
+  });
 
   // ── Tutorial targets (first visible card only) ──
   const cardTutorialRef = useTutorialTarget('subjectCard', isTutorialTarget);
@@ -101,34 +117,21 @@ export const SubjectCard = ({
     } as const;
     const cancelAction = { text: t('common.cancel'), style: 'cancel' as const };
 
-    if (!hasCount) {
-      Alert.alert(t('diary.actionsTitle'), subject.subjectFullName, [
-        {
-          text: t('diary.actionEnter'),
-          onPress: () => onRequestEnterCount(subject.subject, subject.subjectFullName, null),
-        },
-        hideAction,
-        cancelAction,
-      ]);
-      return;
-    }
-    Alert.alert(t('diary.actionsTitle'), subject.subjectFullName, [
-      {
-        text: t('diary.actionEdit'),
-        onPress: () =>
-          onRequestEnterCount(subject.subject, subject.subjectFullName, progress.taskCount),
-      },
-      {
+    // Per-type count entry/edit now lives inline on each grid; the long-press
+    // menu keeps the whole-subject actions (reset / hide).
+    const actions = [];
+    if (hasCount) {
+      actions.push({
         text: t('diary.actionReset'),
-        style: 'destructive',
+        style: 'destructive' as const,
         onPress: () => {
           void hapticLight();
           resetSubject(groupName, subject.subject);
         },
-      },
-      hideAction,
-      cancelAction,
-    ]);
+      });
+    }
+    actions.push(hideAction, cancelAction);
+    Alert.alert(t('diary.actionsTitle'), subject.subjectFullName, actions);
   };
 
   return (
@@ -164,33 +167,70 @@ export const SubjectCard = ({
             </Text>
           </View>
 
-          <View style={styles.separator} />
+          {taskTypes.length > 0 && <View style={styles.separator} />}
 
-          {/* ── Bottom: enter-count button OR grid ── */}
-          {!hasCount ? (
-            <Pressable
-              ref={enterTutorialRef}
-              onPress={() => onRequestEnterCount(subject.subject, subject.subjectFullName, null)}
-              style={({ pressed }) => [styles.enterBtn, pressed && styles.enterBtnPressed]}
-            >
-              <Text {...textProps('body')} style={styles.enterBtnLabel}>
-                {t('diary.enterTaskCount')}
-              </Text>
-            </Pressable>
-          ) : (
-            <View ref={completeTutorialRef}>
-              <TaskGrid
-                count={progress.taskCount as number}
-                completed={progress.completed}
-                onToggle={(idx) => {
-                  const wasDone = progress.completed.includes(idx);
-                  toggleTask(groupName, subject.subject, idx);
-                  // Marking a task as done = activity for the fire streak.
-                  if (!wasDone) FireController.registerHomework();
-                }}
-              />
-            </View>
-          )}
+          {/* ── Bottom: one enter-count button OR grid per task type (ЛР / ПЗ) ── */}
+          <View ref={hasCount ? completeTutorialRef : enterTutorialRef} style={styles.typeSections}>
+            {taskTypes.map((type) => {
+              const tprog = progress[type];
+              const count = tprog.taskCount;
+              const typeHasCount = count != null && count > 0;
+              const color = LESSON_TYPE_COLORS[type];
+              return (
+                <View key={type} style={styles.typeSection}>
+                  <View style={styles.typeHeaderRow}>
+                    <View style={[styles.typeTag, { backgroundColor: color + '1F' }]}>
+                      <View style={[styles.typeDot, { backgroundColor: color }]} />
+                      <Text {...textProps('subhead')} style={[styles.typeTagLabel, { color }]}>
+                        {type}
+                      </Text>
+                    </View>
+                    {typeHasCount && (
+                      <Text {...textProps('footnote')} style={styles.typeProgress}>
+                        {tprog.completed.length}/{count}
+                      </Text>
+                    )}
+                    <View style={styles.typeHeaderSpacer} />
+                    {typeHasCount && (
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() =>
+                          onRequestEnterCount(subject.subject, subject.subjectFullName, type, count)
+                        }
+                        accessibilityRole="button"
+                        accessibilityLabel={t('diary.actionEdit')}
+                      >
+                        <Ionicons name="pencil" size={15} color={Palette.textTertiary} />
+                      </Pressable>
+                    )}
+                  </View>
+                  {typeHasCount ? (
+                    <TaskGrid
+                      count={count}
+                      completed={tprog.completed}
+                      onToggle={(idx) => {
+                        const wasDone = tprog.completed.includes(idx);
+                        toggleTask(groupName, subject.subject, type, idx);
+                        // Marking a task as done = activity for the fire streak.
+                        if (!wasDone) FireController.registerHomework();
+                      }}
+                    />
+                  ) : (
+                    <Pressable
+                      onPress={() =>
+                        onRequestEnterCount(subject.subject, subject.subjectFullName, type, null)
+                      }
+                      style={({ pressed }) => [styles.enterBtn, pressed && styles.enterBtnPressed]}
+                    >
+                      <Text {...textProps('body')} style={styles.enterBtnLabel}>
+                        {t('diary.enterTaskCount')}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
+          </View>
         </Animated.View>
       </Pressable>
     </Animated.View>
@@ -275,6 +315,41 @@ const makeStyles = (Palette: PaletteType) =>
     separator: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: Palette.separator,
+    },
+    typeSections: {
+      gap: Spacing.lg,
+    },
+    typeSection: {
+      gap: Spacing.sm,
+    },
+    typeHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    typeTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: 3,
+      borderRadius: Radius.pill,
+    },
+    typeDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    typeTagLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    typeProgress: {
+      color: Palette.textSecondary,
+      fontWeight: '600',
+    },
+    typeHeaderSpacer: {
+      flex: 1,
     },
     enterBtn: {
       backgroundColor: Palette.background,
