@@ -68,7 +68,9 @@ export const AvatarGroup = ({ items, size = 48, overlap, max = 2, maxChars }: Pr
       )}
       {reversed.map((item, i) => (
         <View
-          key={i}
+          // Key by stable identity (uri + initials), not array index, so React
+          // does not reuse an Avatar instance across different teachers.
+          key={`${item.uri ?? 'noimg'}:${item.initials}:${i}`}
           style={[
             styles.avatarWrapper,
             // eslint-disable-next-line react-native/no-inline-styles -- dynamic runtime value

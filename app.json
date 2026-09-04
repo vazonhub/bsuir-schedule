@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "by.vazon.bsuirschedule",
-      "buildNumber": "52",
+      "buildNumber": "53",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "ru", "be"],
@@ -255,7 +255,7 @@
     },
     "android": {
       "package": "by.vazon.bsuirtime",
-      "versionCode": 21,
+      "versionCode": 22,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon.png",
         "backgroundColor": "#3A547F"
@@ -271,6 +271,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Разрешите доступ к фото, чтобы прикреплять изображения к заметкам дневника."
+        }
+      ],
       "./plugins/withWidget",
       [
         "expo-icloud-kv",

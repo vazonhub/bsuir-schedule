@@ -10,12 +10,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
 import { UnityBanner } from '@components/UnityBanner';
+import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
+import type { DiaryTaskType } from '@stores/diary.store';
 import {
   usePreferencesStore,
   selectBlockedLessons,
@@ -29,9 +31,12 @@ import { textProps } from '@theme/typography';
 import { extractDiarySubjects } from '@utils/diary';
 import type { DiarySubject } from '@utils/diary';
 
-import { DiaryStats } from './DiaryStats';
 import { EnterTaskCountSheet } from './EnterTaskCountSheet';
 import type { EnterTaskCountSheetRef } from './EnterTaskCountSheet';
+import { NoteSheet } from './NoteSheet';
+import type { NoteSheetRef } from './NoteSheet';
+import { SubjectLessonsSheet } from '@views/lesson/SubjectLessonsSheet';
+import type { SubjectLessonsSheetRef } from '@views/lesson/SubjectLessonsSheet';
 import { HiddenSubjectStrip } from './HiddenSubjectStrip';
 import { StreakBadge } from './StreakBadge';
 import { SubjectCard } from './SubjectCard';
@@ -66,6 +71,8 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
+  const noteSheetRef = useRef<NoteSheetRef>(null);
+  const nearestSheetRef = useRef<SubjectLessonsSheetRef>(null);
   const listRef = useRef<FlatList<ListItem>>(null);
   const scrollOffsetRef = useRef(0);
   const setOnboardingSeen = usePreferencesStore((s) => s.setDiaryOnboardingSeen);
@@ -131,18 +138,29 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   );
 
   const handleRequestEnterCount = useCallback(
-    (subject: string, subjectFullName: string, initial: number | null) => {
-      sheetRef.current?.present({ subject, subjectFullName, initial });
+    (subject: string, subjectFullName: string, type: DiaryTaskType, initial: number | null) => {
+      sheetRef.current?.present({ subject, subjectFullName, type, initial });
     },
     [],
   );
 
   const handleSubmitCount = useCallback(
-    (subject: string, count: number) => {
-      setTaskCount(groupName, subject, count);
+    (subject: string, type: DiaryTaskType, count: number) => {
+      setTaskCount(groupName, subject, type, count);
     },
     [groupName, setTaskCount],
   );
+
+  const handleRequestNote = useCallback(
+    (subject: string, subjectFullName: string, type: DiaryTaskType, index: number) => {
+      noteSheetRef.current?.present({ subject, subjectFullName, type, index });
+    },
+    [],
+  );
+
+  const handleRequestNearest = useCallback((subject: string) => {
+    nearestSheetRef.current?.present(subject);
+  }, []);
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
@@ -218,16 +236,6 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             data={listData}
             onScroll={handleScroll}
             scrollEventThrottle={16}
-            ListHeaderComponent={
-              <DiaryStats
-                groupName={groupName}
-                schedule={schedule}
-                currentWeek={currentWeek}
-                subgroup={subgroup}
-                blocked={blocked}
-                subjects={visible}
-              />
-            }
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
               return `${item.kind}:${item.subject.subject}`;
@@ -238,7 +246,10 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
                   <SubjectCard
                     subject={item.subject}
                     groupName={groupName}
+                    subgroup={subgroup}
                     onRequestEnterCount={handleRequestEnterCount}
+                    onRequestNote={handleRequestNote}
+                    onRequestNearest={handleRequestNearest}
                     isTutorialTarget={index === 0}
                   />
                 );
@@ -276,6 +287,12 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             }
           />
           <EnterTaskCountSheet ref={sheetRef} onSubmit={handleSubmitCount} />
+          <NoteSheet ref={noteSheetRef} groupName={groupName} />
+          <SubjectLessonsSheet
+            ref={nearestSheetRef}
+            schedule={schedule}
+            currentWeek={currentWeek}
+          />
         </SafeAreaView>
         <TutorialRunner
           hasSubjects={visible.length > 0}
@@ -336,7 +353,7 @@ const TutorialRunner = ({
   // Trigger for the first showing (and a re-run after the flag is reset).
   // Gated on focus — so the tutorial doesn't start while the tab is in the background.
   useEffect(() => {
-    if (!isFocused || !hydrated || seen || !hasSubjects || active) return;
+    if (!ONBOARDING_ENABLED || !isFocused || !hydrated || seen || !hasSubjects || active) return;
     const timer = setTimeout(() => start(), 450);
     return () => clearTimeout(timer);
   }, [isFocused, hydrated, seen, hasSubjects, active, start]);
