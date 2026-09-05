@@ -292,6 +292,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             ref={nearestSheetRef}
             schedule={schedule}
             currentWeek={currentWeek}
+            subgroup={subgroup}
           />
         </SafeAreaView>
         <TutorialRunner

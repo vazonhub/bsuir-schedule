@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
+import type { SubgroupChoice } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 import { formatDiaryWhen } from '@utils/diary';
@@ -14,6 +15,9 @@ import { getLessonTypeFullName } from '@utils/lesson';
 import { flattenSchedule } from '@utils/scheduleNormalization';
 
 type PaletteType = ReturnType<typeof usePalette>;
+
+/** Only submission-bearing lessons are listed here — lectures are excluded. */
+const NEAREST_LESSON_TYPES: ReadonlySet<string> = new Set(['ЛР', 'ПЗ']);
 
 export interface SubjectLessonsSheetRef {
   present(subject: string): void;
@@ -23,15 +27,18 @@ export interface SubjectLessonsSheetRef {
 interface Props {
   schedule: ScheduleDto;
   currentWeek: CurrentWeekNumber;
+  /** User's chosen subgroup: 0 = all, 1|2 = specific. */
+  subgroup: SubgroupChoice;
 }
 
 /**
- * Bottom sheet listing the nearest (today + future) occurrences of a single
- * subject — labs, practicals, lectures, everything — in a scrollable list.
+ * Bottom sheet listing the nearest (today + future) ЛР / ПЗ occurrences of a
+ * single subject — lectures are excluded. When a subgroup is selected, only
+ * shared (numSubgroup=0) and matching-subgroup lessons are shown.
  * Opened from the icon next to a lesson's title.
  */
 export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
-  ({ schedule, currentWeek }, ref) => {
+  ({ schedule, currentWeek, subgroup }, ref) => {
     const { t } = useTranslation();
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -51,10 +58,20 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
 
     const lessons = useMemo(() => {
       if (!subject) return [];
-      return flattenSchedule(schedule, currentWeek, new Date()).filter(
-        (l) => l.raw.subject === subject,
-      );
-    }, [subject, schedule, currentWeek]);
+      return flattenSchedule(schedule, currentWeek, new Date()).filter((l) => {
+        if (l.raw.subject !== subject) return false;
+        // Only ЛР / ПЗ — lectures are never listed here.
+        if (!l.raw.lessonTypeAbbrev || !NEAREST_LESSON_TYPES.has(l.raw.lessonTypeAbbrev)) {
+          return false;
+        }
+        // With a subgroup selected, keep shared (numSubgroup=0) and matching
+        // lessons only; drop the other subgroup's occurrences.
+        if (subgroup !== 0 && l.raw.numSubgroup !== 0 && l.raw.numSubgroup !== subgroup) {
+          return false;
+        }
+        return true;
+      });
+    }, [subject, schedule, currentWeek, subgroup]);
 
     return (
       <BottomSheetModal
