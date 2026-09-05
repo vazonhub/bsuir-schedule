@@ -507,6 +507,11 @@
         {
           "ios": {
             "deploymentTarget": "15.1"
+          },
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# Keep our app + widget provider classes referenced by reflection from the manifest.\n-keep class by.vazon.bsuirtime.** { *; }\n# react-native-android-widget resolves widget classes by name.\n-keep class com.reactnativeandroidwidget.** { *; }\n# Keep annotated members RN/Expo native modules access via reflection.\n-keepclassmembers class * { @com.facebook.react.bridge.ReactMethod <methods>; }"
           }
         }
       ],
