@@ -30,6 +30,20 @@ type PaletteType = ReturnType<typeof usePalette>;
  */
 const markdownItInstance = MarkdownIt({ typographer: true, linkify: true });
 
+/**
+ * Allow the `file:` scheme so attachments (images/files picked from the device
+ * and copied under `documentDirectory`) tokenize into image/link nodes instead
+ * of staying as raw `![](file://…)` text. Keeps markdown-it's other guards
+ * (`javascript:`/`vbscript:`, non-image `data:`).
+ */
+markdownItInstance.validateLink = (url: string) => {
+  const str = url.trim().toLowerCase();
+  if (str.startsWith('file:')) return true;
+  return /^(vbscript|javascript|data):/.test(str)
+    ? /^data:image\/(gif|png|jpeg|webp);/.test(str)
+    : true;
+};
+
 interface Payload {
   subject: string;
   subjectFullName: string;

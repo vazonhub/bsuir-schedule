@@ -702,21 +702,33 @@ export const ScheduleView = ({
     ],
   );
 
-  const keyExtractor = useCallback((item: ScheduleRow) => item.key, []);
   // Encode the visual variant of a lesson (full / compact / blocked) in the
   // recycle type. Otherwise FlashList reuses one pool for all lessons and, on
   // Android, a recycled cell keeps a stale height when a full card is reused as
   // a compact one (or vice versa) — the "all pairs vanish except subgroup ones"
   // bug when switching subgroup or fling-scrolling.
-  const getItemType = useCallback(
-    (item: ScheduleRow) => {
-      if (item.type !== 'lesson') return item.type;
-      const l = item.lesson;
+  const lessonVariant = useCallback(
+    (l: NormalizedLesson): 'lesson-blocked' | 'lesson-compact' | 'lesson' => {
       if (isLessonBlocked(l)) return 'lesson-blocked';
       if (!isMineSubgroup(l.raw.numSubgroup)) return 'lesson-compact';
       return 'lesson';
     },
     [isLessonBlocked, isMineSubgroup],
+  );
+
+  // Bake the lesson variant into the key so a lesson that flips full<->compact
+  // when the subgroup changes gets a *fresh* cell instead of a recycled one.
+  // getItemType alone is not enough on Android FlashList v2: a recycled cell
+  // keeps the stale (collapsed) height of the previous variant, leaving the
+  // card background but no content ("фон блока остаётся, а сам блок пропадает").
+  const keyExtractor = useCallback(
+    (item: ScheduleRow) =>
+      item.type === 'lesson' ? `${item.key}:${lessonVariant(item.lesson)}` : item.key,
+    [lessonVariant],
+  );
+  const getItemType = useCallback(
+    (item: ScheduleRow) => (item.type === 'lesson' ? lessonVariant(item.lesson) : item.type),
+    [lessonVariant],
   );
 
   // extraData: forces FlashList to re-render visible rows when the subgroup /
