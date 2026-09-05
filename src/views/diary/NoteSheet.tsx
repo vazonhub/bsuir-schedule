@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { MarkdownIt } from 'react-native-markdown-display';
 
 import { FireController } from '@controllers/fire.controller';
 import { useIsDark, usePalette } from '@hooks/usePalette';
@@ -22,6 +22,27 @@ import { hapticLight } from '@utils/haptics';
 import { pickFileForNote, pickImageForNote } from '@utils/noteAttachments';
 
 type PaletteType = ReturnType<typeof usePalette>;
+
+/**
+ * Markdown renderer with autolinking on: a bare pasted URL (not just the
+ * `[text](url)` form) becomes a tappable link. `typographer` matches the
+ * library's default instance.
+ */
+const markdownItInstance = MarkdownIt({ typographer: true, linkify: true });
+
+/**
+ * Allow the `file:` scheme so attachments (images/files picked from the device
+ * and copied under `documentDirectory`) tokenize into image/link nodes instead
+ * of staying as raw `![](file://…)` text. Keeps markdown-it's other guards
+ * (`javascript:`/`vbscript:`, non-image `data:`).
+ */
+markdownItInstance.validateLink = (url: string) => {
+  const str = url.trim().toLowerCase();
+  if (str.startsWith('file:')) return true;
+  return /^(vbscript|javascript|data):/.test(str)
+    ? /^data:image\/(gif|png|jpeg|webp);/.test(str)
+    : true;
+};
 
 interface Payload {
   subject: string;
@@ -217,6 +238,7 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
                 </Text>
               ) : (
                 <Markdown
+                  markdownit={markdownItInstance}
                   style={mdStyles}
                   onLinkPress={(url) => {
                     void Linking.openURL(url).catch(() => {
