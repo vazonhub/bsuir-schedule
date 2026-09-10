@@ -102,6 +102,10 @@ export const GroupPickerScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, pinnedGroupNames, i18n.language]);
 
+  // Key of the last group section — used to drop the trailing banner so ads sit
+  // *between* faculties, not after the last one.
+  const lastGroupSectionKey = groupSections[groupSections.length - 1]?.key;
+
   // ─── Employees ───
   const employees = useEmployeesStore((s) => s.items);
   const employeesLoading = useEmployeesStore((s) => s.isLoading);
@@ -275,7 +279,7 @@ export const GroupPickerScreen = () => {
                     />
                   )}
                   renderSectionFooter={({ section }) =>
-                    section.key === PINNED_SECTION_KEY ? (
+                    section.key !== lastGroupSectionKey ? (
                       <View style={styles.bannerWrap}>
                         <UnityBanner />
                       </View>
