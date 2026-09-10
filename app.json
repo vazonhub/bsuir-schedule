@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "by.vazon.bsuirschedule",
-      "buildNumber": "55",
+      "buildNumber": "56",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "ru", "be"],
@@ -255,7 +255,7 @@
     },
     "android": {
       "package": "by.vazon.bsuirtime",
-      "versionCode": 24,
+      "versionCode": 25,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon.png",
         "backgroundColor": "#3A547F"
