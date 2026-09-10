@@ -43,8 +43,12 @@ import { SubjectCard } from './SubjectCard';
 
 type ListItem =
   | { kind: 'card'; subject: DiarySubject }
+  | { kind: 'banner'; id: number }
   | { kind: 'hiddenHeader' }
   | { kind: 'hidden'; subject: DiarySubject };
+
+/** Insert an inline banner after every Nth visible subject card. */
+const BANNER_EVERY = 3;
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -120,7 +124,15 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   }, [subjects, hiddenList]);
 
   const listData: ListItem[] = useMemo(() => {
-    const out: ListItem[] = visible.map((s) => ({ kind: 'card', subject: s }));
+    const out: ListItem[] = [];
+    let bannerId = 0;
+    visible.forEach((s, i) => {
+      out.push({ kind: 'card', subject: s });
+      // A banner after every Nth card, but not trailing after the last one.
+      if ((i + 1) % BANNER_EVERY === 0 && i + 1 < visible.length) {
+        out.push({ kind: 'banner', id: bannerId++ });
+      }
+    });
     if (hidden.length > 0) {
       out.push({ kind: 'hiddenHeader' });
       for (const s of hidden) out.push({ kind: 'hidden', subject: s });
@@ -238,9 +250,17 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             scrollEventThrottle={16}
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
+              if (item.kind === 'banner') return `banner:${item.id}`;
               return `${item.kind}:${item.subject.subject}`;
             }}
             renderItem={({ item, index }) => {
+              if (item.kind === 'banner') {
+                return (
+                  <View style={styles.inlineBannerWrap}>
+                    <UnityBanner />
+                  </View>
+                );
+              }
               if (item.kind === 'card') {
                 return (
                   <SubjectCard
@@ -272,11 +292,6 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
               );
             }}
             ItemSeparatorComponent={() => <View style={styles.gap} />}
-            ListFooterComponent={
-              <View style={styles.bannerWrap}>
-                <UnityBanner />
-              </View>
-            }
             contentContainerStyle={contentContainerStyle}
             refreshControl={
               <RefreshControl
@@ -460,9 +475,9 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
-    bannerWrap: {
+    inlineBannerWrap: {
       alignItems: 'center',
-      marginTop: Spacing.xl,
+      paddingVertical: Spacing.sm,
     },
     hiddenHeaderWrap: {
       paddingTop: Spacing.xl,
