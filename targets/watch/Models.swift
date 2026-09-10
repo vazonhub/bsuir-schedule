@@ -143,9 +143,3 @@ extension WatchSnapshot {
   }
 }
 
-extension WatchDayBlock {
-  /// Lessons that belong to the user's selected subgroup (shared always shown).
-  var visibleLessons: [WatchLesson] {
-    lessons.filter { $0.isMine }
-  }
-}

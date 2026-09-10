@@ -16,7 +16,9 @@ struct DayView: View {
             .foregroundStyle(.orange)
         }
 
-        let lessons = day.visibleLessons
+        // Show every lesson, including other subgroups' — LessonRow renders those
+        // in a muted, dashed style (matches the phone app).
+        let lessons = day.lessons
         if lessons.isEmpty {
           Text(snapshot.strings.noClasses)
             .font(.footnote)
