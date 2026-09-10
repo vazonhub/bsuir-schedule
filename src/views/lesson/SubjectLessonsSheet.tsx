@@ -1,23 +1,36 @@
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
+import { UnityBanner } from '@components/UnityBanner';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
 import { Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
-import { formatDiaryWhen } from '@utils/diary';
-import { getLessonTypeFullName } from '@utils/lesson';
+import { formatDayDate, formatDayName, isSameDay } from '@utils/date';
+import { getLessonTimeStatus } from '@utils/lesson';
 import { flattenSchedule } from '@utils/scheduleNormalization';
+import type { NormalizedLesson } from '@utils/scheduleNormalization';
+import { LessonCard } from '@views/lesson/LessonCard';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
 /** Only submission-bearing lessons are listed here — lectures are excluded. */
 const NEAREST_LESSON_TYPES: ReadonlySet<string> = new Set(['ЛР', 'ПЗ']);
+
+/** Insert a banner after every Nth lesson block. */
+const BANNER_EVERY = 3;
+
+/** Row stream: a compact date header, a lesson block, or an inline banner. */
+type Row =
+  | { kind: 'date'; date: Date; key: string }
+  | { kind: 'lesson'; lesson: NormalizedLesson }
+  | { kind: 'banner'; id: number };
+
+const dateKeyOf = (date: Date): string =>
+  `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
 export interface SubjectLessonsSheetRef {
   present(subject: string): void;
@@ -36,14 +49,16 @@ interface Props {
  * single subject — lectures are excluded. When a subgroup is selected, only
  * shared (numSubgroup=0) and matching-subgroup lessons are shown.
  * Opened from the icon next to a lesson's title.
+ *
+ * Lessons render with the same `LessonCard` block used on the main schedule so
+ * the look is identical; each day gets a compact (de-emphasized) date header and
+ * a banner is interleaved after every few lessons.
  */
 export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
   ({ schedule, currentWeek, subgroup }, ref) => {
     const { t } = useTranslation();
     const Palette = usePalette();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
-    const getLessonColor = useGetLessonAccentColor();
-    const locationIcon = useIconName('location');
     const sheetRef = useRef<BottomSheetModal>(null);
     const [subject, setSubject] = useState<string | null>(null);
     const snapPoints = useMemo(() => ['55%', '90%'], []);
@@ -73,6 +88,30 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
       });
     }, [subject, schedule, currentWeek, subgroup]);
 
+    // Build the render stream: a date header per day, lesson blocks, and a
+    // banner after every BANNER_EVERY lessons (never trailing).
+    const rows = useMemo(() => {
+      const out: Row[] = [];
+      let prevDateKey: string | null = null;
+      let lessonCount = 0;
+      let bannerId = 0;
+      for (const lesson of lessons) {
+        const dk = dateKeyOf(lesson.date);
+        if (dk !== prevDateKey) {
+          out.push({ kind: 'date', date: lesson.date, key: dk });
+          prevDateKey = dk;
+        }
+        out.push({ kind: 'lesson', lesson });
+        lessonCount += 1;
+        if (lessonCount % BANNER_EVERY === 0) out.push({ kind: 'banner', id: bannerId++ });
+      }
+      // Drop a trailing banner so ads sit *between* lessons, not after the last.
+      if (out[out.length - 1]?.kind === 'banner') out.pop();
+      return out;
+    }, [lessons]);
+
+    const now = new Date();
+
     return (
       <BottomSheetModal
         ref={sheetRef}
@@ -91,55 +130,49 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
           </Text>
         </View>
         <BottomSheetScrollView contentContainerStyle={styles.content}>
-          {lessons.length === 0 ? (
+          {rows.length === 0 ? (
             <View style={styles.empty}>
               <Text {...textProps('callout')} style={styles.emptyText}>
                 {t('lesson.nearestOfSubjectEmpty')}
               </Text>
             </View>
           ) : (
-            lessons.map((lesson) => {
-              const type = lesson.raw.lessonTypeAbbrev;
-              const accent = getLessonColor(type);
-              const auditories = (lesson.raw.auditories ?? []).join(', ');
-              return (
-                <View key={lesson.key} style={styles.row}>
-                  <View style={[styles.typeStripe, { backgroundColor: accent }]} />
-                  <View style={styles.rowBody}>
-                    <View style={styles.rowTop}>
-                      <Text {...textProps('body')} style={styles.when} numberOfLines={1}>
-                        {formatDiaryWhen(lesson.date, lesson.startTime, new Date())}
-                      </Text>
-                      {type && (
-                        <View style={[styles.typeBadge, { backgroundColor: accent + '1A' }]}>
-                          <Text
-                            {...textProps('tiny')}
-                            style={[styles.typeBadgeText, { color: accent }]}
-                          >
-                            {getLessonTypeFullName(type)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.rowMeta}>
-                      <Text {...textProps('footnote')} style={styles.time}>
-                        {lesson.startTime}–{lesson.endTime}
-                      </Text>
-                      {auditories.length > 0 && (
-                        <View style={styles.auditory}>
-                          <Ionicons
-                            name={locationIcon as never}
-                            size={13}
-                            color={Palette.textTertiary}
-                          />
-                          <Text {...textProps('footnote')} style={styles.auditoryText}>
-                            {auditories}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
+            rows.map((row) => {
+              if (row.kind === 'banner') {
+                return (
+                  <View key={`banner:${row.id}`} style={styles.bannerWrap}>
+                    <UnityBanner />
                   </View>
-                </View>
+                );
+              }
+              if (row.kind === 'date') {
+                const isToday = isSameDay(row.date, now);
+                const status = isToday ? t('date.today') : null;
+                return (
+                  <View key={`date:${row.key}`} style={styles.dateHeader}>
+                    <Text style={styles.dateDayName} numberOfLines={1}>
+                      {formatDayName(row.date)}
+                    </Text>
+                    <Text style={styles.dateDate} numberOfLines={1}>
+                      {formatDayDate(row.date)}
+                    </Text>
+                    {status != null && <Text style={styles.dateStatus}>{status}</Text>}
+                  </View>
+                );
+              }
+              const lesson = row.lesson;
+              return (
+                <LessonCard
+                  key={lesson.key}
+                  lesson={lesson}
+                  timeStatus={
+                    isSameDay(lesson.date, now)
+                      ? getLessonTimeStatus(lesson, now)
+                      : lesson.isPast
+                        ? { kind: 'past' as const }
+                        : null
+                  }
+                />
               );
             })
           )}
@@ -154,7 +187,9 @@ SubjectLessonsSheet.displayName = 'SubjectLessonsSheet';
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     background: {
-      backgroundColor: Palette.card,
+      // Screen background (not card) so the `LessonCard` blocks stand out just
+      // like on the main schedule instead of blending into the sheet.
+      backgroundColor: Palette.background,
       borderRadius: Radius.xl,
     },
     handle: {
@@ -176,9 +211,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textSecondary,
     },
     content: {
-      paddingHorizontal: Spacing.xl,
+      // No horizontal padding — LessonCard brings its own screen-edge margins,
+      // matching the main schedule exactly.
       paddingBottom: Spacing.xxxl + 40,
-      gap: Spacing.cardGap,
     },
     empty: {
       alignItems: 'center',
@@ -188,56 +223,34 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textSecondary,
       textAlign: 'center',
     },
-    row: {
+    // Compact, de-emphasized date header — smaller than the main-screen DayHeader
+    // so the accent stays on the lesson block.
+    dateHeader: {
       flexDirection: 'row',
-      backgroundColor: Palette.background,
-      borderRadius: Radius.lg,
-      overflow: 'hidden',
+      alignItems: 'baseline',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.screenPadding + Spacing.xs,
+      paddingTop: Spacing.md,
+      paddingBottom: Spacing.sm,
     },
-    typeStripe: {
-      width: 4,
-    },
-    rowBody: {
-      flex: 1,
-      paddingHorizontal: Spacing.lg,
-      paddingVertical: Spacing.md,
-      gap: 4,
-    },
-    rowTop: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: Spacing.md,
-    },
-    when: {
-      flex: 1,
-      fontSize: 15,
-      fontWeight: '600',
+    dateDayName: {
+      fontSize: 14,
+      fontWeight: '700',
       color: Palette.textPrimary,
     },
-    typeBadge: {
-      paddingHorizontal: Spacing.md,
-      paddingVertical: 2,
-      borderRadius: Radius.pill,
-    },
-    typeBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-    },
-    rowMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.lg,
-    },
-    time: {
+    dateDate: {
+      fontSize: 12,
+      fontWeight: '500',
       color: Palette.textSecondary,
     },
-    auditory: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3,
+    dateStatus: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: Palette.accent,
     },
-    auditoryText: {
-      color: Palette.textTertiary,
+    bannerWrap: {
+      alignItems: 'center',
+      paddingVertical: Spacing.md,
     },
   });

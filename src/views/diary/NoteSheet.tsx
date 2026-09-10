@@ -6,13 +6,23 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { useNavigation } from 'expo-router';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Markdown, { MarkdownIt } from 'react-native-markdown-display';
 
 import { FireController } from '@controllers/fire.controller';
 import { useIsDark, usePalette } from '@hooks/usePalette';
+import { showInterstitialAd } from '@services/ads';
 import { useDiaryStore } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
 import { Radius, Spacing } from '@theme';
@@ -66,6 +76,7 @@ interface Props {
  */
 export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) => {
   const { t } = useTranslation();
+  const navigation = useNavigation();
   const Palette = usePalette();
   const isDark = useIsDark();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
@@ -79,6 +90,10 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
   const [editing, setEditing] = useState(false);
   const [done, setDone] = useState(false);
   const snapPoints = useMemo(() => ['92%'], []);
+  // The note text the sheet opened with — used to detect an edit on dismiss.
+  const initialNoteRef = useRef('');
+  // Whether the user marked the task done during this session (interstitial trigger).
+  const markedDoneRef = useRef(false);
 
   const save = useCallback(
     (value: string) => {
@@ -94,12 +109,20 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       const note = entry?.notes?.[p.index] ?? '';
       setPayload(p);
       setText(note);
+      initialNoteRef.current = note;
+      markedDoneRef.current = false;
       setDone(entry?.completed.includes(p.index) ?? false);
       setEditing(note.trim().length === 0); // new note → open straight into edit
+      // Disable the screen's back-swipe while the sheet is open, otherwise an
+      // edge swipe pops the tab instead of closing the sheet.
+      navigation.setOptions({ gestureEnabled: false });
       sheetRef.current?.present();
     },
     dismiss: () => sheetRef.current?.dismiss(),
   }));
+
+  // Restore the back-swipe if the sheet host unmounts while still open.
+  useEffect(() => () => navigation.setOptions({ gestureEnabled: true }), [navigation]);
 
   const handleDone = useCallback(() => {
     save(text);
@@ -110,12 +133,16 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
     if (!payload) return;
     void hapticLight();
     toggleTask(groupName, payload.subject, payload.type, payload.index);
-    setDone((prev) => {
+    const next = !done;
+    // Side effects live in the handler (not the setState updater): marking done
+    // writes to the fire store, which must not happen during another render.
+    if (next) {
       // Marking done = activity for the fire streak (un-checking is not).
-      if (!prev) FireController.registerHomework();
-      return !prev;
-    });
-  }, [payload, groupName, toggleTask]);
+      FireController.registerHomework();
+      markedDoneRef.current = true;
+    }
+    setDone(next);
+  }, [payload, groupName, toggleTask, done]);
 
   const handleAttach = useCallback(
     async (kind: 'image' | 'file') => {
@@ -144,7 +171,13 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       backgroundStyle={styles.background}
       handleIndicatorStyle={styles.handle}
       onDismiss={() => {
+        navigation.setOptions({ gestureEnabled: true });
         save(text);
+        // Finished working with a task: show an interstitial if the user either
+        // marked it done or edited the description during this session.
+        if (markedDoneRef.current || text !== initialNoteRef.current) {
+          void showInterstitialAd();
+        }
         setPayload(null);
         setText('');
         setEditing(false);

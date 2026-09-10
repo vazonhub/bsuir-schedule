@@ -8,7 +8,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { FlameIcon } from '@components/fire/FlameIcon';
 import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
-import { showRewardedAd } from '@services/ads';
+import { showInterstitialAd, showRewardedAd } from '@services/ads';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
 import { Radius, Spacing } from '@theme';
 import { FIRE_COLORS } from '@theme/colors';
@@ -36,11 +36,24 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
   const core = useFireStore(useShallow(selectFireCore));
   const snapPoints = useMemo(() => ['70%'], []);
   const [loadingFreeze, setLoadingFreeze] = useState(false);
+  // Skip the on-close interstitial when the user just watched a rewarded ad for a
+  // freeze — avoids showing two full-screen ads back to back.
+  const rewardedThisSessionRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
-    present: () => sheetRef.current?.present(),
+    present: () => {
+      rewardedThisSessionRef.current = false;
+      sheetRef.current?.present();
+    },
     dismiss: () => sheetRef.current?.dismiss(),
   }));
+
+  const handleDismiss = useCallback(() => {
+    // Show an interstitial when leaving the fire sheet, unless a rewarded ad was
+    // already shown for a freeze during this session.
+    if (rewardedThisSessionRef.current) return;
+    void showInterstitialAd();
+  }, []);
 
   const accentColor = getFlameColor(core.current);
   const hasHistory = Object.keys(core.history).length > 0;
@@ -50,6 +63,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
     if (loadingFreeze) return;
     setLoadingFreeze(true);
     try {
+      rewardedThisSessionRef.current = true;
       const rewarded = await showRewardedAd();
       if (!rewarded) return;
       FireController.rewardFreeze();
@@ -63,6 +77,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
       ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
+      onDismiss={handleDismiss}
       backgroundStyle={{ backgroundColor: Palette.card }}
       handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
     >
