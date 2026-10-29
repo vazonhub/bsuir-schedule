@@ -7,7 +7,7 @@ import { UnityBanner } from '@components/UnityBanner';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 import { formatDayDate, formatDayName, isSameDay } from '@utils/date';
 import { getLessonTimeStatus } from '@utils/lesson';
@@ -117,6 +117,7 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={() => setSubject(null)}

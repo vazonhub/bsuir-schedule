@@ -28,6 +28,7 @@ import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
 import { usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import {
   selectBlockedLessons,
@@ -36,7 +37,7 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import type { Holiday } from '@models/holiday';
 import { useDeepLinkStore } from '@stores/deepLink.store';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
@@ -130,6 +131,9 @@ export const ScheduleView = ({
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // On wide layouts (iPad, unfolded foldables) the native tab bar moves to the
+  // side, so the fixed bottom tab-bar clearance would leave an empty gap.
+  const { isWide } = useWideLayout();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<FlashListRef<ScheduleRow>>(null);
@@ -395,14 +399,24 @@ export const ScheduleView = ({
   // when returning from a tab (neither top nor bottom), and the paddings don't
   // jump. The header is an absolute sibling.
   const listWrapStyle = useMemo(
-    () => ({ flex: 1, paddingTop: insets.top, paddingBottom: BOTTOM_CLEARANCE }),
-    [insets.top],
+    () => ({
+      flex: 1,
+      paddingTop: insets.top,
+      // When the tab bar is on the side (wide layout) only the home indicator
+      // needs clearance; otherwise reserve space for the bottom tab bar.
+      paddingBottom: isWide ? insets.bottom : BOTTOM_CLEARANCE,
+    }),
+    [insets.top, insets.bottom, isWide],
   );
 
   // Inside the scroll view (already between the notch and the tab bar) — only
   // the header gap on top and a small padding at the bottom.
   const contentStyle = useMemo(
     () => ({
+      // Cap + center the lesson column on wide screens (iPad).
+      width: '100%' as const,
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center' as const,
       paddingTop: BAR_CLEARANCE,
       paddingBottom: Spacing.md,
     }),
@@ -1064,8 +1078,8 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     photoFull: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').width,
+      width: '100%',
+      height: '100%',
     },
     photoCaption: {
       marginTop: Spacing.xl,

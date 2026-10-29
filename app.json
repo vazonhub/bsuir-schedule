@@ -573,7 +573,8 @@
       "react-native-iap",
       "@react-native-google-signin/google-signin",
       "./plugins/withModularHeaders",
-      "./plugins/withIosDeploymentTarget"
+      "./plugins/withIosDeploymentTarget",
+      "./plugins/withSceneDelegate"
     ],
     "extra": {
       "router": {},

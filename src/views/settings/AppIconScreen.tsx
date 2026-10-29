@@ -18,7 +18,7 @@ import { GlassButton } from '@components/GlassButton';
 import { APP_ICON_SECTIONS } from '@constants/appIcons';
 import { usePalette } from '@hooks/usePalette';
 import { showRewardedAd } from '@services/ads';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -52,9 +52,13 @@ export const AppIconScreen = () => {
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const { width: screenWidth } = useWindowDimensions();
-  const gridWidth = screenWidth - Spacing.screenPadding * 2;
-  const iconSize = Math.floor((gridWidth - MIN_GAP * (COLUMNS - 1)) / COLUMNS) - 8;
-  const iconGap = Math.floor((gridWidth - (iconSize + 8) * COLUMNS) / (COLUMNS - 1));
+  const isWide = screenWidth >= Layout.wideBreakpoint;
+  // Cap the grid to a readable width and use more columns on wide screens so
+  // tiles don't balloon on iPad.
+  const gridWidth = Math.min(screenWidth, Layout.maxContentWidth) - Spacing.screenPadding * 2;
+  const columns = isWide ? 6 : COLUMNS;
+  const iconSize = Math.floor((gridWidth - MIN_GAP * (columns - 1)) / columns) - 8;
+  const iconGap = Math.floor((gridWidth - (iconSize + 8) * columns) / (columns - 1));
 
   const [currentIcon, setCurrentIcon] = useState<string | null>(() => getCurrentIconName());
 
@@ -105,7 +109,8 @@ export const AppIconScreen = () => {
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md },
+          LayoutStyles.centeredContent,
+          { paddingBottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md },
         ]}
         showsVerticalScrollIndicator={false}
       >

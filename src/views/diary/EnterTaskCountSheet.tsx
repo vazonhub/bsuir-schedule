@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { DiaryTaskType } from '@stores/diary.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -106,6 +106,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         // The numeric keyboard covered the 30% sheet (input + Save, and
         // number-pad has no return key). Pin the sheet to the top of the
         // keyboard so its whole content stays reachable, and restore the 30%

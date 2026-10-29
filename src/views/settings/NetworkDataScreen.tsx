@@ -17,7 +17,7 @@ import { clearCloudSchedules } from '@services/cloud/syncService';
 import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Layout, Radius, Spacing } from '@theme';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -286,6 +286,9 @@ const makeStyles = (Palette: PaletteType) =>
     checkVisible: { opacity: 1 },
     checkHidden: { opacity: 0 },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.screenPadding,
@@ -300,6 +303,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     section: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,

@@ -5,7 +5,6 @@ import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   FlatList,
   Modal,
   Pressable,
@@ -13,6 +12,7 @@ import {
   SectionList,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +30,7 @@ import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useEmployeesStore } from '@stores/employees.store';
 import { useGroupsStore } from '@stores/groups.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 import { PINNED_SECTION_KEY, buildPinnedSection, groupByFaculty } from '@utils/groupGrouping';
 import {
@@ -45,8 +45,6 @@ import { SectionHeader } from '@views/groups/SectionHeader';
 
 type PaletteType = ReturnType<typeof usePalette>;
 type ScheduleTab = 'groups' | 'employees';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const SEGMENT_ACTIVE_FONT_DARK = '#FFFFFF';
 const SEGMENT_ACTIVE_FONT_LIGHT = '#000000';
@@ -66,6 +64,8 @@ export const ScheduleTabScreen = () => {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // Live width so the pane slide stays correct after rotation / Split View.
+  const { width: windowWidth } = useWindowDimensions();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const isDark = useIsDark();
@@ -131,12 +131,19 @@ export const ScheduleTabScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employees, pinnedEmployeeIds, i18n.language]);
 
+  // On wide layouts the native tab bar moves to the side — drop the bottom
+  // tab-bar clearance so the list doesn't leave an empty gap at the bottom.
+  const isWide = windowWidth >= Layout.wideBreakpoint;
   const listContent = useMemo(
     () => ({
+      // Cap + center the content column on wide screens (iPad).
+      width: '100%' as const,
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center' as const,
       paddingTop: Spacing.md,
-      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+      paddingBottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md,
     }),
-    [insets.bottom],
+    [insets.bottom, isWide],
   );
 
   useEffect(() => {
@@ -213,11 +220,11 @@ export const ScheduleTabScreen = () => {
 
   const groupsTranslateX = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -SCREEN_WIDTH],
+    outputRange: [0, -windowWidth],
   });
   const employeesTranslateX = slideAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [SCREEN_WIDTH, 0],
+    outputRange: [windowWidth, 0],
   });
   const groupsOpacity = slideAnim.interpolate({
     inputRange: [0, 0.5, 1],
@@ -418,6 +425,9 @@ const makeStyles = (Palette: PaletteType) =>
     emptyContent: { flexGrow: 1 },
     empty: { color: Palette.textSecondary, textAlign: 'center' },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
     },
@@ -427,6 +437,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     segmentWrapper: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
       paddingBottom: Spacing.md,
@@ -465,7 +478,7 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     photoFull: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').width,
+      width: '100%',
+      height: '100%',
     },
   });

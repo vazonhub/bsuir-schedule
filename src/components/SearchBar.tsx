@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { usePalette } from '@hooks/usePalette';
-import { Radius, Spacing } from '@theme';
+import { Layout, Radius, Spacing } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -78,6 +78,11 @@ export const SearchBar = ({ value, onChange, placeholder }: Props) => {
 const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     wrap: {
+      // Cap + center on wide screens (iPad) so the search bar aligns with the
+      // capped content column instead of stretching edge-to-edge.
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
       paddingBottom: Spacing.cardGap,

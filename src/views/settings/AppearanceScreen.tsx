@@ -40,7 +40,7 @@ import type {
   IconOverrides,
   LessonColorOverrides,
 } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -314,6 +314,7 @@ export const AppearanceScreen = () => {
         ref={scrollRef}
         contentContainerStyle={[
           styles.scroll,
+          LayoutStyles.centeredContent,
           { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md + (hasChanges ? 60 : 0) },
         ]}
         showsVerticalScrollIndicator={false}

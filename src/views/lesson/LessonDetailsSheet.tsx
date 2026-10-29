@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Avatar } from '@components/Avatar';
@@ -12,7 +12,7 @@ import { useAuditoryStatus } from '@hooks/useAuditoryStatus';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto, LessonStudentGroupDto, WeekNumber } from '@models/dto';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 import { getDayNames } from '@utils/date';
 import { hapticLight } from '@utils/haptics';
@@ -152,6 +152,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         ref={ref}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={onDismiss}
@@ -681,8 +682,8 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     photoFull: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').width,
+      width: '100%',
+      height: '100%',
     },
     photoCaption: {
       marginTop: Spacing.xl,
