@@ -32,7 +32,6 @@ import { ICON_COLOR_DEFAULTS, ICON_DEFAULTS } from '@hooks/useAppearance';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useWideLayout } from '@hooks/useWideLayout';
-import { showRewardedAd } from '@services/ads';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -243,21 +242,10 @@ export const AppearanceScreen = () => {
     }
   }, [draftColors, draftIcons, draftIconColors, applyScale, reduceMotion]);
 
-  /** Show reward-ad confirmation, then commit. */
+  /** Commit the draft to the store. */
   const applyChanges = useCallback(() => {
-    Alert.alert(t('settings.appearanceApplyTitle'), t('settings.appearanceApplyMessage'), [
-      {
-        text: t('settings.appearanceApplyButton'),
-        isPreferred: true,
-        onPress: async () => {
-          const rewarded = await showRewardedAd();
-          if (!rewarded) return;
-          commitDraft();
-        },
-      },
-      { text: t('common.cancel'), style: 'destructive' },
-    ]);
-  }, [t, commitDraft]);
+    commitDraft();
+  }, [commitDraft]);
 
   /** Back with unsaved-changes guard. */
   const handleBack = useCallback(() => {
@@ -265,13 +253,11 @@ export const AppearanceScreen = () => {
       router.back();
       return;
     }
-    Alert.alert(t('settings.unsavedTitle'), t('settings.unsavedMessageAd'), [
+    Alert.alert(t('settings.unsavedTitle'), t('settings.unsavedMessage'), [
       {
-        text: t('settings.unsavedSaveAd'),
+        text: t('settings.unsavedSave'),
         isPreferred: true,
-        onPress: async () => {
-          const rewarded = await showRewardedAd();
-          if (!rewarded) return;
+        onPress: () => {
           commitDraft();
           router.back();
         },

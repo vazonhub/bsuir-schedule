@@ -584,7 +584,14 @@ export function ScheduleWidget({ snapshot, size, widgetHeight }: ScheduleWidgetP
       ) : visibleLessons.length > 0 ? (
         <ListWidget style={{ width: FULL, height: FULL }}>
           {visibleLessons.map((lesson, idx) => (
-            <FlexWidget key={`l${idx}`} style={{ width: FULL, flexDirection: 'column' }}>
+            // Android strips the root FlexWidget's clickAction from ListWidget
+            // children, so each row needs its own action to open the app on tap.
+            <FlexWidget
+              key={`l${idx}`}
+              style={{ width: FULL, flexDirection: 'column' }}
+              clickAction="OPEN_URI"
+              clickActionData={{ uri: 'bsuirtime://' }}
+            >
               {idx > 0 ? <Separator pal={pal} /> : null}
               <LessonRow
                 lesson={lesson}

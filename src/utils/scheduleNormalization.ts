@@ -302,15 +302,13 @@ export const findUpcomingSectionIndex = (sections: ScheduleSection[], now: Date)
  *
  * `FlashList` works with a flat `data` array (no native section concept), so we
  * expand `ScheduleSection[]` into a typed row stream: a day `header`, its
- * `lesson` rows, an optional Unity `banner` after the section, and a one-off
- * `examsSeparator` before the first exam section. `getItemType` recycles views
- * per `type`; `key` is a stable list key.
+ * `lesson` rows, and a one-off `examsSeparator` before the first exam section.
+ * `getItemType` recycles views per `type`; `key` is a stable list key.
  */
 export type ScheduleRow =
   | { type: 'examsSeparator'; key: string }
   | { type: 'header'; key: string; section: ScheduleSection }
-  | { type: 'lesson'; key: string; lesson: NormalizedLesson }
-  | { type: 'banner'; key: string; sectionIndex: number };
+  | { type: 'lesson'; key: string; lesson: NormalizedLesson };
 
 interface BuildRowsOptions {
   /**
@@ -319,8 +317,6 @@ interface BuildRowsOptions {
    * preceding them).
    */
   examsSeparatorBeforeIndex?: number;
-  /** Combined-array section indices after which a Unity banner row is appended. */
-  bannerSectionIndices?: ReadonlySet<number>;
 }
 
 /** Stable list key for a section header (date + regular/exam discriminator). */
@@ -329,13 +325,13 @@ export const headerRowKey = (section: ScheduleSection): string =>
 
 /**
  * Expand day sections into a flat, typed row stream for `FlashList`.
- * Order per section: `[examsSeparator?]` → `header` → `lesson…` → `[banner?]`.
+ * Order per section: `[examsSeparator?]` → `header` → `lesson…`.
  */
 export const buildScheduleRows = (
   sections: ScheduleSection[],
   options: BuildRowsOptions = {},
 ): ScheduleRow[] => {
-  const { examsSeparatorBeforeIndex, bannerSectionIndices } = options;
+  const { examsSeparatorBeforeIndex } = options;
   const rows: ScheduleRow[] = [];
   for (let i = 0; i < sections.length; i++) {
     const section = sections[i];
@@ -346,9 +342,6 @@ export const buildScheduleRows = (
     rows.push({ type: 'header', key: headerRowKey(section), section });
     for (const lesson of section.data) {
       rows.push({ type: 'lesson', key: `lesson:${lesson.key}`, lesson });
-    }
-    if (bannerSectionIndices?.has(i)) {
-      rows.push({ type: 'banner', key: `banner:${i}`, sectionIndex: i });
     }
   }
   return rows;

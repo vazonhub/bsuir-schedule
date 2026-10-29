@@ -17,7 +17,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GlassButton } from '@components/GlassButton';
 import { APP_ICON_SECTIONS } from '@constants/appIcons';
 import { usePalette } from '@hooks/usePalette';
-import { showRewardedAd } from '@services/ads';
 import { Layout, LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -63,31 +62,16 @@ export const AppIconScreen = () => {
   const [currentIcon, setCurrentIcon] = useState<string | null>(() => getCurrentIconName());
 
   const handleSelect = useCallback(
-    (key: string | null) => {
+    async (key: string | null) => {
       if (key === currentIcon) return;
-
-      Alert.alert(t('settings.appIconApplyTitle'), t('settings.appIconApplyMessage'), [
-        {
-          text: t('settings.appIconApplyButton'),
-          isPreferred: true,
-          onPress: async () => {
-            const rewarded = await showRewardedAd();
-            if (!rewarded) return;
-            try {
-              await changeIcon(key);
-              setCurrentIcon(key);
-            } catch (err) {
-              Alert.alert('Error', String(err));
-            }
-          },
-        },
-        {
-          text: t('common.cancel'),
-          style: 'destructive',
-        },
-      ]);
+      try {
+        await changeIcon(key);
+        setCurrentIcon(key);
+      } catch (err) {
+        Alert.alert('Error', String(err));
+      }
     },
-    [currentIcon, t],
+    [currentIcon],
   );
 
   return (

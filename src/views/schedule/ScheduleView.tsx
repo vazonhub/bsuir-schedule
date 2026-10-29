@@ -22,7 +22,6 @@ import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-
 
 import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
-import { UnityBanner } from '@components/UnityBanner';
 import { FireController } from '@controllers/fire.controller';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useIconName } from '@hooks/useAppearance';
@@ -317,28 +316,13 @@ export const ScheduleView = ({
     return -1;
   }, [regularSections, examSections, firstExamSectionIndex, hasExams, today]);
 
-  // Banner indices for employee schedules: starting at upcomingIndex, every 3 days with lessons.
-  const bannerSectionIndices = useMemo(() => {
-    if (entityType !== 'employee') return new Set<number>();
-    const start = Math.max(0, upcomingIndex);
-    const indices = new Set<number>();
-    let count = 0;
-    for (let i = start; i < sections.length; i++) {
-      const s = sections[i];
-      if (!s || s.data.length === 0) continue;
-      if (count % 3 === 0) indices.add(i);
-      count++;
-    }
-    return indices;
-  }, [entityType, upcomingIndex, sections]);
-
-  // Flat row stream for FlashList: day header → lessons → (banner),
+  // Flat row stream for FlashList: day header → lessons,
   // with a one-off separator before the first exam section.
   const examsSeparatorBeforeIndex =
     hasExams && regularSections.length > 0 ? firstExamSectionIndex : undefined;
   const rows = useMemo(
-    () => buildScheduleRows(sections, { examsSeparatorBeforeIndex, bannerSectionIndices }),
-    [sections, examsSeparatorBeforeIndex, bannerSectionIndices],
+    () => buildScheduleRows(sections, { examsSeparatorBeforeIndex }),
+    [sections, examsSeparatorBeforeIndex],
   );
 
   // Header-row index for each section (in section order). Needed so that
@@ -613,8 +597,8 @@ export const ScheduleView = ({
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null; isViewable: boolean }[] }) => {
       // Take the topmost visible content row (a day header or a lesson),
-      // skipping the exams separator and the banner, so the date label shows
-      // the correct day at the exams boundary and doesn't "stick" to the banner.
+      // skipping the exams separator, so the date label shows the correct day
+      // at the exams boundary.
       let minIndex = Infinity;
       for (const token of viewableItems) {
         if (!token.isViewable || typeof token.index !== 'number') continue;
@@ -695,25 +679,9 @@ export const ScheduleView = ({
             />
           );
         }
-        case 'banner':
-          return (
-            <View style={styles.scheduleBannerWrap}>
-              <UnityBanner />
-            </View>
-          );
       }
     },
-    [
-      Palette,
-      today,
-      holidays,
-      isMineSubgroup,
-      isLessonBlocked,
-      entityType,
-      now,
-      handleLessonPress,
-      styles,
-    ],
+    [Palette, today, holidays, isMineSubgroup, isLessonBlocked, entityType, now, handleLessonPress],
   );
 
   // Encode the visual variant of a lesson (full / compact / blocked) in the
@@ -990,10 +958,6 @@ const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
-    scheduleBannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
-    },
     loadPastBtn: {
       flexDirection: 'row',
       alignItems: 'center',

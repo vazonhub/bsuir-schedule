@@ -1,4 +1,4 @@
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   forwardRef,
   useCallback,
@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ElementRef,
 } from 'react';
 import {
   InputAccessoryView,
@@ -15,7 +16,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -60,7 +60,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
     const isDark = useIsDark();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const sheetRef = useRef<BottomSheetModal>(null);
-    const inputRef = useRef<TextInput>(null);
+    const inputRef = useRef<ElementRef<typeof BottomSheetTextInput>>(null);
     const [payload, setPayload] = useState<Payload | null>(null);
     const [text, setText] = useState<string>('');
     const snapPoints = useMemo(() => ['30%'], []);
@@ -131,7 +131,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
             </Text>
           )}
 
-          <TextInput
+          <BottomSheetTextInput
             ref={inputRef}
             value={text}
             onChangeText={handleChange}

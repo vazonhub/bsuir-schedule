@@ -19,7 +19,6 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchBar } from '@components/SearchBar';
-import { UnityBanner } from '@components/UnityBanner';
 import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { EmployeesController } from '@controllers/employees.controller';
@@ -308,13 +307,6 @@ export const ScheduleTabScreen = () => {
                       pinned={section.key === PINNED_SECTION_KEY}
                     />
                   )}
-                  renderSectionFooter={({ section }) =>
-                    section.key === PINNED_SECTION_KEY ? (
-                      <View style={styles.bannerWrap}>
-                        <UnityBanner />
-                      </View>
-                    ) : null
-                  }
                   renderItem={renderGroupRow}
                   refreshControl={groupsRefreshControl}
                 />
@@ -377,13 +369,6 @@ export const ScheduleTabScreen = () => {
                       </Text>
                     </View>
                   )}
-                  renderSectionFooter={({ section }) =>
-                    section.key === PINNED_EMP_KEY ? (
-                      <View style={styles.bannerWrap}>
-                        <UnityBanner />
-                      </View>
-                    ) : null
-                  }
                   renderItem={renderEmployeeRow}
                   refreshControl={employeesRefreshControl}
                 />
@@ -466,10 +451,6 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
       textTransform: 'uppercase',
       letterSpacing: 0.3,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
     },
     photoBackdrop: {
       flex: 1,

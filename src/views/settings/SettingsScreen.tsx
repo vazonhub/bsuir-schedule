@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { UnityBanner } from '@components/UnityBanner';
 import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
@@ -272,10 +271,6 @@ export const SettingsScreen = () => {
             activeFontStyle={isDark ? styles.segmentActiveFontDark : styles.segmentActiveFontLight}
             appearance={isDark ? 'dark' : 'light'}
           />
-        </View>
-
-        <View style={styles.bannerSection}>
-          <UnityBanner marginHorizontal={0} />
         </View>
 
         <View style={styles.navSection}>
@@ -578,11 +573,6 @@ const makeStyles = (Palette: PaletteType) =>
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
-    },
-    bannerSection: {
-      paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: Spacing.xl,
-      alignItems: 'center',
     },
     navSection: {
       paddingHorizontal: Spacing.screenPadding,

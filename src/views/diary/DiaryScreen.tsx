@@ -9,7 +9,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
-import { UnityBanner } from '@components/UnityBanner';
 import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
@@ -44,12 +43,8 @@ import { SubjectCard } from './SubjectCard';
 
 type ListItem =
   | { kind: 'card'; subject: DiarySubject }
-  | { kind: 'banner'; id: number }
   | { kind: 'hiddenHeader' }
   | { kind: 'hidden'; subject: DiarySubject };
-
-/** Insert an inline banner after every Nth visible subject card. */
-const BANNER_EVERY = 3;
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -127,13 +122,8 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
 
   const listData: ListItem[] = useMemo(() => {
     const out: ListItem[] = [];
-    let bannerId = 0;
-    visible.forEach((s, i) => {
+    visible.forEach((s) => {
       out.push({ kind: 'card', subject: s });
-      // A banner after every Nth card, but not trailing after the last one.
-      if ((i + 1) % BANNER_EVERY === 0 && i + 1 < visible.length) {
-        out.push({ kind: 'banner', id: bannerId++ });
-      }
     });
     if (hidden.length > 0) {
       out.push({ kind: 'hiddenHeader' });
@@ -256,17 +246,9 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             scrollEventThrottle={16}
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
-              if (item.kind === 'banner') return `banner:${item.id}`;
               return `${item.kind}:${item.subject.subject}`;
             }}
             renderItem={({ item, index }) => {
-              if (item.kind === 'banner') {
-                return (
-                  <View style={styles.inlineBannerWrap}>
-                    <UnityBanner />
-                  </View>
-                );
-              }
               if (item.kind === 'card') {
                 return (
                   <SubjectCard
@@ -484,10 +466,6 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
-    inlineBannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.sm,
-    },
     hiddenHeaderWrap: {
       paddingTop: Spacing.xl,
       paddingBottom: Spacing.sectionBottom,
