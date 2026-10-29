@@ -562,7 +562,8 @@
       "./plugins/withUnityBanner",
       "react-native-iap",
       "@react-native-google-signin/google-signin",
-      "./plugins/withModularHeaders"
+      "./plugins/withModularHeaders",
+      "./plugins/withIosDeploymentTarget"
     ],
     "extra": {
       "router": {},
