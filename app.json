@@ -18,6 +18,16 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "ru", "be"],
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration"
+              }
+            ]
+          }
+        },
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "ppxm28t8ap.skadnetwork"
