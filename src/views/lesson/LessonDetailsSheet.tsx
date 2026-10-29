@@ -5,6 +5,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@components/Avatar';
 import { UnityBanner } from '@components/UnityBanner';
@@ -47,6 +48,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const segments = useSegments() as string[];
     const currentTab = (segments[1] ?? '(schedule)') as '(amy)' | '(schedule)';
     const Palette = usePalette();
+    const insets = useSafeAreaInsets();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
 
@@ -152,6 +154,8 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         ref={ref}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        // Keep the sheet below the status bar / Dynamic Island at the 90% snap.
+        topInset={insets.top}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={onDismiss}

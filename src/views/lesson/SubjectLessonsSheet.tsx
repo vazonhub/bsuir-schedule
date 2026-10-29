@@ -2,6 +2,7 @@ import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { UnityBanner } from '@components/UnityBanner';
 import { usePalette } from '@hooks/usePalette';
@@ -58,6 +59,7 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
   ({ schedule, currentWeek, subgroup }, ref) => {
     const { t } = useTranslation();
     const Palette = usePalette();
+    const insets = useSafeAreaInsets();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const sheetRef = useRef<BottomSheetModal>(null);
     const [subject, setSubject] = useState<string | null>(null);
@@ -117,6 +119,8 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        // Keep the sheet below the status bar / Dynamic Island at the 90% snap.
+        topInset={insets.top}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={() => setSubject(null)}
