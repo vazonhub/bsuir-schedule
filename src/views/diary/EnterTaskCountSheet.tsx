@@ -1,4 +1,4 @@
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetTextInput, BottomSheetView } from '@gorhom/bottom-sheet';
 import {
   forwardRef,
   useCallback,
@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ElementRef,
 } from 'react';
 import {
   InputAccessoryView,
@@ -15,14 +16,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import type { DiaryTaskType } from '@stores/diary.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -60,7 +60,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
     const isDark = useIsDark();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const sheetRef = useRef<BottomSheetModal>(null);
-    const inputRef = useRef<TextInput>(null);
+    const inputRef = useRef<ElementRef<typeof BottomSheetTextInput>>(null);
     const [payload, setPayload] = useState<Payload | null>(null);
     const [text, setText] = useState<string>('');
     const snapPoints = useMemo(() => ['30%'], []);
@@ -106,6 +106,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         // The numeric keyboard covered the 30% sheet (input + Save, and
         // number-pad has no return key). Pin the sheet to the top of the
         // keyboard so its whole content stays reachable, and restore the 30%
@@ -130,7 +131,7 @@ export const EnterTaskCountSheet = forwardRef<EnterTaskCountSheetRef, Props>(
             </Text>
           )}
 
-          <TextInput
+          <BottomSheetTextInput
             ref={inputRef}
             value={text}
             onChangeText={handleChange}

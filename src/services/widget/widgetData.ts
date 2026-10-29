@@ -99,9 +99,15 @@ const buildTeacherShort = (employees: EmployeeDto[]): string | null => {
   return employees.map(buildEmployeeShort).join(', ');
 };
 
+/** A lesson belongs to the user when no subgroup is chosen, it's shared, or it matches. */
+const lessonIsMine = (lesson: NormalizedLesson, subgroup: SubgroupChoice): boolean => {
+  const numSub = lesson.raw.numSubgroup;
+  return subgroup === 0 || numSub === 0 || numSub === subgroup;
+};
+
 const toWidgetLesson = (lesson: NormalizedLesson, subgroup: SubgroupChoice): WidgetLesson => {
   const numSub = lesson.raw.numSubgroup;
-  const isMine = subgroup === 0 || numSub === 0 || numSub === subgroup;
+  const isMine = lessonIsMine(lesson, subgroup);
 
   return {
     subject: lesson.raw.subject,
@@ -187,8 +193,10 @@ export const buildWidgetSnapshot = (
   }
 
   // Nearest unfinished lesson — either the ongoing one, else the next one (today or later).
-  // Used by accessory (Lock Screen) widgets.
+  // Used by accessory (Lock Screen) widgets. Only the user's own subgroup counts,
+  // so the featured lesson is never another subgroup's.
   const upcomingSource = all.find((l) => {
+    if (!lessonIsMine(l, subgroup)) return false;
     const status = getLessonTimeStatus(l, now);
     return status !== null && status.kind !== 'past';
   });

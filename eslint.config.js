@@ -61,7 +61,6 @@ module.exports = [
             '\\.(png|jpe?g|gif|webp)$',
             '/widgets/ScheduleWidget$',
             '\\./package\\.json$',
-            '^@mrnitrox/react-native-unity-ads-monetization$',
             '^@react-native-google-signin/google-signin$',
             '^@react-native-async-storage/async-storage$',
             '^expo-alternate-app-icons$',

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import { AppVersionController } from '@controllers/appVersion.controller';
 import { useAppVersionStore } from '@stores/appVersion.store';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -28,6 +29,7 @@ export const UpdateBadge = ({ onPress }: Props) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const reduceMotion = useReduceMotion();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
@@ -62,7 +64,9 @@ export const UpdateBadge = ({ onPress }: Props) => {
       style={[
         styles.container,
         {
-          bottom: TAB_BAR_HEIGHT + insets.bottom + 20,
+          // On wide layouts the tab bar is on the side, so there's no bottom bar
+          // to clear — anchor above the home indicator only.
+          bottom: (isWide ? 0 : TAB_BAR_HEIGHT) + insets.bottom + 20,
           transform: [{ translateX }],
         },
       ]}

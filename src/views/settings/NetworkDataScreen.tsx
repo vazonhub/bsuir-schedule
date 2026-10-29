@@ -6,7 +6,6 @@ import { Alert, Animated, Platform, Pressable, StyleSheet, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
-import { UnityBanner } from '@components/UnityBanner';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { clearLocalCache } from '@services/cache/cache';
@@ -17,7 +16,7 @@ import { clearCloudSchedules } from '@services/cloud/syncService';
 import { updateWatchSnapshot } from '@services/watch';
 import { updateWidgetSnapshot } from '@services/widget';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Layout, Radius, Spacing } from '@theme';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -265,10 +264,6 @@ export const NetworkDataScreen = () => {
         </View>
       </View>
 
-      <View style={styles.bannerWrap}>
-        <UnityBanner />
-      </View>
-
       {/* ── Toast ── */}
       {toast && (
         <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
@@ -286,6 +281,9 @@ const makeStyles = (Palette: PaletteType) =>
     checkVisible: { opacity: 1 },
     checkHidden: { opacity: 0 },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.screenPadding,
@@ -300,6 +298,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     section: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
@@ -385,10 +386,6 @@ const makeStyles = (Palette: PaletteType) =>
     actionLabelDestructive: {
       fontSize: 16,
       color: Palette.destructive,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      paddingHorizontal: Spacing.screenPadding,
     },
     toast: {
       position: 'absolute',

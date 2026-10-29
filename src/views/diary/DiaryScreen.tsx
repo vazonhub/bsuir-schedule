@@ -9,13 +9,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
-import { UnityBanner } from '@components/UnityBanner';
 import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
 import {
@@ -26,7 +26,7 @@ import {
   waitForHydration,
 } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 import { extractDiarySubjects } from '@utils/diary';
 import type { DiarySubject } from '@utils/diary';
@@ -69,6 +69,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
   const noteSheetRef = useRef<NoteSheetRef>(null);
@@ -120,7 +121,10 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   }, [subjects, hiddenList]);
 
   const listData: ListItem[] = useMemo(() => {
-    const out: ListItem[] = visible.map((s) => ({ kind: 'card', subject: s }));
+    const out: ListItem[] = [];
+    visible.forEach((s) => {
+      out.push({ kind: 'card', subject: s });
+    });
     if (hidden.length > 0) {
       out.push({ kind: 'hiddenHeader' });
       for (const s of hidden) out.push({ kind: 'hidden', subject: s });
@@ -130,11 +134,15 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
 
   const contentContainerStyle = useMemo(
     () => ({
+      width: '100%' as const,
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center' as const,
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
-      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+      // Drop the bottom tab-bar clearance on wide layouts (side tab bar).
+      paddingBottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md,
     }),
-    [insets.bottom],
+    [insets.bottom, isWide],
   );
 
   const handleRequestEnterCount = useCallback(
@@ -272,11 +280,6 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
               );
             }}
             ItemSeparatorComponent={() => <View style={styles.gap} />}
-            ListFooterComponent={
-              <View style={styles.bannerWrap}>
-                <UnityBanner />
-              </View>
-            }
             contentContainerStyle={contentContainerStyle}
             refreshControl={
               <RefreshControl
@@ -423,6 +426,9 @@ const makeStyles = (Palette: PaletteType) =>
     root: { flex: 1 },
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.md,
@@ -460,10 +466,6 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
-    bannerWrap: {
-      alignItems: 'center',
-      marginTop: Spacing.xl,
-    },
     hiddenHeaderWrap: {
       paddingTop: Spacing.xl,
       paddingBottom: Spacing.sectionBottom,

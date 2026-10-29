@@ -76,9 +76,9 @@ npm run ios            # или: npm run android
 > **Expo Go не подойдёт** — нативные табы требуют dev client, который
 > `npm run ios` / `npm run android` собирает автоматически.
 
-Все переменные окружения опциональны: фичи, которым они нужны (Unity Ads,
-синк через Google Drive, статус аудиторий, EAS-сборки), просто остаются
-выключенными. См. [`.env.example`](.env.example).
+Все переменные окружения опциональны: фичи, которым они нужны (синк через
+Google Drive, статус аудиторий, EAS-сборки), просто остаются выключенными.
+См. [`.env.example`](.env.example).
 
 ## Архитектура
 
@@ -95,7 +95,7 @@ src/
 ├── components/       переиспользуемый UI без бизнес-логики
 ├── widgets/          UI Android-виджетов
 └── theme/ utils/ …   дизайн-токены и хелперы
-targets/              нативный iOS-виджет (WidgetKit) и Unity-баннер
+targets/              нативный iOS-виджет (WidgetKit) и watchOS-приложение
 plugins/              Expo config-плагины (виджеты, StoreKit, иконки, …)
 services/auditory-api Cloudflare Worker + краулер занятости аудиторий
 ```

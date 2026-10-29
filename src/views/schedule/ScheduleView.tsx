@@ -22,12 +22,12 @@ import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-
 
 import { Image } from 'expo-image';
 import { FloatingTopBar } from '@components/FloatingTopBar';
-import { UnityBanner } from '@components/UnityBanner';
 import { FireController } from '@controllers/fire.controller';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import { useIconName } from '@hooks/useAppearance';
 import { useNow } from '@hooks/useNow';
 import { usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import {
   selectBlockedLessons,
@@ -36,7 +36,7 @@ import {
   selectSubgroup,
   usePreferencesStore,
 } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import type { Holiday } from '@models/holiday';
 import { useDeepLinkStore } from '@stores/deepLink.store';
 import { getMergedHolidays, useHolidaysStore } from '@stores/holidays.store';
@@ -130,6 +130,9 @@ export const ScheduleView = ({
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // On wide layouts (iPad, unfolded foldables) the native tab bar moves to the
+  // side, so the fixed bottom tab-bar clearance would leave an empty gap.
+  const { isWide } = useWideLayout();
   const Palette = usePalette();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const listRef = useRef<FlashListRef<ScheduleRow>>(null);
@@ -313,28 +316,13 @@ export const ScheduleView = ({
     return -1;
   }, [regularSections, examSections, firstExamSectionIndex, hasExams, today]);
 
-  // Banner indices for employee schedules: starting at upcomingIndex, every 3 days with lessons.
-  const bannerSectionIndices = useMemo(() => {
-    if (entityType !== 'employee') return new Set<number>();
-    const start = Math.max(0, upcomingIndex);
-    const indices = new Set<number>();
-    let count = 0;
-    for (let i = start; i < sections.length; i++) {
-      const s = sections[i];
-      if (!s || s.data.length === 0) continue;
-      if (count % 3 === 0) indices.add(i);
-      count++;
-    }
-    return indices;
-  }, [entityType, upcomingIndex, sections]);
-
-  // Flat row stream for FlashList: day header → lessons → (banner),
+  // Flat row stream for FlashList: day header → lessons,
   // with a one-off separator before the first exam section.
   const examsSeparatorBeforeIndex =
     hasExams && regularSections.length > 0 ? firstExamSectionIndex : undefined;
   const rows = useMemo(
-    () => buildScheduleRows(sections, { examsSeparatorBeforeIndex, bannerSectionIndices }),
-    [sections, examsSeparatorBeforeIndex, bannerSectionIndices],
+    () => buildScheduleRows(sections, { examsSeparatorBeforeIndex }),
+    [sections, examsSeparatorBeforeIndex],
   );
 
   // Header-row index for each section (in section order). Needed so that
@@ -395,14 +383,24 @@ export const ScheduleView = ({
   // when returning from a tab (neither top nor bottom), and the paddings don't
   // jump. The header is an absolute sibling.
   const listWrapStyle = useMemo(
-    () => ({ flex: 1, paddingTop: insets.top, paddingBottom: BOTTOM_CLEARANCE }),
-    [insets.top],
+    () => ({
+      flex: 1,
+      paddingTop: insets.top,
+      // When the tab bar is on the side (wide layout) only the home indicator
+      // needs clearance; otherwise reserve space for the bottom tab bar.
+      paddingBottom: isWide ? insets.bottom : BOTTOM_CLEARANCE,
+    }),
+    [insets.top, insets.bottom, isWide],
   );
 
   // Inside the scroll view (already between the notch and the tab bar) — only
   // the header gap on top and a small padding at the bottom.
   const contentStyle = useMemo(
     () => ({
+      // Cap + center the lesson column on wide screens (iPad).
+      width: '100%' as const,
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center' as const,
       paddingTop: BAR_CLEARANCE,
       paddingBottom: Spacing.md,
     }),
@@ -599,8 +597,8 @@ export const ScheduleView = ({
   const handleViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { index: number | null; isViewable: boolean }[] }) => {
       // Take the topmost visible content row (a day header or a lesson),
-      // skipping the exams separator and the banner, so the date label shows
-      // the correct day at the exams boundary and doesn't "stick" to the banner.
+      // skipping the exams separator, so the date label shows the correct day
+      // at the exams boundary.
       let minIndex = Infinity;
       for (const token of viewableItems) {
         if (!token.isViewable || typeof token.index !== 'number') continue;
@@ -681,25 +679,9 @@ export const ScheduleView = ({
             />
           );
         }
-        case 'banner':
-          return (
-            <View style={styles.scheduleBannerWrap}>
-              <UnityBanner />
-            </View>
-          );
       }
     },
-    [
-      Palette,
-      today,
-      holidays,
-      isMineSubgroup,
-      isLessonBlocked,
-      entityType,
-      now,
-      handleLessonPress,
-      styles,
-    ],
+    [Palette, today, holidays, isMineSubgroup, isLessonBlocked, entityType, now, handleLessonPress],
   );
 
   // Encode the visual variant of a lesson (full / compact / blocked) in the
@@ -976,10 +958,6 @@ const makeStyles = (Palette: PaletteType) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Palette.background },
     flex: { flex: 1 },
-    scheduleBannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
-    },
     loadPastBtn: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1064,8 +1042,8 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     photoFull: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').width,
+      width: '100%',
+      height: '100%',
     },
     photoCaption: {
       marginTop: Spacing.xl,

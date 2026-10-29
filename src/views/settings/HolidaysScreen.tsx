@@ -21,7 +21,7 @@ import { GlassButton } from '@components/GlassButton';
 import { usePalette } from '@hooks/usePalette';
 import type { Holiday } from '@models/holiday';
 import { useHolidaysStore } from '@stores/holidays.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { toDateISO } from '@utils/holidays';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -173,6 +173,7 @@ export const HolidaysScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
+          LayoutStyles.centeredContent,
           { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md },
         ]}
       >
@@ -502,6 +503,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     modalContent: {
       width: '100%',
+      maxWidth: 480,
       backgroundColor: Palette.card,
       borderRadius: Radius.lg,
       padding: Spacing.xxl,

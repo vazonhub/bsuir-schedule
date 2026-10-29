@@ -31,7 +31,7 @@ import {
 import { ICON_COLOR_DEFAULTS, ICON_DEFAULTS } from '@hooks/useAppearance';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
-import { showRewardedAd } from '@services/ads';
+import { useWideLayout } from '@hooks/useWideLayout';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
 import { usePreferencesStore } from '@stores/preferences.store';
@@ -40,7 +40,7 @@ import type {
   IconOverrides,
   LessonColorOverrides,
 } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -102,6 +102,7 @@ export const AppearanceScreen = () => {
   const isDark = useIsDark();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const committedColors = usePreferencesStore((s) => s.lessonColorOverrides);
@@ -241,21 +242,10 @@ export const AppearanceScreen = () => {
     }
   }, [draftColors, draftIcons, draftIconColors, applyScale, reduceMotion]);
 
-  /** Show reward-ad confirmation, then commit. */
+  /** Commit the draft to the store. */
   const applyChanges = useCallback(() => {
-    Alert.alert(t('settings.appearanceApplyTitle'), t('settings.appearanceApplyMessage'), [
-      {
-        text: t('settings.appearanceApplyButton'),
-        isPreferred: true,
-        onPress: async () => {
-          const rewarded = await showRewardedAd();
-          if (!rewarded) return;
-          commitDraft();
-        },
-      },
-      { text: t('common.cancel'), style: 'destructive' },
-    ]);
-  }, [t, commitDraft]);
+    commitDraft();
+  }, [commitDraft]);
 
   /** Back with unsaved-changes guard. */
   const handleBack = useCallback(() => {
@@ -263,13 +253,11 @@ export const AppearanceScreen = () => {
       router.back();
       return;
     }
-    Alert.alert(t('settings.unsavedTitle'), t('settings.unsavedMessageAd'), [
+    Alert.alert(t('settings.unsavedTitle'), t('settings.unsavedMessage'), [
       {
-        text: t('settings.unsavedSaveAd'),
+        text: t('settings.unsavedSave'),
         isPreferred: true,
-        onPress: async () => {
-          const rewarded = await showRewardedAd();
-          if (!rewarded) return;
+        onPress: () => {
           commitDraft();
           router.back();
         },
@@ -314,6 +302,7 @@ export const AppearanceScreen = () => {
         ref={scrollRef}
         contentContainerStyle={[
           styles.scroll,
+          LayoutStyles.centeredContent,
           { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md + (hasChanges ? 60 : 0) },
         ]}
         showsVerticalScrollIndicator={false}
@@ -513,7 +502,7 @@ export const AppearanceScreen = () => {
           style={[
             styles.applyWrap,
             {
-              bottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+              bottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md,
               transform: [{ scale: applyScale }],
             },
           ]}
@@ -652,10 +641,14 @@ const makeStyles = (Palette: PaletteType) =>
     /* Apply (absolute) */
     applyWrap: {
       position: 'absolute',
-      left: Spacing.screenPadding,
-      right: Spacing.screenPadding,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      paddingHorizontal: Spacing.screenPadding,
     },
     applyButton: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
       height: 48,
       borderRadius: Radius.lg,
       overflow: 'hidden',
