@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@components/Avatar';
-import { UnityBanner } from '@components/UnityBanner';
 import { useAuditoryStatus } from '@hooks/useAuditoryStatus';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
@@ -420,11 +419,6 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
                 ))}
               </View>
             )}
-
-            {/* Banner at the very bottom, under the teacher / group blocks. */}
-            <View style={styles.bannerWrap}>
-              <UnityBanner />
-            </View>
           </BottomSheetScrollView>
         )}
         <Modal
@@ -472,10 +466,6 @@ const makeStyles = (Palette: PaletteType) =>
       padding: Spacing.xl,
       paddingBottom: Spacing.xxxl + 40,
       gap: Spacing.lg,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      marginTop: Spacing.sm,
     },
     chipRow: {
       flexDirection: 'row',

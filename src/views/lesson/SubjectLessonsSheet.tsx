@@ -4,7 +4,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { UnityBanner } from '@components/UnityBanner';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
@@ -21,14 +20,8 @@ type PaletteType = ReturnType<typeof usePalette>;
 /** Only submission-bearing lessons are listed here — lectures are excluded. */
 const NEAREST_LESSON_TYPES: ReadonlySet<string> = new Set(['ЛР', 'ПЗ']);
 
-/** Insert a banner after every Nth lesson block. */
-const BANNER_EVERY = 3;
-
-/** Row stream: a compact date header, a lesson block, or an inline banner. */
-type Row =
-  | { kind: 'date'; date: Date; key: string }
-  | { kind: 'lesson'; lesson: NormalizedLesson }
-  | { kind: 'banner'; id: number };
+/** Row stream: a compact date header or a lesson block. */
+type Row = { kind: 'date'; date: Date; key: string } | { kind: 'lesson'; lesson: NormalizedLesson };
 
 const dateKeyOf = (date: Date): string =>
   `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -52,8 +45,7 @@ interface Props {
  * Opened from the icon next to a lesson's title.
  *
  * Lessons render with the same `LessonCard` block used on the main schedule so
- * the look is identical; each day gets a compact (de-emphasized) date header and
- * a banner is interleaved after every few lessons.
+ * the look is identical; each day gets a compact (de-emphasized) date header.
  */
 export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
   ({ schedule, currentWeek, subgroup }, ref) => {
@@ -90,13 +82,10 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
       });
     }, [subject, schedule, currentWeek, subgroup]);
 
-    // Build the render stream: a date header per day, lesson blocks, and a
-    // banner after every BANNER_EVERY lessons (never trailing).
+    // Build the render stream: a date header per day, then its lesson blocks.
     const rows = useMemo(() => {
       const out: Row[] = [];
       let prevDateKey: string | null = null;
-      let lessonCount = 0;
-      let bannerId = 0;
       for (const lesson of lessons) {
         const dk = dateKeyOf(lesson.date);
         if (dk !== prevDateKey) {
@@ -104,11 +93,7 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
           prevDateKey = dk;
         }
         out.push({ kind: 'lesson', lesson });
-        lessonCount += 1;
-        if (lessonCount % BANNER_EVERY === 0) out.push({ kind: 'banner', id: bannerId++ });
       }
-      // Drop a trailing banner so ads sit *between* lessons, not after the last.
-      if (out[out.length - 1]?.kind === 'banner') out.pop();
       return out;
     }, [lessons]);
 
@@ -142,13 +127,6 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
             </View>
           ) : (
             rows.map((row) => {
-              if (row.kind === 'banner') {
-                return (
-                  <View key={`banner:${row.id}`} style={styles.bannerWrap}>
-                    <UnityBanner />
-                  </View>
-                );
-              }
               if (row.kind === 'date') {
                 const isToday = isSameDay(row.date, now);
                 const status = isToday ? t('date.today') : null;
@@ -252,9 +230,5 @@ const makeStyles = (Palette: PaletteType) =>
       fontSize: 12,
       fontWeight: '700',
       color: Palette.accent,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
     },
   });
