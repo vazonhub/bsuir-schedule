@@ -274,11 +274,4 @@ describe('headerRowKey / buildScheduleRows', () => {
       'lesson',
     ]);
   });
-
-  it('appends a banner row after the flagged section index', () => {
-    const rows = buildScheduleRows([section(new Date(2025, 8, 1))], {
-      bannerSectionIndices: new Set([0]),
-    });
-    expect(rows.map((r) => r.type)).toEqual(['header', 'lesson', 'banner']);
-  });
 });

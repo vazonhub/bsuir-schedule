@@ -8,7 +8,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { GlassButton } from '@components/GlassButton';
 import { SearchBar } from '@components/SearchBar';
-import { UnityBanner } from '@components/UnityBanner';
 import { SkeletonGroupsList, SkeletonEmployeesList } from '@components/Skeleton';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { hapticSuccess } from '@utils/haptics';
@@ -101,10 +100,6 @@ export const GroupPickerScreen = () => {
     return pinned ? [pinned, ...facultySections] : facultySections;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, pinnedGroupNames, i18n.language]);
-
-  // Key of the last group section — used to drop the trailing banner so ads sit
-  // *between* faculties, not after the last one.
-  const lastGroupSectionKey = groupSections[groupSections.length - 1]?.key;
 
   // ─── Employees ───
   const employees = useEmployeesStore((s) => s.items);
@@ -278,13 +273,6 @@ export const GroupPickerScreen = () => {
                       pinned={section.key === PINNED_SECTION_KEY}
                     />
                   )}
-                  renderSectionFooter={({ section }) =>
-                    section.key !== lastGroupSectionKey ? (
-                      <View style={styles.bannerWrap}>
-                        <UnityBanner />
-                      </View>
-                    ) : null
-                  }
                   renderItem={renderGroupRow}
                 />
               )}
@@ -345,13 +333,6 @@ export const GroupPickerScreen = () => {
                       </Text>
                     </View>
                   )}
-                  renderSectionFooter={({ section }) =>
-                    section.key === PINNED_EMP_KEY ? (
-                      <View style={styles.bannerWrap}>
-                        <UnityBanner />
-                      </View>
-                    ) : null
-                  }
                   renderItem={renderEmployeeRow}
                 />
               )}
@@ -413,9 +394,5 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
       textTransform: 'uppercase',
       letterSpacing: 0.3,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.md,
     },
   });
