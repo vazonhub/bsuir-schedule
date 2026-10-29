@@ -79,9 +79,9 @@ npm run ios            # or: npm run android
 > **Expo Go won't work** — native tabs require a dev client, which
 > `npm run ios` / `npm run android` builds automatically.
 
-All environment variables are optional; features that need one (Unity Ads,
-Google Drive sync, auditory status, EAS builds) simply stay disabled when it
-is missing. See [`.env.example`](.env.example).
+All environment variables are optional; features that need one (Google Drive
+sync, auditory status, EAS builds) simply stay disabled when it is missing. See
+[`.env.example`](.env.example).
 
 ## Architecture
 
@@ -98,7 +98,7 @@ src/
 ├── components/       reusable UI without business logic
 ├── widgets/          Android widget UI
 └── theme/ utils/ …   design tokens and helpers
-targets/              native iOS widget (WidgetKit), watchOS app & Unity banner view
+targets/              native iOS widget (WidgetKit) & watchOS app
 modules/              local Expo native modules (watch-bridge — WatchConnectivity)
 plugins/              Expo config plugins (widgets, watch app, StoreKit, icons, …)
 services/auditory-api Cloudflare Worker + crawler for room occupancy

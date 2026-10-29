@@ -9,13 +9,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ScheduleError } from '@components/ScheduleError';
 import { SkeletonDiary } from '@components/Skeleton';
-import { UnityBanner } from '@components/UnityBanner';
 import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { SpotlightOverlay } from '@components/onboarding/SpotlightOverlay';
 import { TutorialProvider, useTutorial } from '@components/onboarding/TutorialContext';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import { useDiaryStore, selectHidden } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
 import {
@@ -26,7 +26,7 @@ import {
   waitForHydration,
 } from '@stores/preferences.store';
 import { useScheduleStore } from '@stores/schedule.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 import { extractDiarySubjects } from '@utils/diary';
 import type { DiarySubject } from '@utils/diary';
@@ -43,12 +43,8 @@ import { SubjectCard } from './SubjectCard';
 
 type ListItem =
   | { kind: 'card'; subject: DiarySubject }
-  | { kind: 'banner'; id: number }
   | { kind: 'hiddenHeader' }
   | { kind: 'hidden'; subject: DiarySubject };
-
-/** Insert an inline banner after every Nth visible subject card. */
-const BANNER_EVERY = 3;
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -73,6 +69,7 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
   const { t } = useTranslation();
   const Palette = usePalette();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const sheetRef = useRef<EnterTaskCountSheetRef>(null);
   const noteSheetRef = useRef<NoteSheetRef>(null);
@@ -125,13 +122,8 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
 
   const listData: ListItem[] = useMemo(() => {
     const out: ListItem[] = [];
-    let bannerId = 0;
-    visible.forEach((s, i) => {
+    visible.forEach((s) => {
       out.push({ kind: 'card', subject: s });
-      // A banner after every Nth card, but not trailing after the last one.
-      if ((i + 1) % BANNER_EVERY === 0 && i + 1 < visible.length) {
-        out.push({ kind: 'banner', id: bannerId++ });
-      }
     });
     if (hidden.length > 0) {
       out.push({ kind: 'hiddenHeader' });
@@ -142,11 +134,15 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
 
   const contentContainerStyle = useMemo(
     () => ({
+      width: '100%' as const,
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center' as const,
       paddingHorizontal: Spacing.screenPadding,
       paddingTop: Spacing.md,
-      paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+      // Drop the bottom tab-bar clearance on wide layouts (side tab bar).
+      paddingBottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md,
     }),
-    [insets.bottom],
+    [insets.bottom, isWide],
   );
 
   const handleRequestEnterCount = useCallback(
@@ -250,17 +246,9 @@ const DiaryForGroup = ({ groupName }: { groupName: string }) => {
             scrollEventThrottle={16}
             keyExtractor={(item) => {
               if (item.kind === 'hiddenHeader') return '__hidden-header';
-              if (item.kind === 'banner') return `banner:${item.id}`;
               return `${item.kind}:${item.subject.subject}`;
             }}
             renderItem={({ item, index }) => {
-              if (item.kind === 'banner') {
-                return (
-                  <View style={styles.inlineBannerWrap}>
-                    <UnityBanner />
-                  </View>
-                );
-              }
               if (item.kind === 'card') {
                 return (
                   <SubjectCard
@@ -438,6 +426,9 @@ const makeStyles = (Palette: PaletteType) =>
     root: { flex: 1 },
     container: { flex: 1, backgroundColor: Palette.background },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.md,
@@ -475,10 +466,6 @@ const makeStyles = (Palette: PaletteType) =>
       fontWeight: '600',
     },
     gap: { height: Spacing.cardGap },
-    inlineBannerWrap: {
-      alignItems: 'center',
-      paddingVertical: Spacing.sm,
-    },
     hiddenHeaderWrap: {
       paddingTop: Spacing.xl,
       paddingBottom: Spacing.sectionBottom,

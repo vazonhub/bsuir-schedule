@@ -19,15 +19,15 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { UnityBanner } from '@components/UnityBanner';
 import { ONBOARDING_ENABLED } from '@components/onboarding/config';
 import { ScheduleController } from '@controllers/schedule.controller';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import { hapticLight, hapticSuccess } from '@utils/haptics';
 import type { LanguageChoice, ThemeChoice } from '@stores/preferences.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -72,6 +72,7 @@ export const SettingsScreen = () => {
   const Palette = usePalette();
   const isDark = useIsDark();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const router = useRouter();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
   const theme = usePreferencesStore((s) => s.theme);
@@ -233,7 +234,10 @@ export const SettingsScreen = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md }}
+        contentContainerStyle={[
+          LayoutStyles.centeredContent,
+          { paddingBottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md },
+        ]}
       >
         <View style={styles.section}>
           <Text {...textProps('footnote')} style={styles.sectionTitle}>
@@ -267,10 +271,6 @@ export const SettingsScreen = () => {
             activeFontStyle={isDark ? styles.segmentActiveFontDark : styles.segmentActiveFontLight}
             appearance={isDark ? 'dark' : 'light'}
           />
-        </View>
-
-        <View style={styles.bannerSection}>
-          <UnityBanner marginHorizontal={0} />
         </View>
 
         <View style={styles.navSection}>
@@ -489,6 +489,7 @@ export const SettingsScreen = () => {
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.sheetHandle}
       >
@@ -572,11 +573,6 @@ const makeStyles = (Palette: PaletteType) =>
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
-    },
-    bannerSection: {
-      paddingHorizontal: Spacing.screenPadding,
-      paddingBottom: Spacing.xl,
-      alignItems: 'center',
     },
     navSection: {
       paddingHorizontal: Spacing.screenPadding,

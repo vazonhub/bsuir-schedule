@@ -9,7 +9,7 @@ import { GlassButton } from '@components/GlassButton';
 import { useAccessibility } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 import { textProps } from '@theme/typography';
 
 type PaletteType = ReturnType<typeof usePalette>;
@@ -172,6 +172,7 @@ export const AccessibilityScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
+          LayoutStyles.centeredContent,
           { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md },
         ]}
       >

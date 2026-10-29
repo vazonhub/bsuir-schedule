@@ -6,13 +6,12 @@ import { Animated, Linking, Pressable, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@components/GlassButton';
-import { UnityBanner } from '@components/UnityBanner';
 import { UpdateModal } from '@components/UpdateModal';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { useAppVersionStore } from '@stores/appVersion.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Layout, Radius, Spacing } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -148,10 +147,6 @@ export const AboutScreen = () => {
         </View>
       </View>
 
-      <View style={styles.bannerWrap}>
-        <UnityBanner />
-      </View>
-
       <UpdateModal
         visible={whatsNewVisible}
         version={latestVersion}
@@ -168,6 +163,9 @@ const makeStyles = (Palette: PaletteType) =>
     container: { flex: 1, backgroundColor: Palette.background },
     backIcon: { marginLeft: -1 },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.screenPadding,
@@ -182,6 +180,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     section: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,
@@ -237,10 +238,6 @@ const makeStyles = (Palette: PaletteType) =>
       gap: Spacing.lg,
       paddingVertical: Spacing.cardPaddingY,
       paddingHorizontal: Spacing.cardPaddingX,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      paddingHorizontal: Spacing.screenPadding,
     },
     navRowPressed: {
       backgroundColor: Palette.cardPressed,

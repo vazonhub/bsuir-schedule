@@ -3,16 +3,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter, useSegments } from 'expo-router';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
-import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@components/Avatar';
-import { UnityBanner } from '@components/UnityBanner';
 import { useAuditoryStatus } from '@hooks/useAuditoryStatus';
 import { useGetLessonAccentColor, useIconName } from '@hooks/useAppearance';
 import { usePalette } from '@hooks/usePalette';
 import type { EmployeeDto, LessonStudentGroupDto, WeekNumber } from '@models/dto';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 import { getDayNames } from '@utils/date';
 import { hapticLight } from '@utils/haptics';
@@ -47,6 +47,7 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
     const segments = useSegments() as string[];
     const currentTab = (segments[1] ?? '(schedule)') as '(amy)' | '(schedule)';
     const Palette = usePalette();
+    const insets = useSafeAreaInsets();
     const styles = useMemo(() => makeStyles(Palette), [Palette]);
     const snapPoints = useMemo(() => ['45%', '90%'], []);
 
@@ -152,6 +153,10 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
         ref={ref}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        // Cap width on wide screens (iPad) and keep the sheet below the status
+        // bar / Dynamic Island at the 90% snap.
+        style={LayoutStyles.centeredSheet}
+        topInset={insets.top}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}
         onDismiss={onDismiss}
@@ -416,11 +421,6 @@ export const LessonDetailsSheet = forwardRef<BottomSheetModal, Props>(
                 ))}
               </View>
             )}
-
-            {/* Banner at the very bottom, under the teacher / group blocks. */}
-            <View style={styles.bannerWrap}>
-              <UnityBanner />
-            </View>
           </BottomSheetScrollView>
         )}
         <Modal
@@ -468,10 +468,6 @@ const makeStyles = (Palette: PaletteType) =>
       padding: Spacing.xl,
       paddingBottom: Spacing.xxxl + 40,
       gap: Spacing.lg,
-    },
-    bannerWrap: {
-      alignItems: 'center',
-      marginTop: Spacing.sm,
     },
     chipRow: {
       flexDirection: 'row',
@@ -681,8 +677,8 @@ const makeStyles = (Palette: PaletteType) =>
       alignItems: 'center',
     },
     photoFull: {
-      width: Dimensions.get('window').width,
-      height: Dimensions.get('window').width,
+      width: '100%',
+      height: '100%',
     },
     photoCaption: {
       marginTop: Spacing.xl,

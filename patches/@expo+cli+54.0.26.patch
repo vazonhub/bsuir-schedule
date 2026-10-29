@@ -1,0 +1,150 @@
+diff --git a/node_modules/@expo/cli/build/src/start/doctor/apple/SimulatorAppPrerequisite.js b/node_modules/@expo/cli/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
+index 886f915..58412a8 100644
+--- a/node_modules/@expo/cli/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
++++ b/node_modules/@expo/cli/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
+@@ -83,12 +83,19 @@ const debug = require('debug')('expo:doctor:apple:simulatorApp');
+  * May return null if the Simulator.app is not registered in LaunchServices
+  * (e.g. when Xcode lives on an external or renamed volume).
+  */ async function getSimulatorAppIdViaAppleScriptAsync() {
+-    try {
+-        return (await (0, _osascript().execAsync)('id of app "Simulator"')).trim();
+-    } catch  {
+-    // This error may occur in CI where the user intends to install just the simulators but no
+-    // Xcode, or when Simulator.app is not registered in LaunchServices (e.g. Xcode on an
+-    // external or renamed volume).
++    // Xcode 27+ removed the standalone Simulator.app and replaced it with DeviceHub.app.
++    for (const appName of [
++        'Simulator',
++        'DeviceHub'
++    ]){
++        try {
++            const id = (await (0, _osascript().execAsync)(`id of app "${appName}"`)).trim();
++            if (id) return id;
++        } catch  {
++        // This error may occur in CI where the user intends to install just the simulators but no
++        // Xcode, or when the app is not registered in LaunchServices (e.g. Xcode on an
++        // external or renamed volume).
++        }
+     }
+     return null;
+ }
+@@ -101,13 +108,25 @@ const debug = require('debug')('expo:doctor:apple:simulatorApp');
+         const { stdout: developerDir } = await (0, _spawnasync().default)('xcode-select', [
+             '--print-path'
+         ]);
+-        const simulatorInfoPlist = _path().default.join(developerDir.trim(), 'Applications', 'Simulator.app', 'Contents', 'Info.plist');
+-        const { stdout: bundleId } = await (0, _spawnasync().default)('defaults', [
+-            'read',
+-            simulatorInfoPlist,
+-            'CFBundleIdentifier'
+-        ]);
+-        return bundleId.trim() || null;
++        // Xcode <=26: Contents/Developer/Applications/Simulator.app
++        // Xcode 27+:  Contents/Applications/DeviceHub.app
++        const candidatePlists = [
++            _path().default.join(developerDir.trim(), 'Applications', 'Simulator.app', 'Contents', 'Info.plist'),
++            _path().default.join(developerDir.trim(), '..', 'Applications', 'DeviceHub.app', 'Contents', 'Info.plist')
++        ];
++        for (const infoPlist of candidatePlists){
++            try {
++                const { stdout: bundleId } = await (0, _spawnasync().default)('defaults', [
++                    'read',
++                    infoPlist,
++                    'CFBundleIdentifier'
++                ]);
++                if (bundleId.trim()) return bundleId.trim();
++            } catch  {
++            // Try the next candidate path.
++            }
++        }
++        return null;
+     } catch  {
+     // Simulator.app not found at the expected path or xcode-select is unavailable.
+     }
+@@ -124,7 +143,7 @@ class SimulatorAppPrerequisite extends _Prerequisite.Prerequisite {
+             // This error may occur in CI where the users intends to install just the simulators but no Xcode.
+             throw new _Prerequisite.PrerequisiteCommandError('SIMULATOR_APP', "Can't determine id of Simulator app; the Simulator is most likely not installed on this machine. Run `sudo xcode-select -s /Applications/Xcode.app`");
+         }
+-        if (result !== 'com.apple.iphonesimulator' && result !== 'com.apple.CoreSimulator.SimulatorTrampoline') {
++        if (result !== 'com.apple.iphonesimulator' && result !== 'com.apple.CoreSimulator.SimulatorTrampoline' && result !== 'com.apple.dt.Devices') {
+             throw new _Prerequisite.PrerequisiteCommandError('SIMULATOR_APP', "Simulator is installed but is identified as '" + result + "'; don't know what that is.");
+         }
+         debug(`Simulator app id: ${result}`);
+diff --git a/node_modules/@expo/cli/build/src/start/platforms/ios/AppleDeviceManager.js b/node_modules/@expo/cli/build/src/start/platforms/ios/AppleDeviceManager.js
+index 725db8a..07d6a71 100644
+--- a/node_modules/@expo/cli/build/src/start/platforms/ios/AppleDeviceManager.js
++++ b/node_modules/@expo/cli/build/src/start/platforms/ios/AppleDeviceManager.js
+@@ -269,7 +269,19 @@ class AppleDeviceManager extends _DeviceManager.DeviceManager {
+     async activateWindowAsync() {
+         await (0, _ensureSimulatorAppRunning.ensureSimulatorAppRunningAsync)(this.device);
+         // TODO: Focus the individual window
+-        await _osascript().execAsync(`tell application "Simulator" to activate`);
++        // Xcode 27+ replaced Simulator.app with DeviceHub.app; try either and never
++        // throw, since this only brings the window to the foreground.
++        for (const appName of [
++            'Simulator',
++            'DeviceHub'
++        ]){
++            try {
++                await _osascript().execAsync(`tell application "${appName}" to activate`);
++                return;
++            } catch  {
++            // Try the next app; window focus is best-effort.
++            }
++        }
+     }
+     getExpoGoAppId() {
+         return EXPO_GO_BUNDLE_IDENTIFIER;
+diff --git a/node_modules/@expo/cli/build/src/start/platforms/ios/ensureSimulatorAppRunning.js b/node_modules/@expo/cli/build/src/start/platforms/ios/ensureSimulatorAppRunning.js
+index 31296bc..4808028 100644
+--- a/node_modules/@expo/cli/build/src/start/platforms/ios/ensureSimulatorAppRunning.js
++++ b/node_modules/@expo/cli/build/src/start/platforms/ios/ensureSimulatorAppRunning.js
+@@ -95,7 +95,8 @@ async function waitForSimulatorAppToStart({ maxWaitTime } = {}) {
+ // I think the app can be open while no simulators are booted.
+ async function isSimulatorAppRunningAsync() {
+     try {
+-        const zeroMeansNo = (await _osascript().execAsync('tell app "System Events" to count processes whose name is "Simulator"')).trim();
++        // Xcode 27+ replaced Simulator.app with DeviceHub.app; accept either process.
++        const zeroMeansNo = (await _osascript().execAsync('tell app "System Events" to count (processes whose name is "Simulator" or name is "DeviceHub")')).trim();
+         if (zeroMeansNo === '0') {
+             return false;
+         }
+@@ -108,15 +109,29 @@ async function isSimulatorAppRunningAsync() {
+     return true;
+ }
+ async function openSimulatorAppAsync(device) {
+-    const args = [
+-        '-a',
+-        'Simulator'
+-    ];
+-    if (device.udid) {
+-        // This has no effect if the app is already running.
+-        args.push('--args', '-CurrentDeviceUDID', device.udid);
++    try {
++        const args = [
++            '-a',
++            'Simulator'
++        ];
++        if (device.udid) {
++            // This has no effect if the app is already running.
++            args.push('--args', '-CurrentDeviceUDID', device.udid);
++        }
++        await (0, _spawnasync().default)('open', args);
++    } catch  {
++        // Xcode 27+ removed Simulator.app; open the booted device through DeviceHub instead.
++        if (device.udid) {
++            await (0, _spawnasync().default)('open', [
++                `devices://device/open?id=${device.udid}`
++            ]);
++        } else {
++            await (0, _spawnasync().default)('open', [
++                '-b',
++                'com.apple.dt.Devices'
++            ]);
++        }
+     }
+-    await (0, _spawnasync().default)('open', args);
+ }
+ 
+ //# sourceMappingURL=ensureSimulatorAppRunning.js.map
+\ No newline at end of file

@@ -1,6 +1,6 @@
 {
   "name": "bsuir-time",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "description": "Bsuir Time — BSUIR class schedule app for iOS and Android: 4-week cycle, widgets, diary, cloud sync",
   "license": "MIT",
   "author": "Konstantsin Betenya",
@@ -43,7 +43,6 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@gorhom/bottom-sheet": "^5.2.9",
-    "@mrnitrox/react-native-unity-ads-monetization": "^0.1.2",
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-google-signin/google-signin": "^16.1.2",

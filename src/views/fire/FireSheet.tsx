@@ -1,16 +1,15 @@
 import { BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { FlameIcon } from '@components/fire/FlameIcon';
 import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
-import { showInterstitialAd, showRewardedAd } from '@services/ads';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { FIRE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import { MAX_FREEZES, WEEKLY_FREEZES, getFlameColor } from '@utils/fire';
@@ -35,49 +34,27 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
   const sheetRef = useRef<BottomSheetModal>(null);
   const core = useFireStore(useShallow(selectFireCore));
   const snapPoints = useMemo(() => ['70%'], []);
-  const [loadingFreeze, setLoadingFreeze] = useState(false);
-  // Skip the on-close interstitial when the user just watched a rewarded ad for a
-  // freeze — avoids showing two full-screen ads back to back.
-  const rewardedThisSessionRef = useRef(false);
 
   useImperativeHandle(ref, () => ({
-    present: () => {
-      rewardedThisSessionRef.current = false;
-      sheetRef.current?.present();
-    },
+    present: () => sheetRef.current?.present(),
     dismiss: () => sheetRef.current?.dismiss(),
   }));
-
-  const handleDismiss = useCallback(() => {
-    // Show an interstitial when leaving the fire sheet, unless a rewarded ad was
-    // already shown for a freeze during this session.
-    if (rewardedThisSessionRef.current) return;
-    void showInterstitialAd();
-  }, []);
 
   const accentColor = getFlameColor(core.current);
   const hasHistory = Object.keys(core.history).length > 0;
   const freezeMaxed = core.freezes >= MAX_FREEZES;
 
-  const handleGetFreeze = useCallback(async () => {
-    if (loadingFreeze) return;
-    setLoadingFreeze(true);
-    try {
-      rewardedThisSessionRef.current = true;
-      const rewarded = await showRewardedAd();
-      if (!rewarded) return;
-      FireController.rewardFreeze();
-    } finally {
-      setLoadingFreeze(false);
-    }
-  }, [loadingFreeze]);
+  const handleGetFreeze = useCallback(() => {
+    if (freezeMaxed) return;
+    FireController.rewardFreeze();
+  }, [freezeMaxed]);
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
-      onDismiss={handleDismiss}
+      style={LayoutStyles.centeredSheet}
       backgroundStyle={{ backgroundColor: Palette.card }}
       handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
     >
@@ -111,25 +88,21 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
           />
         </View>
 
-        {/* ── Rewarded ad → extra freeze ── */}
+        {/* ── Get an extra freeze ── */}
         <Pressable
           onPress={handleGetFreeze}
-          disabled={freezeMaxed || loadingFreeze}
+          disabled={freezeMaxed}
           style={({ pressed }) => [
             styles.freezeBtn,
             pressed && styles.freezeBtnPressed,
             freezeMaxed && styles.freezeBtnDisabled,
           ]}
         >
-          {loadingFreeze ? (
-            <ActivityIndicator size="small" color={FIRE_COLORS.frozen} />
-          ) : (
-            <Ionicons
-              name="snow-outline"
-              size={18}
-              color={freezeMaxed ? Palette.textTertiary : FIRE_COLORS.frozen}
-            />
-          )}
+          <Ionicons
+            name="snow-outline"
+            size={18}
+            color={freezeMaxed ? Palette.textTertiary : FIRE_COLORS.frozen}
+          />
           <Text
             {...textProps('headline')}
             style={[styles.freezeBtnLabel, freezeMaxed && styles.freezeBtnLabelDisabled]}

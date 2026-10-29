@@ -22,10 +22,9 @@ import Markdown, { MarkdownIt } from 'react-native-markdown-display';
 
 import { FireController } from '@controllers/fire.controller';
 import { useIsDark, usePalette } from '@hooks/usePalette';
-import { showInterstitialAd } from '@services/ads';
 import { useDiaryStore } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import { hapticLight } from '@utils/haptics';
@@ -90,10 +89,6 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
   const [editing, setEditing] = useState(false);
   const [done, setDone] = useState(false);
   const snapPoints = useMemo(() => ['92%'], []);
-  // The note text the sheet opened with — used to detect an edit on dismiss.
-  const initialNoteRef = useRef('');
-  // Whether the user marked the task done during this session (interstitial trigger).
-  const markedDoneRef = useRef(false);
 
   const save = useCallback(
     (value: string) => {
@@ -109,8 +104,6 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       const note = entry?.notes?.[p.index] ?? '';
       setPayload(p);
       setText(note);
-      initialNoteRef.current = note;
-      markedDoneRef.current = false;
       setDone(entry?.completed.includes(p.index) ?? false);
       setEditing(note.trim().length === 0); // new note → open straight into edit
       // Disable the screen's back-swipe while the sheet is open, otherwise an
@@ -139,7 +132,6 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
     if (next) {
       // Marking done = activity for the fire streak (un-checking is not).
       FireController.registerHomework();
-      markedDoneRef.current = true;
     }
     setDone(next);
   }, [payload, groupName, toggleTask, done]);
@@ -165,6 +157,7 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
+      style={LayoutStyles.centeredSheet}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
@@ -173,11 +166,6 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       onDismiss={() => {
         navigation.setOptions({ gestureEnabled: true });
         save(text);
-        // Finished working with a task: show an interstitial if the user either
-        // marked it done or edited the description during this session.
-        if (markedDoneRef.current || text !== initialNoteRef.current) {
-          void showInterstitialAd();
-        }
         setPayload(null);
         setText('');
         setEditing(false);
