@@ -24,7 +24,7 @@ import { FireController } from '@controllers/fire.controller';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useDiaryStore } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import { hapticLight } from '@utils/haptics';
@@ -157,6 +157,7 @@ export const NoteSheet = forwardRef<NoteSheetRef, Props>(({ groupName }, ref) =>
       ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
+      style={LayoutStyles.centeredSheet}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"

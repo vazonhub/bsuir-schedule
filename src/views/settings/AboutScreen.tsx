@@ -11,7 +11,7 @@ import { useReduceMotion } from '@hooks/useAccessibility';
 import { usePalette } from '@hooks/usePalette';
 import { useAppVersionStore } from '@stores/appVersion.store';
 import { usePreferencesStore } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { Layout, Radius, Spacing } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -163,6 +163,9 @@ const makeStyles = (Palette: PaletteType) =>
     container: { flex: 1, backgroundColor: Palette.background },
     backIcon: { marginLeft: -1 },
     header: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: Spacing.screenPadding,
@@ -177,6 +180,9 @@ const makeStyles = (Palette: PaletteType) =>
       color: Palette.textPrimary,
     },
     section: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
+      alignSelf: 'center',
       paddingHorizontal: Spacing.screenPadding,
       paddingBottom: Spacing.xl,
       gap: Spacing.md,

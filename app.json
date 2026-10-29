@@ -17,7 +17,17 @@
       "buildNumber": "56",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleLocalizations": ["en", "ru", "be"]
+        "CFBundleLocalizations": ["en", "ru", "be"],
+        "UIApplicationSceneManifest": {
+          "UIApplicationSupportsMultipleScenes": false,
+          "UISceneConfigurations": {
+            "UIWindowSceneSessionRoleApplication": [
+              {
+                "UISceneConfigurationName": "Default Configuration"
+              }
+            ]
+          }
+        }
       },
       "entitlements": {
         "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
@@ -331,7 +341,9 @@
       "./plugins/withWatchApp",
       "react-native-iap",
       "@react-native-google-signin/google-signin",
-      "./plugins/withModularHeaders"
+      "./plugins/withModularHeaders",
+      "./plugins/withIosDeploymentTarget",
+      "./plugins/withSceneDelegate"
     ],
     "extra": {
       "router": {},

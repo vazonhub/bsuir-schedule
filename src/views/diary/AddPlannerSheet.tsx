@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useIsDark, usePalette } from '@hooks/usePalette';
 import { useDiaryStore, DIARY_TASK_TYPES } from '@stores/diary.store';
 import type { DiaryTaskType } from '@stores/diary.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { LESSON_TYPE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import type { DiarySubject } from '@utils/diary';
@@ -131,6 +131,7 @@ export const AddPlannerSheet = forwardRef<AddPlannerSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
+        style={LayoutStyles.centeredSheet}
         backgroundStyle={{ backgroundColor: Palette.card }}
         handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
       >

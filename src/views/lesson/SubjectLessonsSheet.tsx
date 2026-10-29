@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePalette } from '@hooks/usePalette';
 import type { CurrentWeekNumber, ScheduleDto } from '@models/dto';
 import type { SubgroupChoice } from '@stores/preferences.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { textProps } from '@theme/typography';
 import { formatDayDate, formatDayName, isSameDay } from '@utils/date';
 import { getLessonTimeStatus } from '@utils/lesson';
@@ -104,7 +104,9 @@ export const SubjectLessonsSheet = forwardRef<SubjectLessonsSheetRef, Props>(
         ref={sheetRef}
         snapPoints={snapPoints}
         enableDynamicSizing={false}
-        // Keep the sheet below the status bar / Dynamic Island at the 90% snap.
+        // Cap width on wide screens (iPad) and keep the sheet below the status
+        // bar / Dynamic Island at the 90% snap.
+        style={LayoutStyles.centeredSheet}
         topInset={insets.top}
         backgroundStyle={styles.background}
         handleIndicatorStyle={styles.handle}

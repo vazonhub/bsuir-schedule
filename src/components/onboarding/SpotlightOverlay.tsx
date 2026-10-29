@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   useAnimatedStyle,
@@ -52,7 +52,7 @@ export const SpotlightOverlay = () => {
   const { active, stepIndex, steps, currentStep, next, skip, getTarget, getScroller } =
     useTutorial();
 
-  const win = Dimensions.get('window');
+  const win = useWindowDimensions();
 
   // Resolved target rect (already padded). null = centered step.
   // During a re-measure we keep the previous rect — the ring smoothly

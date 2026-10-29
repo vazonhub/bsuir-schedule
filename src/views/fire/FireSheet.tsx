@@ -9,7 +9,7 @@ import { FlameIcon } from '@components/fire/FlameIcon';
 import { FireController } from '@controllers/fire.controller';
 import { usePalette } from '@hooks/usePalette';
 import { selectFireCore, useFireStore } from '@stores/fire.store';
-import { Radius, Spacing } from '@theme';
+import { LayoutStyles, Radius, Spacing } from '@theme';
 import { FIRE_COLORS } from '@theme/colors';
 import { textProps } from '@theme/typography';
 import { MAX_FREEZES, WEEKLY_FREEZES, getFlameColor } from '@utils/fire';
@@ -54,6 +54,7 @@ export const FireSheet = forwardRef<FireSheetRef>((_props, ref) => {
       ref={sheetRef}
       snapPoints={snapPoints}
       enableDynamicSizing={false}
+      style={LayoutStyles.centeredSheet}
       backgroundStyle={{ backgroundColor: Palette.card }}
       handleIndicatorStyle={{ backgroundColor: Palette.textTertiary }}
     >
