@@ -62,7 +62,7 @@ Full model — `docs/plans/CICD_PLAN.md`, release checklist — `RELEASE.md`. In
 
 ## Environment variables
 
-Owner-specific identifiers (EAS owner/projectId, auditory API URL, Unity Ads IDs, Google client ID) are **not** committed — they come from `.env` via `app.config.ts`. See `.env.example`; every variable is optional and the related feature silently disables when unset.
+Owner-specific identifiers (EAS owner/projectId, auditory API URL, Google client ID) are **not** committed — they come from `.env` via `app.config.ts`. See `.env.example`; every variable is optional and the related feature silently disables when unset.
 
 ## Running on a device
 

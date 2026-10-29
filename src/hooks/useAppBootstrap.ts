@@ -7,7 +7,6 @@ import { EmployeesController } from '@controllers/employees.controller';
 import { FireController } from '@controllers/fire.controller';
 import { GroupsController } from '@controllers/groups.controller';
 import { HolidaysController } from '@controllers/holidays.controller';
-import { initAds } from '@services/ads';
 import { restoreGoogleSession } from '@services/cloud/googleAuth';
 import { prefetchPinned } from '@services/prefetch';
 import { trackUsageAndMaybeRequestReview } from '@services/review';
@@ -46,7 +45,6 @@ export const useAppBootstrap = () => {
     void trackUsageAndMaybeRequestReview();
     void AppVersionController.checkForUpdate();
     void restoreGoogleSession();
-    void initAds();
     // Diary: wait for store rehydration, subscribe to changes,
     // run the first pull+merge from the cloud. It does not need the schedule —
     // no need to tie it to prefetchPinned.
