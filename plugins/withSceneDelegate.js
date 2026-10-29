@@ -1,15 +1,22 @@
 const { withAppDelegate } = require('expo/config-plugins');
 
 const MARKER = 'class SceneDelegate';
-
 const IMPORT_LINE = 'import UIKit';
 
+// The window-creation block Expo generates inside `didFinishLaunching`. It is
+// moved into the scene delegate so the app adopts the iOS 26+ scene lifecycle.
+const WINDOW_BLOCK =
+  /#if os\(iOS\) \|\| os\(tvOS\)\s*\n\s*window = UIWindow\(frame: UIScreen\.main\.bounds\)\s*\n\s*factory\.startReactNative\([\s\S]*?\)\s*\n\s*#endif\n/;
+
+const WINDOW_BLOCK_REPLACEMENT =
+  '    // The window + React Native root are created in `SceneDelegate` for the\n' +
+  '    // iOS 26+ UIScene lifecycle (correct safe-area insets, no launch crash).\n';
+
 const SCENE_DELEGATE = `
-/// iOS 26+ requires UIScene lifecycle adoption. Expo SDK 54 / RN 0.81 still
-/// create the window in the AppDelegate, so this scene delegate re-parents that
-/// already-mounted React Native root onto a scene-bound window — otherwise iOS
-/// 26+ crashes on launch (NoSceneLifecycleAdoption) or shows an empty (black)
-/// scene-owned window. The scene manifest is declared in app.json's infoPlist.
+/// iOS 26+ requires UIScene lifecycle adoption. Expo SDK 54 / RN 0.81 do not
+/// generate a scene delegate, so we add one here: the React Native root is
+/// mounted into a scene-bound window (which reports correct safe-area insets).
+/// The UIApplicationSceneManifest is declared in app.json's infoPlist.
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
 
@@ -20,13 +27,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   ) {
     guard let windowScene = scene as? UIWindowScene else { return }
 
-    let sceneWindow = UIWindow(windowScene: windowScene)
+    let window = UIWindow(windowScene: windowScene)
     if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-      sceneWindow.rootViewController = appDelegate.window?.rootViewController
-      appDelegate.window = sceneWindow
+      appDelegate.reactNativeFactory?.startReactNative(
+        withModuleName: "main",
+        in: window,
+        launchOptions: nil
+      )
+      appDelegate.window = window
     }
-    self.window = sceneWindow
-    sceneWindow.makeKeyAndVisible()
+    self.window = window
 
     if let url = connectionOptions.urlContexts.first?.url {
       RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
@@ -49,9 +59,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 `;
 
 /**
- * Injects a UIScene delegate into the generated Swift AppDelegate so the app
- * adopts the iOS 26+ scene lifecycle (see the class doc comment). Paired with
- * the UIApplicationSceneManifest declared in app.json.
+ * Adopts the iOS 26+ UIScene lifecycle for the Expo/RN AppDelegate: moves the
+ * window + React Native startup into a UISceneDelegate. Paired with the
+ * UIApplicationSceneManifest declared in app.json.
  */
 function withSceneDelegate(config) {
   return withAppDelegate(config, (c) => {
@@ -62,6 +72,7 @@ function withSceneDelegate(config) {
     if (!contents.includes(IMPORT_LINE)) {
       contents = contents.replace(/^(import Expo\n)/m, `$1${IMPORT_LINE}\n`);
     }
+    contents = contents.replace(WINDOW_BLOCK, WINDOW_BLOCK_REPLACEMENT);
     c.modResults.contents = `${contents}\n${SCENE_DELEGATE}`;
     return c;
   });

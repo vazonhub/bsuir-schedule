@@ -31,6 +31,7 @@ import {
 import { ICON_COLOR_DEFAULTS, ICON_DEFAULTS } from '@hooks/useAppearance';
 import { useReduceMotion } from '@hooks/useAccessibility';
 import { useIsDark, usePalette } from '@hooks/usePalette';
+import { useWideLayout } from '@hooks/useWideLayout';
 import { showRewardedAd } from '@services/ads';
 import type { KnownLessonType } from '@theme/colors';
 import { FALLBACK_LESSON_COLOR, LESSON_TYPE_COLORS } from '@theme/colors';
@@ -40,7 +41,7 @@ import type {
   IconOverrides,
   LessonColorOverrides,
 } from '@stores/preferences.store';
-import { LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
+import { Layout, LayoutStyles, Radius, Spacing, TAB_BAR_HEIGHT } from '@theme';
 
 type PaletteType = ReturnType<typeof usePalette>;
 
@@ -102,6 +103,7 @@ export const AppearanceScreen = () => {
   const isDark = useIsDark();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { isWide } = useWideLayout();
   const styles = useMemo(() => makeStyles(Palette), [Palette]);
 
   const committedColors = usePreferencesStore((s) => s.lessonColorOverrides);
@@ -514,7 +516,7 @@ export const AppearanceScreen = () => {
           style={[
             styles.applyWrap,
             {
-              bottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.md,
+              bottom: insets.bottom + (isWide ? 0 : TAB_BAR_HEIGHT) + Spacing.md,
               transform: [{ scale: applyScale }],
             },
           ]}
@@ -653,10 +655,14 @@ const makeStyles = (Palette: PaletteType) =>
     /* Apply (absolute) */
     applyWrap: {
       position: 'absolute',
-      left: Spacing.screenPadding,
-      right: Spacing.screenPadding,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      paddingHorizontal: Spacing.screenPadding,
     },
     applyButton: {
+      width: '100%',
+      maxWidth: Layout.maxContentWidth,
       height: 48,
       borderRadius: Radius.lg,
       overflow: 'hidden',

@@ -503,6 +503,7 @@ const makeStyles = (Palette: PaletteType) =>
     },
     modalContent: {
       width: '100%',
+      maxWidth: 480,
       backgroundColor: Palette.card,
       borderRadius: Radius.lg,
       padding: Spacing.xxl,
