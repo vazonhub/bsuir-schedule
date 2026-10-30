@@ -17,17 +17,7 @@
       "buildNumber": "57",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleLocalizations": ["en", "ru", "be"],
-        "UIApplicationSceneManifest": {
-          "UIApplicationSupportsMultipleScenes": false,
-          "UISceneConfigurations": {
-            "UIWindowSceneSessionRoleApplication": [
-              {
-                "UISceneConfigurationName": "Default Configuration"
-              }
-            ]
-          }
-        }
+        "CFBundleLocalizations": ["en", "ru", "be"]
       },
       "entitlements": {
         "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
