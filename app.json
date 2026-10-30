@@ -14,20 +14,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "by.vazon.bsuirschedule",
-      "buildNumber": "57",
+      "buildNumber": "58",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleLocalizations": ["en", "ru", "be"],
-        "UIApplicationSceneManifest": {
-          "UIApplicationSupportsMultipleScenes": false,
-          "UISceneConfigurations": {
-            "UIWindowSceneSessionRoleApplication": [
-              {
-                "UISceneConfigurationName": "Default Configuration"
-              }
-            ]
-          }
-        }
+        "CFBundleLocalizations": ["en", "ru", "be"]
       },
       "entitlements": {
         "com.apple.security.application-groups": ["group.by.vazon.bsuirschedule"]
@@ -35,7 +25,7 @@
     },
     "android": {
       "package": "by.vazon.bsuirtime",
-      "versionCode": 26,
+      "versionCode": 27,
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon.png",
         "backgroundColor": "#3A547F"
