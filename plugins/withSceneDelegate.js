@@ -1,7 +1,11 @@
-const { withAppDelegate } = require('expo/config-plugins');
+const { withAppDelegate, withInfoPlist } = require('expo/config-plugins');
 
 const MARKER = 'class SceneDelegate';
 const IMPORT_LINE = 'import UIKit';
+
+// Resolved by Xcode at build time to e.g. `BsuirTime.SceneDelegate`. Must match
+// the Swift class injected below so iOS can instantiate it.
+const SCENE_DELEGATE_CLASS = '$(PRODUCT_MODULE_NAME).SceneDelegate';
 
 const SCENE_DELEGATE = `
 /// iOS 26+ requires UIScene lifecycle adoption. Expo SDK 54 / RN 0.81 create the
@@ -47,12 +51,46 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 `;
 
 /**
+ * Declares the `UIApplicationSceneManifest` in Info.plist, wired to our
+ * `SceneDelegate` via `UISceneDelegateClassName`.
+ *
+ * This lives in the plugin (not app.json) on purpose: the manifest and the Swift
+ * class it names are one concept, and splitting them is exactly what broke a
+ * release build before — app.json declared scene adoption but never named the
+ * delegate class, so on a clean prebuild iOS adopted the scene lifecycle yet
+ * never instantiated `SceneDelegate`. The window was then never attached to a
+ * scene and the app showed a black screen after the splash. Keeping both halves
+ * here guarantees they can never drift again (and survives `expo prebuild`, since
+ * `ios/` is gitignored and regenerated on every EAS build).
+ */
+function withSceneManifest(config) {
+  return withInfoPlist(config, (c) => {
+    const plist = c.modResults;
+    const manifest = plist.UIApplicationSceneManifest ?? {};
+    manifest.UIApplicationSupportsMultipleScenes = false;
+
+    const configs = manifest.UISceneConfigurations ?? {};
+    const appRole = configs.UIWindowSceneSessionRoleApplication ?? [];
+    const first = appRole[0] ?? {};
+    first.UISceneConfigurationName = first.UISceneConfigurationName ?? 'Default Configuration';
+    first.UISceneDelegateClassName = SCENE_DELEGATE_CLASS;
+
+    appRole[0] = first;
+    configs.UIWindowSceneSessionRoleApplication = appRole;
+    manifest.UISceneConfigurations = configs;
+    plist.UIApplicationSceneManifest = manifest;
+    return c;
+  });
+}
+
+/**
  * Adopts the iOS 26+ UIScene lifecycle by injecting a UISceneDelegate that
- * attaches the AppDelegate's window to the connecting scene. Paired with the
- * UIApplicationSceneManifest declared in app.json.
+ * attaches the AppDelegate's window to the connecting scene, and declaring the
+ * matching UIApplicationSceneManifest (with UISceneDelegateClassName) in
+ * Info.plist.
  */
 function withSceneDelegate(config) {
-  return withAppDelegate(config, (c) => {
+  config = withAppDelegate(config, (c) => {
     let contents = c.modResults.contents;
     if (contents.includes(MARKER)) {
       return c;
@@ -63,6 +101,8 @@ function withSceneDelegate(config) {
     c.modResults.contents = `${contents}\n${SCENE_DELEGATE}`;
     return c;
   });
+  config = withSceneManifest(config);
+  return config;
 }
 
 module.exports = withSceneDelegate;
