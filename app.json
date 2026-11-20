@@ -44,7 +44,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Разрешите доступ к фото, чтобы прикреплять изображения к заметкам дневника."
+          "photosPermission": "Разрешите доступ к фото, чтобы прикреплять изображения к заметкам дневника.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "./plugins/withWidget",
